@@ -1,4 +1,5 @@
 import type { Money, Product } from "./types";
+import { deriveTags } from "./categorize";
 
 // ---------------------------------------------------------------------------
 // Low-level Shopify Storefront API client.
@@ -145,7 +146,9 @@ function reshape(p: ShopifyProduct): Product {
     rating: 5,
     badge: hasDiscount ? "Sale" : null,
     availableForSale: p.availableForSale,
-    tags: p.tags,
+    // Merge any real Shopify tags with type/Orisha tags derived from the title,
+    // so the shop filters + "Comprar por Orisha" work even when products are untagged.
+    tags: Array.from(new Set([...p.tags, ...deriveTags(p.title)])),
     variants: p.variants.edges.map((e) => ({
       id: e.node.id,
       title: e.node.title,

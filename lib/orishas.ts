@@ -29,6 +29,7 @@ export const ORISHA_NAMES = [
   "Yemayá",
   "Changó",
   "Orula",
+  "Olokun",
   "Oyá",
   "Ogún",
   "Ochosi",
