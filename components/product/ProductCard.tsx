@@ -1,0 +1,77 @@
+import Link from "next/link";
+import type { Product } from "@/lib/types";
+import { formatMoney } from "@/lib/utils";
+import RatingStars from "@/components/ui/RatingStars";
+import AddToCartButton from "./AddToCartButton";
+import CompareButton from "./CompareButton";
+import WishlistButton from "./WishlistButton";
+
+// Faithful port of the template's `.single_product` markup, driven by data.
+export default function ProductCard({ product }: { product: Product }) {
+  const href = `/products/${product.handle}`;
+  const [primary, secondary] = product.images;
+
+  return (
+    <div className="single_product">
+      <div className="product-img">
+        <Link href={href}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="primary-img"
+            src={primary?.url}
+            alt={primary?.altText ?? product.title}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="secondary-img"
+            src={secondary?.url ?? primary?.url}
+            alt={secondary?.altText ?? product.title}
+          />
+        </Link>
+        {product.badge && <span className="sticker">{product.badge}</span>}
+        <div className="add-actions">
+          <ul>
+            <li>
+              <AddToCartButton className="hiraola-add_cart" product={product}>
+                <i className="ion-bag" />
+              </AddToCartButton>
+            </li>
+            <li>
+              <CompareButton className="hiraola-add_compare" product={product} />
+            </li>
+            <li className="quick-view-btn">
+              <Link href={href} title="Quick View">
+                <i className="ion-eye" />
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="hiraola-product_content">
+        <div className="product-desc_info">
+          <h6>
+            <Link className="product-name" href={href}>
+              {product.title}
+            </Link>
+          </h6>
+          <div className="price-box">
+            <span className="new-price">{formatMoney(product.price)}</span>
+            {product.compareAtPrice && (
+              <span className="old-price">
+                {formatMoney(product.compareAtPrice)}
+              </span>
+            )}
+          </div>
+          <div className="additional-add_action">
+            <ul>
+              <li>
+                <WishlistButton className="hiraola-add_compare" product={product} />
+              </li>
+            </ul>
+          </div>
+          <RatingStars rating={product.rating} />
+        </div>
+      </div>
+    </div>
+  );
+}

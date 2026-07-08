@@ -1,49 +1,1961 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap");
+
+/* ===========================================================================
+ * Pedro Yoruba Jewelry — BRAND LAYER (palette + typography)
+ * Palette extracted from the brand logo: warm gold/bronze, deep black, cream.
+ * Codified here as CSS variables for consistent global reuse, and a ceremonial
+ * serif applied to display headings for a luxury / Yoruba-heritage feel.
+ * =========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --pyj-gold: #e3b23c; /* primary accent — intense gold */
+  --pyj-gold-deep: #b8860b; /* rich bronze */
+  --pyj-gold-light: #f2d896; /* bright cream gold */
+  --pyj-black: #18120b; /* softer warm dark (not pure black) */
+  --pyj-cream: #f6efe2; /* warm off-white */
+  /* Orisha (eleke) accent colours */
+  --orisha-obatala: #efe6d2;
+  --orisha-oshun: #d8a72c;
+  --orisha-chango: #b5341f;
+  --orisha-yemaya: #2e5e9e;
+  --orisha-orula: #1f6b3c;
+  --orisha-oya: #7b3f2e;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ---- "Comprar por Orisha" showcase ---- */
+.orisha-area {
+  padding: 84px 0 74px;
+  background: linear-gradient(180deg, #fbf8f2 0%, #ffffff 100%);
+}
+.orisha-intro {
+  max-width: 560px;
+  margin: -4px auto 42px;
+  text-align: center;
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--dk-muted);
+}
+.orisha-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 18px;
+}
+@media (max-width: 991px) {
+  .orisha-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+@media (max-width: 575px) {
+  .orisha-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.orisha-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  padding: 26px 12px 22px;
+  border: 1px solid var(--dk-border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0));
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.orisha-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--pyj-gold);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+.eleke {
+  width: 88px;
+  height: 88px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.3s ease;
+}
+.orisha-card:hover .eleke {
+  transform: scale(1.07);
+}
+.orisha-card h6 {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  color: var(--dk-head);
+  margin: 0 0 4px;
+}
+.orisha-card span {
+  display: block;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  color: var(--dk-muted);
+}
+
+/* ---- Dark ceremonial footer (altar / trono aesthetic) ---- */
+.hiraola-footer_area {
+  background-color: var(--pyj-black) !important;
+  color: #b8ad97;
+}
+.hiraola-footer_area .footer-top_area,
+.hiraola-footer_area .footer-bottom_area {
+  background: transparent !important;
+}
+.hiraola-footer_area .footer-bottom_area {
+  border-top: 1px solid rgba(205, 165, 87, 0.18);
+}
+.hiraola-footer_area .footer-widgets_title h6 {
+  color: var(--pyj-gold-light) !important;
+  font-family: "Cinzel", serif;
+  letter-spacing: 0.04em;
+}
+.hiraola-footer_area .widget-short_desc p,
+.hiraola-footer_area .widgets-essential_stuff ul li,
+.hiraola-footer_area .copyright span {
+  color: #b8ad97 !important;
+}
+.hiraola-footer_area a {
+  color: #b0a690 !important;
+}
+.hiraola-footer_area a:hover {
+  color: var(--pyj-gold) !important;
+}
+.hiraola-footer_area .widgets-essential_stuff ul li span {
+  color: var(--pyj-gold-light) !important;
+}
+.hiraola-footer_area .widgets-essential_stuff ul li > i {
+  color: var(--pyj-gold) !important;
+}
+.hiraola-footer_area .hiraola-social_link > ul > li > a {
+  color: #b8ad97 !important;
+  border-color: rgba(205, 165, 87, 0.28) !important;
+}
+.hiraola-footer_area .newsletter-form_wrap .newsletter-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(205, 165, 87, 0.28);
+  color: #f0e9da;
+}
+
+/* =========================================================================
+ * DARK + GOLD THEME — applied site-wide. Warm near-black surfaces, cream text
+ * (AA+ contrast), gold accents. Keeps the template layout; only re-skins colour.
+ * ========================================================================= */
+:root {
+  --dk-bg: #18120b; /* page — softer warm dark */
+  --dk-surface: #221a10; /* cards, inputs — clearly lighter than the page */
+  --dk-raised: #2c2114; /* sidebar, totals, dropdowns */
+  --dk-border: rgba(227, 178, 60, 0.34); /* visible gold separation line */
+  --dk-text: #d6cbb2;
+  --dk-head: #f1e7d2;
+  --dk-muted: #a99d83;
+}
+
+body.template-color-1 {
+  background-color: var(--dk-bg) !important;
+  color: var(--dk-text);
+}
+.template-color-1 h1,
+.template-color-1 h2,
+.template-color-1 h3,
+.template-color-1 h4,
+.template-color-1 h5,
+.template-color-1 h6 {
+  color: var(--dk-head);
+}
+.template-color-1 p,
+.template-color-1 li,
+.template-color-1 label,
+.template-color-1 td,
+.template-color-1 th {
+  color: var(--dk-text);
+}
+
+/* Section wrappers → let the page background show through */
+.hiraola-shipping_area,
+.hiraola-product_area,
+.hiraola-product_area-2,
+.hiraola-product-tab_area-2,
+.hiraola-banner_area-2,
+.hiraola-banner_area-3,
+.orisha-area,
+.shop-category-area,
+.hiraola-content_wrapper,
+.sp-area,
+.hiraola-cart-area,
+.checkout-area,
+.hiraola-wishlist_area,
+.compare-area,
+.frequently-area,
+.contact-main-page,
+.error404-area,
+.myaccount-area,
+.login-register-area,
+.hiraola-blog_area,
+.blog-details-area {
+  background: transparent !important;
+}
+.orisha-area {
+  background: linear-gradient(180deg, #120e09 0%, var(--dk-bg) 100%) !important;
+}
+
+/* Header dark */
+.header-main_area,
+.header-main_area-2,
+.header-bottom_area,
+.header-top_area,
+.header-middle_area {
+  background-color: var(--dk-bg) !important;
+}
+.header-bottom_area.sticky {
+  background-color: var(--dk-bg) !important;
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+.main-menu_area > nav > ul > li > a,
+.header-right_area > ul > li > a,
+.header-right_area .toolbar-btn,
+.ht-menu > ul > li > a {
+  color: var(--dk-head) !important;
+}
+.main-menu_area > nav > ul > li > ul,
+.main-menu_area > nav > ul > li .hm-megamenu {
+  background-color: var(--dk-raised) !important;
+  border: 1px solid var(--dk-border);
+}
+.main-menu_area > nav > ul > li > ul li a {
+  color: var(--dk-text) !important;
+}
+
+/* Product cards */
+.single_product {
+  background-color: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+}
+.hiraola-product_content,
+.list-slide_item .single_product {
+  background-color: transparent !important;
+}
+/*
+ * The card border is ours (the template's cards had none), so the content block was
+ * designed to sit flush against the image — the template's `padding: 0 20px 20px`
+ * leaves the name touching the image (the "pegado arriba"). Add top breathing room so
+ * the name clears the image; the template's 20px sides/bottom already balance it.
+ * !important because the template's content rule is more specific and loads after us.
+ */
+.single_product .hiraola-product_content {
+  padding: 20px 18px 22px !important;
+  border-top: 1px solid var(--dk-border);
+}
+/* The template collapses the shop grid to ONE column below 480px (too big — endless
+   scrolling for a 150-piece catalogue). Keep 2 per row on phones, with tighter cards. */
+@media (max-width: 479px) {
+  .shop-product-wrap.grid.gridview-3 > [class*="col-"],
+  .shop-product-wrap.grid.gridview-4 > [class*="col-"],
+  .shop-product-wrap.grid.gridview-5 > [class*="col-"] {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+  .single_product .hiraola-product_content {
+    padding: 14px 12px 16px !important;
+  }
+  .single_product .product-name {
+    font-size: 13px !important;
+    line-height: 1.35;
+  }
+  .single_product .price-box .new-price {
+    font-size: 15px !important;
+  }
+}
+.product-name,
+.single_product .product-desc_info h6 a {
+  color: var(--dk-head) !important;
+}
+.price-box .new-price {
+  color: var(--pyj-gold) !important;
+}
+.price-box .old-price {
+  color: var(--dk-muted) !important;
+}
+.product-img .add-actions > ul li > a,
+.additional-add_action ul li > a {
+  background-color: var(--dk-raised) !important;
+  color: var(--dk-text) !important;
+}
+
+/* Section titles / tabs */
+.hiraola-section_title h4,
+.hiraola-tab_title h4 {
+  color: var(--dk-head) !important;
+}
+.product-menu li a {
+  color: var(--dk-muted) !important;
+}
+.product-menu li a.active {
+  color: var(--pyj-gold) !important;
+}
+
+/* Breadcrumb — darken the photo so gold text reads */
+.breadcrumb-area {
+  background-color: var(--dk-bg);
+  box-shadow: inset 0 0 0 2000px rgba(13, 10, 7, 0.84);
+}
+.breadcrumb-content h2 {
+  color: #fff !important;
+}
+.breadcrumb-content ul li,
+.breadcrumb-content ul li a {
+  color: var(--pyj-gold-light) !important;
+}
+
+/* Shop sidebar widgets */
+.hiraola-sidebar_categories,
+.category-module {
+  background-color: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border);
+  padding: 18px;
+  margin-bottom: 22px;
+}
+.hiraola-categories_title h5,
+.category-module_heading h5 {
+  color: var(--pyj-gold-light) !important;
+  font-family: "Cinzel", serif;
+}
+.sidebar-checkbox_list li label,
+.module-list_item a {
+  color: var(--dk-text) !important;
+}
+
+/* Shop toolbar + selects */
+.shop-toolbar,
+.product-short select,
+.select-search-category,
+.nice-select {
+  background-color: var(--dk-surface) !important;
+  color: var(--dk-text) !important;
+  border-color: var(--dk-border) !important;
+}
+.product-view-mode a {
+  color: var(--dk-muted) !important;
+}
+.product-view-mode a.active {
+  color: var(--pyj-gold) !important;
+}
+
+/* Product detail */
+/* The template's .sp-nav wrapper carries a solid WHITE background (it framed the
+   product "card" in the light theme). On the dark theme that white bleeds out as a
+   stark white edge on the left of the content column, and the copy sits flush against
+   it. Make it transparent so the whole column rests on the dark page. */
+.sp-nav,
+.sp-area .sp-nav {
+  background: transparent !important;
+}
+.sp-content .sp-heading h5 a,
+.sp-content .sp-heading h5 {
+  color: var(--dk-head) !important;
+}
+.sp-content .reference,
+.sp-essential_stuff ul li {
+  color: var(--dk-muted) !important;
+}
+/* Airier, premium vertical rhythm for the product-detail column. The template packs
+   the heading / reference / price / spec lines tightly; space them out and add two
+   hairline dividers (above the price, above the tags) so the column reads as three
+   calm zones: identity → price + specs → actions + meta. */
+.sp-area .sp-nav .sp-content .sp-heading > h5,
+.sp-area .sp-nav .sp-content .sp-heading > h5 > a {
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 23px !important;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--dk-head) !important;
+}
+.sp-area .sp-nav .sp-content .sp-heading > h5 {
+  padding-bottom: 14px !important;
+}
+@media (max-width: 575px) {
+  .sp-area .sp-nav .sp-content .sp-heading > h5,
+  .sp-area .sp-nav .sp-content .sp-heading > h5 > a {
+    font-size: 20px !important;
+  }
+}
+.sp-content .reference {
+  display: inline-block;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.sp-area .sp-nav .sp-content .rating-box {
+  padding: 14px 0 0 !important;
+}
+.sp-area .sp-nav .sp-content .price-box {
+  margin-top: 22px;
+  padding: 22px 0 0 !important;
+  border-top: 1px solid var(--dk-border);
+}
+.sp-area .sp-nav .sp-content .price-box .new-price {
+  font-size: 26px !important;
+}
+.sp-area .sp-nav .sp-content .sp-essential_stuff {
+  padding-top: 20px !important;
+}
+.sp-area .sp-nav .sp-content .sp-essential_stuff > ul > li {
+  padding: 7px 0 !important;
+  line-height: 1.5;
+}
+.sp-area .sp-nav .sp-content .quantity {
+  padding-top: 26px !important;
+}
+.sp-area .sp-nav .sp-content .qty-btn_area {
+  padding-top: 24px !important;
+}
+.sp-area .sp-nav .sp-content .hiraola-tag-line {
+  margin-top: 28px;
+  padding-top: 24px !important;
+  border-top: 1px solid var(--dk-border);
+}
+.sp-area .sp-nav .sp-content .hiraola-social_link {
+  padding-top: 18px !important;
+}
+/* ===== Mobile horizontal breathing room =====
+   The template's .container sits only 12px from the screen edge on phones, so text
+   reads as cramped against the border. Give content a more comfortable ~20px gutter
+   site-wide on small screens. (Container padding > Bootstrap's row negative margin,
+   so this never causes horizontal overflow.) */
+@media (max-width: 767px) {
+  .container {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
   }
 }
 
-html {
+.cart-plus-minus .cart-plus-minus-box {
+  background-color: var(--dk-surface) !important;
+  color: var(--dk-head) !important;
+  border-color: var(--dk-border) !important;
+}
+/* Quantity stepper: the template leaves the +/- arrow buttons WHITE, which clashes on
+   the dark theme right beside the (now dark) number box. Theme the arrows so the whole
+   control is one cohesive dark stepper — cream glyphs, gold on hover. */
+.quantity .cart-plus-minus > .qtybutton {
+  background: var(--dk-raised) !important;
+  border-color: var(--dk-border) !important;
+  color: var(--dk-head) !important;
+}
+.quantity .cart-plus-minus > .qtybutton:hover {
+  background: var(--pyj-gold) !important;
+  color: var(--pyj-black) !important;
+}
+.quantity .cart-plus-minus > .qtybutton > i {
+  color: inherit !important;
+}
+/* Product-detail social icons: the template draws light-grey boxes; on the dark theme
+   give them a gold hairline + gold fill on hover so they match the rest of the page. */
+.sp-content .hiraola-social_link > ul > li > a {
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-text) !important;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.sp-content .hiraola-social_link > ul > li > a:hover {
+  background: var(--pyj-gold) !important;
+  border-color: var(--pyj-gold) !important;
+  color: var(--pyj-black) !important;
+}
+
+/* Tables: cart, wishlist, compare, order */
+.table-content table th,
+.your-order-table table th,
+.compare-table table th {
+  color: var(--dk-head) !important;
+  border-color: var(--dk-border) !important;
+}
+.table-content table td,
+.your-order-table table td,
+.compare-table table td,
+.your-order-table table,
+.compare-table table {
+  border-color: var(--dk-border) !important;
+  color: var(--dk-text) !important;
+}
+.cart-page-total,
+.your-order {
+  background-color: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border);
+  padding: 22px;
+}
+.cart-page-total h2,
+.your-order h3 {
+  color: var(--pyj-gold-light) !important;
+}
+
+/* Forms: checkout, contact, login */
+.checkbox-form .checkout-form-list input[type="text"],
+.checkbox-form .checkout-form-list input[type="password"],
+.checkbox-form .checkout-form-list input[type="email"],
+.contact-form input,
+.contact-form textarea,
+.login-form input,
+.coupon input.input-text {
+  background-color: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-head) !important;
+}
+::placeholder {
+  color: var(--dk-muted) !important;
+}
+
+/* FAQ accordion */
+.frequently-content .card,
+.card-header {
+  background-color: var(--dk-surface) !important;
+  border-color: var(--dk-border) !important;
+}
+
+/* Newsletter popup */
+.popup_wrapper .test {
+  background-color: var(--dk-raised) !important;
+}
+.popup_wrapper .subscribe_area h2 {
+  color: var(--pyj-gold-light) !important;
+}
+.popup_wrapper .subscribe_area p,
+.popup_wrapper .subscribe-bottom label {
+  color: var(--dk-text) !important;
+}
+
+/* Accessibility: visible focus ring on all interactive elements (gold) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--pyj-gold) !important;
+  outline-offset: 2px;
+}
+
+/* Header Two is transparent + position:absolute over the hero by default.
+   Force a solid dark bar in normal flow so the dark theme reads and the light
+   menu/icons stay legible. High specificity to beat the template's -2 rule. */
+.template-color-1 .header-main_area-2 .header-bottom_area.header-bottom_area-2 {
+  background-color: var(--dk-bg) !important;
+  position: relative !important;
+  border-bottom: 1px solid var(--dk-border) !important;
+}
+.template-color-1 .header-right_area > ul > li > a,
+.template-color-1 .header-right_area .toolbar-btn,
+.template-color-1 .header-right_area .toolbar-btn i,
+.template-color-1 .header-right_area .wishlist-btn i {
+  color: var(--dk-head) !important;
+}
+
+/* Product-detail tab section (Description / Specification / Reviews) */
+.sp-product-tab_area,
+.sp-product-tab_nav,
+.product-tab,
+.product-description,
+.hiraola-tab_content,
+.tab-pane {
+  background: transparent !important;
+}
+.sp-product-tab_nav .product-menu li a {
+  color: var(--dk-muted) !important;
+  border-color: var(--dk-border) !important;
+}
+.sp-product-tab_nav .product-menu li a.active {
+  color: var(--pyj-gold) !important;
+}
+.product-description,
+.product-description p,
+.product-description h3 {
+  color: var(--dk-text) !important;
+}
+.review-input,
+.review-textarea {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-head) !important;
+}
+/* wishlist / compare icon buttons in the buy box (were white) */
+.qty-btn_area > ul li > a.qty-wishlist_btn,
+.qty-btn_area > ul li > a.qty-compare_btn {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-text) !important;
+}
+/* Primary CTA → gold so it stands out on the dark surface */
+.sp-area .qty-btn_area > ul li > a.qty-cart_btn,
+.hiraola-group_btn ul li .add-to_cart {
+  background-color: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+  border: 0 !important;
+}
+.sp-area .qty-btn_area > ul li > a.qty-cart_btn:hover,
+.hiraola-group_btn ul li .add-to_cart:hover {
+  background-color: var(--pyj-gold-light) !important;
+  color: #1a1208 !important;
+}
+/* gallery thumbnail frames → gold border on dark */
+.sp-img_area .sp-img_slider > a {
+  border-color: var(--dk-border) !important;
+}
+.sp-img_area .sp-img_slider > a.active {
+  border-color: var(--pyj-gold) !important;
+}
+
+/* ---- Intense gold propagated to the template's accent elements ---- */
+.template-color-1 .hiraola-btn,
+.template-color-1 .hiraola-banner_btn,
+.template-color-1 .qty-cart_btn,
+.template-color-1 .newsletter-btn {
+  background-color: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+}
+.template-color-1 .hiraola-btn:hover,
+.template-color-1 .hiraola-banner_btn:hover,
+.template-color-1 .newsletter-btn:hover {
+  background-color: var(--pyj-gold-light) !important;
+  color: #1a1208 !important;
+}
+/* Secondary buttons (minicart) → gold outline on dark */
+.template-color-1 .hiraola-btn_dark {
+  background-color: var(--dk-raised) !important;
+  border: 1px solid var(--pyj-gold) !important;
+  color: var(--pyj-gold-light) !important;
+}
+.template-color-1 .hiraola-btn_dark:hover {
+  background-color: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+}
+.template-color-1 .sticker {
+  background: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+}
+.template-color-1 .sticker:before {
+  border-color: var(--pyj-gold) transparent transparent transparent !important;
+}
+/* gold underlines under section / tab titles */
+.template-color-1 .hiraola-section_title > h4:before {
+  background-color: var(--pyj-gold) !important;
+  height: 2px !important;
+}
+/* link & menu hovers, product name hover → intense gold */
+.template-color-1 a:hover,
+.template-color-1 .product-name:hover,
+.template-color-1 .main-menu_area > nav > ul > li:hover > a,
+.template-color-1 .footer-links ul li a:hover {
+  color: var(--pyj-gold) !important;
+}
+/* rating stars */
+.template-color-1 .rating-box > ul > li > i {
+  color: var(--pyj-gold) !important;
+}
+.template-color-1 .rating-box > ul > li.silver-color > i {
+  color: #6a604c !important;
+}
+/* scroll-to-top */
+.template-color-1 #scrollUp {
+  background-color: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+}
+
+/* ---- Marked separations: make every divider/line visible ---- */
+.table-content table tbody tr,
+.your-order-table table tbody tr,
+.your-order-table table tfoot tr,
+.compare-table table tr {
+  border-bottom: 1px solid var(--dk-border) !important;
+}
+.header-main_area,
+.header-main_area-2 {
+  border-bottom: 1px solid var(--dk-border);
+}
+.hiraola-shipping_area {
+  border-top: 1px solid var(--dk-border);
+  border-bottom: 1px solid var(--dk-border);
+}
+
+/* ===== AUDIT FIXES — remaining light surfaces → dark, detail by detail ===== */
+/* Offcanvas panels: minicart, mobile menu, search */
+.offcanvas-minicart_wrapper .offcanvas-menu-inner,
+.mobile-menu_wrapper .offcanvas-menu-inner,
+.offcanvas-search_wrapper .offcanvas-menu-inner {
+  background: var(--dk-raised) !important;
+  border-left: 1px solid var(--dk-border);
+}
+.minicart-list .minicart-product {
+  border-bottom: 1px solid var(--dk-border);
+}
+.minicart-product .product-item_title,
+.minicart-heading h4,
+.minicart-item_total {
+  color: var(--dk-head) !important;
+}
+.minicart-item_total {
+  border-top: 1px solid var(--dk-border);
+}
+.offcanvas-navigation .mobile-menu li a,
+.offcanvas-navigation .mobile-menu li .mm-text {
+  color: var(--dk-text) !important;
+}
+.offcanvas-inner_search input,
+.offcanvas-search input {
+  background: var(--dk-surface) !important;
+  color: var(--dk-head) !important;
+  border: 1px solid var(--dk-border) !important;
+}
+
+/* Blog */
+.blog-item,
+.blog-item_wrap,
+.hiraola-blog-details,
+.hiraola-blog-sidebar,
+.hiraola-blog-sidebar-wrapper,
+.hiraola-sidebar-search-form,
+.comment-post-box,
+.hiraola-blog-comment-wrapper {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border);
+}
+.blog-content h4 a,
+.blog-content .blog-title,
+.hiraola-blog-sidebar-title h4 {
+  color: var(--dk-head) !important;
+}
+.hiraola-blog-sidebar-title h4 {
+  color: var(--pyj-gold-light) !important;
+}
+
+/* Checkout payment */
+.payment-method,
+.payment-accordion,
+.payment-accordion .card,
+.payment-accordion .card-header {
+  background: var(--dk-surface) !important;
+  border-color: var(--dk-border) !important;
+}
+
+/* Contact */
+.contact-main-page,
+.contact-form-content,
+.contact-page-side-content {
+  background: transparent !important;
+}
+.single-contact-block {
+  border-bottom: 1px solid var(--dk-border);
+  padding-bottom: 14px;
+}
+.single-contact-block h4 {
+  color: var(--pyj-gold-light) !important;
+}
+
+/* My account */
+.myaccount-tab-trigger,
+.myaccount-tab-content,
+.myaccount-tab-trigger .nav-link {
+  background: var(--dk-surface) !important;
+  border-color: var(--dk-border) !important;
+  color: var(--dk-text) !important;
+}
+.myaccount-tab-trigger .nav-link.active {
+  background: var(--pyj-gold) !important;
+  color: #1a1208 !important;
+}
+
+/* About */
+.overview-content,
+.project-count-area,
+.team-content,
+.team-member {
+  background: transparent !important;
+}
+.team-content {
+  border: 1px solid var(--dk-border);
+}
+
+/* Login / register */
+.login-form {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border);
+  padding: 26px;
+}
+.login-title h4,
+.login-register_area h2 {
+  color: var(--pyj-gold-light) !important;
+}
+.login-form input {
+  background: var(--dk-bg) !important;
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-head) !important;
+}
+
+/* Quick-view modal */
+.modal-wrapper .modal-content,
+.modal-wrapper .modal-body,
+.modal-inner-area {
+  background: var(--dk-raised) !important;
+}
+
+/* Generic comment/review inputs */
+.comment-post-box input,
+.comment-post-box textarea {
+  background: var(--dk-bg) !important;
+  border: 1px solid var(--dk-border) !important;
+  color: var(--dk-head) !important;
+}
+
+/* Ceremonial display serif (Cinzel) for the big brand headings. */
+.breadcrumb-content h2,
+.hiraola-section_title h4,
+.hiraola-tab_title h4,
+.main-slider .slider-content h2,
+.static-banner-content h2 {
+  font-family: "Cinzel", serif !important;
+  letter-spacing: 0.03em;
+}
+/* Elegant italic serif for the supporting hero / banner sub-lines. */
+.main-slider .slider-content h3,
+.static-banner-content h3 {
+  font-family: "Cormorant Garamond", serif !important;
+  font-style: italic;
+  font-weight: 600;
+}
+/*
+ * StaticBanner legibility scrim — same problem as the hero: the promo photo is light
+ * where the copy sits, and the dark-theme copy is light cream → it washes out. The
+ * image wrapper is already position:relative and the content is position:absolute
+ * inside it, so a left-weighted ::before scrim (z-index:1) + z-index:2 on the content
+ * lifts the copy above it WITHOUT disturbing its vertical centering.
+ */
+.static-banner-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 14, 8, 0.8) 0%,
+    rgba(20, 14, 8, 0.55) 32%,
+    rgba(20, 14, 8, 0.16) 60%,
+    rgba(20, 14, 8, 0) 82%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+.static-banner-content {
+  z-index: 2;
+}
+
+/*
+ * Intentionally minimal. The look & feel comes entirely from the original
+ * template CSS loaded via components/layout/Stylesheets.tsx. We deliberately do
+ * NOT add a reset, dark-mode, or body styling here so nothing fights the
+ * template's own style.css cascade.
+ *
+ * Only add small additive rules for behaviours the removed jQuery plugins
+ * used to provide.
+ */
+
+/* Scroll-to-top button base (color comes from .template-color-1 #scrollUp). */
+#scrollUp {
+  position: fixed;
+  right: 25px;
+  bottom: 25px;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 9999;
+  display: block;
+}
+
+/* Native category <select> in the search bar, since nice-select JS is gone. */
+.hm-searchbox .select-search-category {
+  border: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  max-width: 140px;
+}
+
+/* react-slick adds focus outlines on slides; the template never showed them. */
+.slick-slide:focus {
+  outline: none;
+}
+
+/*
+ * react-slick fix: under React 19 the slider over-computes the track height,
+ * leaving a large empty gap below the single visible row. Making the track a
+ * flexbox collapses it to the real content height AND makes every card in a row
+ * the same height (equal-size elements). Slick's transform-based sliding is
+ * unaffected.
+ *
+ * Scoped with :not(.main-slider) to EXCLUDE the hero. The hero is a fade slider,
+ * and slick's fade relies on its native `.slick-slide{float:left}` row layout for
+ * the per-slide `left:-N×width` overlap math. Forcing flex/float:none there makes
+ * the slides stack vertically instead of cross-fading, so the hero keeps native slick.
+ */
+.slick-slider:not(.main-slider) .slick-track {
+  display: flex !important;
+  height: auto !important;
+}
+.slick-slider:not(.main-slider) .slick-list {
+  height: auto !important;
+}
+.slick-slider:not(.main-slider) .slick-track .slick-slide {
+  height: auto !important;
+  float: none !important;
+}
+.slick-slider:not(.main-slider) .slick-slide > div {
   height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
   display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+}
+.slick-slider:not(.main-slider) .slick-slide > div > * {
+  width: 100%;
+}
+
+/*
+ * Hero (.main-slider) is excluded from the flex fix above, so it runs slick's native
+ * fade (block track, float:left slides, per-slide left+opacity crossfade). The only
+ * thing wrong for a full-bleed single-slide hero is the template's multi-up gutter —
+ * .slick-list{margin-left:-30} + .slick-slide{margin-left:30} (style.css:390) — which
+ * adds 30px gaps meant to separate product cards and shoves the hero image off the
+ * left edge. Zero BOTH halves so each slide is exactly viewport-width, flush to both
+ * edges. overflow:hidden clips any sub-pixel rounding.
+ */
+.hiraola-slider_area-2 {
+  overflow: hidden;
+}
+.main-slider .slick-list {
+  margin: 0 !important;
+}
+.main-slider .slick-list .slick-slide,
+.main-slider .slick-track .slick-slide {
+  margin: 0 !important;
+}
+
+/*
+ * Hero legibility scrim. The index-2 hero photos are high-key (light backgrounds),
+ * but the dark+gold theme renders the slide copy in light cream — which washes out
+ * on the pale left side where the text sits. A left-weighted dark gradient gives the
+ * copy a dark backing so it reads as intended, while the right side (the model) stays
+ * bright.
+ *
+ * NOTE: do NOT add position:relative to the inner .container — the template centers
+ * .slider-content with position:absolute; top:50%; translateY(-50%), which must
+ * resolve against the 825px .single-slide. A positioned .container (≈0 height, since
+ * its only child is absolute) would capture it and collapse top:50% to 0, throwing the
+ * copy off the top. The scrim sits at z-index:1 and .slider-content already carries the
+ * template's z-index:8, so the copy renders above the scrim without touching .container.
+ */
+.hiraola-slider_area-2 .single-slide {
+  position: relative;
+}
+.hiraola-slider_area-2 .single-slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 14, 8, 0.74) 0%,
+    rgba(20, 14, 8, 0.52) 28%,
+    rgba(20, 14, 8, 0.22) 50%,
+    rgba(20, 14, 8, 0) 74%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/*
+ * Product detail gallery thumbnails (Tab Style). The template sized these small
+ * via the slick thumbnail slider; we replaced slick with React state, so size
+ * them here: a row of small thumbnails under the main image, active one gold.
+ */
+.sp-img_area .sp-img_slider {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px !important;
+  margin-top: 15px !important;
+}
+.sp-img_area .sp-img_slider > a {
+  flex: 0 0 auto !important;
+  width: 90px !important;
+  border: 1px solid #e5e5e5 !important;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.sp-img_area .sp-img_slider > a.active,
+.sp-img_area .sp-img_slider > a:hover {
+  border-color: #cda557 !important;
+}
+.sp-img_area .sp-img_slider > a img {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
+/*
+ * Cart & minicart thumbnails. The template used small product images; our data
+ * uses the full-size product image, so constrain the thumbnail dimensions here.
+ */
+.hiraola-cart-area .hiraola-product-thumbnail img {
+  max-width: 110px;
+  height: auto;
+}
+.offcanvas-minicart_wrapper .minicart-product .product-item_img img {
+  max-width: 70px;
+  height: auto;
+}
+
+/* Brand logo (square ~300×310) — constrain so it fits the header/footer bars. */
+.header-logo img {
+  max-height: 58px;
+  width: auto;
+}
+.footer-widgets_logo img {
+  max-height: 120px;
+  width: auto;
+}
+
+/*
+ * Uniform product-card images. The original template photos were all square, so
+ * every card was the same height. The demo's real Shopify photos vary in aspect
+ * ratio — force them into a consistent square box (object-fit: cover) so the
+ * cards, sliders and list items stay even, just like before.
+ */
+.single_product .product-img img {
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+}
+/* Gallery thumbnails on the product page → square too. */
+.sp-img_area .sp-img_slider > a img {
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+}
+/* Cart / minicart thumbnails → square. */
+.hiraola-cart-area .hiraola-product-thumbnail img,
+.offcanvas-minicart_wrapper .minicart-product .product-item_img img {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* Minicart item-count badge on the bag icon. */
+.minicart-btn {
+  position: relative;
+}
+.minicart-btn .minicart-count {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 50%;
+  background: #cda557;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Toolbar buttons are <button> now (were <a>); strip native button chrome. */
+.toolbar-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/*
+ * Header Two right-area icons (wishlist / search / menu / bag). The template only
+ * sized the <a> (wishlist) to a 60×60 cell, so our <button> tools (search, menu, bag)
+ * collapsed and bunched together. Give EVERY item — <a> and .toolbar-btn alike — one
+ * consistent, evenly-spaced, circular icon button with a gold hover. Spacing is via a
+ * flex gap (the template's faint black dividers are invisible/ugly on the dark bar).
+ */
+.header-bottom_area-2 .header-right_area > ul {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+@media (max-width: 575px) {
+  .header-bottom_area-2 .header-right_area > ul {
+    justify-content: center;
+  }
+}
+.header-bottom_area-2 .header-right_area > ul > li {
+  display: inline-flex;
+  border: 0 !important;
+}
+/* hide the empty mobile-menu <li> at lg+ (its button is d-lg-none) so the gap stays even */
+@media (min-width: 992px) {
+  .header-bottom_area-2 .header-right_area > ul > li:has(.mobile-menu_btn) {
+    display: none;
+  }
+}
+.header-bottom_area-2 .header-right_area > ul > li > a,
+.header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn {
+  width: 46px !important;
+  height: 46px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--dk-head) !important;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.header-bottom_area-2 .header-right_area > ul > li > a > i,
+.header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn > i {
+  font-size: 21px !important;
+  line-height: 1;
+}
+.header-bottom_area-2 .header-right_area > ul > li > a:hover,
+.header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn:hover {
+  color: var(--pyj-gold) !important;
+  background: rgba(227, 178, 60, 0.12);
+}
+.header-bottom_area-2 .header-right_area > ul > li > a:active,
+.header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn:active {
+  transform: scale(0.92);
+}
+.product-item_remove {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ============================================================================
+   PREMIUM PASS — make the storefront read as high-end ("irradiar dinero y
+   calidad"). Principles: real-gold sheen on focal points, generous tracking,
+   layered depth (shadows + a top-lit vignette), and smooth, restrained motion.
+   Less, but richer.
+   ============================================================================ */
+:root {
+  /* Brushed-metal gold: light + deep stops give flat gold a real sheen. */
+  --gold-sheen: linear-gradient(
+    135deg,
+    #9c6b10 0%,
+    #e3b23c 26%,
+    #f7e6ab 50%,
+    #e3b23c 74%,
+    #9c6b10 100%
+  );
+}
+
+/* Crisper type + tracking on display headings = refinement. */
+body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.hiraola-section_title h4,
+.hiraola-tab_title h4,
+.breadcrumb-content h2,
+.sp-content .sp-heading h5,
+.main-slider .slider-content h2 {
+  letter-spacing: 0.045em;
+}
 
-* {
-  box-sizing: border-box;
-  padding: 0;
+/* Subtle top-lit depth so the page feels dimensional, not flat black. */
+body.template-color-1 {
+  background:
+    radial-gradient(140% 100% at 50% -8%, #1e1610 0%, var(--dk-bg) 58%),
+    var(--dk-bg) !important;
+}
+
+/* ---- Metallic-gold primary buttons: tracked, uppercase, with a sheen sweep ---- */
+.hiraola-btn,
+.qty-cart_btn,
+.hiraola-add_cart,
+.newsletter-btn {
+  background: var(--gold-sheen) !important;
+  background-size: 220% 220% !important;
+  background-position: 0% 50% !important;
+  color: #2c1f0a !important;
+  border: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  transition: background-position 0.55s ease, transform 0.25s ease,
+    box-shadow 0.25s ease !important;
+}
+.hiraola-btn:hover,
+.qty-cart_btn:hover,
+.hiraola-add_cart:hover,
+.newsletter-btn:hover {
+  background-position: 100% 50% !important;
+  color: #2c1f0a !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Section accent bars in metallic gold. */
+.hiraola-section_title h4::before,
+.hiraola-tab_title h4::before {
+  background: var(--gold-sheen) !important;
+  height: 3px !important;
+}
+
+/* NEW / sale badges in metallic gold. */
+.sticker {
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* The detail price should gleam — metallic-gold gradient text (solid fallback). */
+.sp-content .price-box .new-price {
+  color: var(--pyj-gold);
+  background: var(--gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700 !important;
+}
+
+/* ---- Product cards: lift, gold glow, slow image zoom ---- */
+.single_product {
+  transition: transform 0.35s ease, box-shadow 0.35s ease,
+    border-color 0.35s ease !important;
+}
+.single_product:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6) !important;
+  border-color: var(--pyj-gold) !important;
+}
+.single_product .product-img {
+  overflow: hidden;
+}
+.single_product .product-img img {
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) !important;
+}
+.single_product:hover .product-img img {
+  transform: scale(1.07);
+}
+
+/* A hair of depth under the header bar. */
+.header-bottom_area-2 {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================================
+   PREMIUM PASS 2 — motion + boutique product cards.
+   ============================================================================ */
+
+/* #3 — gentle page-load fade so the store "arrives" instead of snapping in. */
+@media (prefers-reduced-motion: no-preference) {
+  .main-wrapper {
+    animation: pageEnter 0.7s ease both;
+  }
+}
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* #1 — scroll reveal via pure-CSS scroll-driven animations (progressive
+   enhancement: where unsupported, everything simply shows — no JS, no flash).
+   Static blocks rise + fade; cards fade ONLY so their hover lift is preserved. */
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(38px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes revealFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hiraola-section_title,
+    .hiraola-tab_title,
+    .shipping-item,
+    .static-banner_content,
+    .orisha-intro,
+    .hiraola-banner_area-2 [class*="col-"],
+    .hiraola-banner_area-3 [class*="col-"] {
+      animation: revealUp both linear;
+      animation-timeline: view();
+      animation-range: entry 6% cover 26%;
+    }
+    .single_product,
+    .orisha-card {
+      animation: revealFade both linear;
+      animation-timeline: view();
+      animation-range: entry 2% cover 20%;
+    }
+  }
+}
+
+/* #4 — boutique product cards: refined name, metallic price, elegant hover actions. */
+.single_product .hiraola-product_content {
+  padding-top: 18px;
+}
+.single_product .product-name {
+  letter-spacing: 0.03em;
+  transition: color 0.2s ease;
+}
+.single_product .product-name:hover {
+  color: var(--pyj-gold) !important;
+}
+.single_product .price-box .new-price {
+  color: var(--pyj-gold);
+  background: var(--gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600 !important;
+  font-size: 17px;
+}
+/* Elegant gold hover-action buttons over the image (cart / compare / quick-view). */
+.single_product .add-actions ul li > a,
+.single_product .add-actions ul li > button {
+  background: rgba(20, 14, 8, 0.82) !important;
+  border: 1px solid rgba(227, 178, 60, 0.5) !important;
+  color: var(--pyj-gold-light) !important;
+  transition: background 0.25s ease, color 0.25s ease,
+    border-color 0.25s ease !important;
+}
+.single_product .add-actions ul li > a:hover,
+.single_product .add-actions ul li > button:hover {
+  background: var(--gold-sheen) !important;
+  border-color: transparent !important;
+  color: #2c1f0a !important;
+}
+
+/* ============================================================================
+   PREMIUM CART & CHECKOUT — refine the default tables/forms into a boutique
+   flow: gilded summary cards, a metallic CTA, gold-focus inputs, gold amounts.
+   ============================================================================ */
+.cart-page-total,
+.your-order {
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--dk-raised), var(--dk-surface)) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+.cart-page-total h2,
+.your-order h3,
+.checkbox-form h3 {
+  font-family: "Cinzel", serif;
+  letter-spacing: 0.04em;
+  color: var(--pyj-gold-light) !important;
+}
+
+/* Cart totals list — clean rows, the final total gleams. */
+.cart-page-total ul li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--dk-border);
+  color: var(--dk-text);
+}
+.cart-page-total ul li:last-of-type {
+  border-bottom: none;
+  color: var(--dk-head);
+  font-weight: 700;
+  font-size: 17px;
+}
+.cart-page-total ul li:last-of-type span {
+  color: var(--pyj-gold-light);
+}
+
+/* Proceed-to-checkout — metallic, full-width CTA. */
+.cart-page-total > a {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  background: var(--gold-sheen) !important;
+  background-size: 220% 220% !important;
+  color: #2c1f0a !important;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: background-position 0.5s ease, transform 0.25s ease;
+}
+.cart-page-total > a:hover {
+  background-position: 100% 50% !important;
+  transform: translateY(-2px);
+  color: #2c1f0a !important;
+}
+
+/* Full-width place-order button. */
+.hiraola-btn_fullwidth {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
+/* Inputs: gold focus glow = a considered, premium interaction. */
+.checkbox-form .checkout-form-list input:focus,
+.coupon input.input-text:focus,
+.contact-form input:focus,
+.contact-form textarea:focus,
+.login-form input:focus {
+  border-color: var(--pyj-gold) !important;
+  box-shadow: 0 0 0 3px rgba(227, 178, 60, 0.18) !important;
+  outline: none;
+}
+.checkout-form-list label {
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  color: var(--dk-text) !important;
+}
+.checkout-form-list label .required {
+  color: var(--pyj-gold);
+}
+
+/* Order summary: gold amounts, prominent order total. */
+.your-order-table .amount {
+  color: var(--pyj-gold) !important;
+  font-weight: 600;
+}
+.your-order-table tfoot .order-total th,
+.your-order-table tfoot .order-total td {
+  color: var(--dk-head) !important;
+  font-size: 17px;
+}
+.your-order-table tfoot .order-total .amount {
+  color: var(--pyj-gold-light) !important;
+}
+
+/* Coupon: outlined gold buttons → fill on hover. */
+.coupon .button,
+.coupon2 .button {
+  background: transparent !important;
+  border: 1px solid var(--pyj-gold) !important;
+  color: var(--pyj-gold-light) !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 12px 22px;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.coupon .button:hover,
+.coupon2 .button:hover {
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  border-color: transparent !important;
+}
+
+/* Cart table polish: gold prices, gold-hover names. */
+.table-content table td.hiraola-product-name a,
+.cart-product-name a {
+  color: var(--dk-head) !important;
+  transition: color 0.2s ease;
+}
+.table-content table td.hiraola-product-name a:hover {
+  color: var(--pyj-gold) !important;
+}
+.table-content .amount {
+  color: var(--pyj-gold) !important;
+  font-weight: 600;
+}
+.hiraola-product-remove a {
+  transition: color 0.2s ease;
+}
+.hiraola-product-remove a:hover i {
+  color: var(--pyj-gold) !important;
+}
+/* The template's cart / order / compare tables render on WHITE. Theme them dark:
+   the cart table becomes a gilded card; cells go transparent so the dark shows. */
+.hiraola-cart-area .table-content {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+.table-content table,
+.table-content table tbody,
+.table-content table tr,
+.table-content table th,
+.table-content table td,
+.your-order-table table,
+.your-order-table table tbody,
+.your-order-table table tr,
+.your-order-table table th,
+.your-order-table table td,
+.compare-table table,
+.compare-table table tbody,
+.compare-table table tr,
+.compare-table table th,
+.compare-table table td {
+  background-color: transparent !important;
+}
+
+/* ============================================================================
+   SHARE + COMPARE (functional features)
+   ============================================================================ */
+/* Product share row: uniform gold-bordered icon boxes (links + buttons). */
+.product-share {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.product-share_label {
   margin: 0;
+  font-size: 15px;
+  color: var(--dk-head);
+  letter-spacing: 0.03em;
+}
+.product-share ul {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: center;
+}
+.product-share ul li > a,
+.product-share ul li > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--dk-border) !important;
+  border-radius: 7px;
+  background: transparent !important;
+  color: var(--dk-text) !important;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.product-share ul li > a:hover,
+.product-share ul li > button:hover {
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  border-color: transparent !important;
+}
+.share-copied {
+  color: var(--pyj-gold-light);
+  font-size: 13px;
+  font-style: italic;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Compare toggle — active state (in product cards + detail buttons). */
+.in-compare {
+  background: var(--gold-sheen) !important;
+  border-color: transparent !important;
+  color: #2c1f0a !important;
+}
+.in-compare i {
+  color: #2c1f0a !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* Comparison table */
+.compare-price {
+  color: var(--pyj-gold-light) !important;
+  font-weight: 600;
+  font-size: 16px;
+}
+.compare-product-name a {
+  color: var(--dk-head) !important;
+}
+.compare-product-name a:hover {
+  color: var(--pyj-gold) !important;
+}
+.compare-desc {
+  font-size: 13px;
+  color: var(--dk-muted) !important;
+  max-width: 300px;
+  line-height: 1.55;
+}
+.hiraola-compare_btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 9px 18px;
+  border-radius: 6px;
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+}
+.compare-remove {
+  background: transparent;
+  border: 1px solid var(--dk-border);
+  color: var(--dk-text);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.compare-remove:hover {
+  border-color: var(--pyj-gold);
+  color: var(--pyj-gold);
+}
+
+/* ---- Wishlist ---- */
+/* Saved heart turns gold + fills (the icon swaps to the solid variant in JS). */
+.in-wishlist i,
+.wishlist-btn.in-wishlist i {
+  color: var(--pyj-gold) !important;
+}
+/* Wishlist table = dark gilded card (like the cart). */
+.hiraola-wishlist_area .table-content {
+  background: var(--dk-surface) !important;
+  border: 1px solid var(--dk-border) !important;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+.hiraola-wishlist_area .hiraola-product-thumbnail img {
+  max-width: 92px;
+  height: auto;
+}
+.hiraola-wishlist_area .hiraola-product-name a {
+  color: var(--dk-head) !important;
+  transition: color 0.2s ease;
+}
+.hiraola-wishlist_area .hiraola-product-name a:hover {
+  color: var(--pyj-gold) !important;
+}
+.hiraola-wishlist_area .amount {
+  color: var(--pyj-gold) !important;
+  font-weight: 600;
+}
+.hiraola-wishlist_area .in-stock {
+  color: #5cb98a;
+}
+.hiraola-wishlist_area .out-stock {
+  color: #d08763;
+}
+.hiraola-wishlist_area .hiraola-product_remove a {
+  transition: color 0.2s ease;
+}
+.hiraola-wishlist_area .hiraola-product_remove a:hover i {
+  color: var(--pyj-gold) !important;
+}
+/* "Añadir al carrito" pill in the wishlist table. */
+.hiraola-wishlist_area .hiraola-cart_btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  white-space: nowrap;
+  border: none;
+}
+
+/* ============================================================================
+   3D PIECE CUSTOMIZER (/personalizar) — live engraving on a gold pendant.
+   ============================================================================ */
+.customizer-area {
+  padding: 56px 0 80px;
+}
+.customizer-loading {
+  padding: 90px 0;
+  text-align: center;
+  color: var(--dk-muted);
+  letter-spacing: 0.04em;
+}
+/* Guest gate: shown instead of the 3D customizer until the visitor has an account. */
+.customizer-gate {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 64px 44px;
+  border: 1px solid var(--dk-border);
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(227, 178, 60, 0.1), transparent 60%),
+    var(--dk-surface);
+  box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.8);
+}
+.cz-gate-badge {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pyj-gold);
+  border: 1px solid var(--dk-border);
+  border-radius: 999px;
+  padding: 7px 18px;
+  margin-bottom: 22px;
+}
+.customizer-gate h3 {
+  font-size: 28px;
+  margin: 0 0 14px;
+  color: var(--dk-head);
+  background: var(--gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.customizer-gate p {
+  color: var(--dk-text);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 460px;
+  margin: 0 auto 30px;
+}
+.customizer-gate .hiraola-btn {
+  display: inline-block;
+}
+.customizer {
+  display: flex;
+  gap: 28px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.customizer-stage {
+  position: relative;
+  flex: 1 1 420px;
+  min-width: 280px;
+  height: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--dk-border);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+}
+.customizer-stage canvas {
+  display: block;
+  touch-action: none;
+}
+.customizer-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--dk-muted);
+  pointer-events: none;
+  letter-spacing: 0.03em;
+}
+.customizer-panel {
+  flex: 1 1 320px;
+  min-width: 280px;
+  background: linear-gradient(180deg, var(--dk-raised), var(--dk-surface));
+  border: 1px solid var(--dk-border);
+  border-radius: 16px;
+  padding: 26px 24px;
+}
+.customizer-panel h4 {
+  font-family: "Cinzel", serif;
+  color: var(--pyj-gold-light);
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+}
+.customizer-sub {
+  color: var(--dk-muted);
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+.cz-label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dk-muted);
+  margin: 16px 0 8px;
+}
+.cz-input {
+  width: 100%;
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: 8px;
+  color: var(--dk-head);
+  padding: 12px 14px;
+  font-size: 15px;
+  resize: none;
+  font-family: inherit;
+}
+.cz-input:focus {
+  outline: none;
+  border-color: var(--pyj-gold);
+  box-shadow: 0 0 0 3px rgba(227, 178, 60, 0.18);
+}
+.cz-fonts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cz-font {
+  flex: 1 1 auto;
+  background: transparent;
+  border: 1px solid var(--dk-border);
+  color: var(--dk-text);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.cz-font.active,
+.cz-font:hover {
+  border-color: var(--pyj-gold);
+  color: var(--pyj-gold-light);
+}
+.customizer input[type="range"] {
+  width: 100%;
+  accent-color: var(--pyj-gold);
+}
+.cz-save {
+  margin-top: 24px;
+  width: 100%;
+  text-align: center;
+}
+.cz-confirm {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--pyj-gold);
+  border-radius: 10px;
+  background: rgba(227, 178, 60, 0.06);
+}
+.cz-confirm strong {
+  color: var(--pyj-gold-light);
+  display: block;
+  margin-bottom: 6px;
+}
+.cz-confirm p {
+  color: var(--dk-text);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.cz-confirm img {
+  width: 130px;
+  border-radius: 8px;
+  border: 1px solid var(--dk-border);
+}
+.cz-place {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--dk-border);
+  color: var(--dk-text);
+  border-radius: 8px;
+  padding: 11px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.cz-place.active {
+  border-style: solid;
+  border-color: var(--pyj-gold);
+  color: var(--pyj-gold-light);
+  background: rgba(227, 178, 60, 0.08);
+}
+.cz-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+  align-items: center;
+}
+.cz-actions .cz-save {
+  margin-top: 0;
+  flex: 1 1 auto;
+}
+.cz-secondary {
+  background: transparent;
+  border: 1px solid var(--dk-border);
+  color: var(--dk-text);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.cz-secondary:hover {
+  border-color: var(--pyj-gold);
+  color: var(--pyj-gold-light);
+}
+.cz-note {
+  font-size: 11.5px;
+  color: var(--dk-muted);
+  font-style: italic;
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+.cz-saved {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cz-thumb {
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--dk-border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--dk-surface);
+  padding: 0;
+  transition: border-color 0.2s ease;
+}
+.cz-thumb:hover {
+  border-color: var(--pyj-gold);
+}
+.cz-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* "Personalizar" entry button on the product detail page. */
+.cz-product-btn {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--pyj-gold);
+  background: rgba(227, 178, 60, 0.08);
+  color: var(--pyj-gold-light) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 13px;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.cz-product-btn:hover {
+  background: var(--gold-sheen) !important;
+  color: #2c1f0a !important;
+  border-color: transparent;
+}
+/* Engraving note shown under a personalised line in the cart/checkout. */
+.cart-customization {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--pyj-gold-light);
+  font-style: italic;
+}
+@media (max-width: 575px) {
+  .customizer-stage {
+    height: 340px;
+    flex-basis: 100%;
+  }
+  .customizer-panel {
+    flex-basis: 100%;
   }
 }

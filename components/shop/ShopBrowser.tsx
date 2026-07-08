@@ -1,0 +1,334 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import ProductCard from "@/components/product/ProductCard";
+import AddToCartButton from "@/components/product/AddToCartButton";
+import CompareButton from "@/components/product/CompareButton";
+import WishlistButton from "@/components/product/WishlistButton";
+import RatingStars from "@/components/ui/RatingStars";
+import { formatMoney } from "@/lib/utils";
+import { ORISHA_NAMES } from "@/lib/orishas";
+import type { Product } from "@/lib/types";
+
+type ShopView = "grid" | "list";
+
+const SORTS = [
+  { value: "relevance", label: "Relevancia" },
+  { value: "name-asc", label: "Nombre, A a Z" },
+  { value: "name-desc", label: "Nombre, Z a A" },
+  { value: "price-asc", label: "Precio, menor a mayor" },
+  { value: "price-desc", label: "Precio, mayor a menor" },
+  { value: "rating", label: "Mejor valorados" },
+];
+
+function priceNum(p: Product) {
+  return Number(p.price.amount);
+}
+
+function ListProductItem({ product }: { product: Product }) {
+  const href = `/products/${product.handle}`;
+  const [primary, secondary] = product.images;
+  return (
+    <div className="col-lg-4">
+      <div className="list-slide_item">
+        <div className="single_product">
+          <div className="product-img">
+            <Link href={href}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="primary-img" src={primary?.url} alt={product.title} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="secondary-img"
+                src={secondary?.url ?? primary?.url}
+                alt={product.title}
+              />
+            </Link>
+            {product.badge && <span className="sticker">{product.badge}</span>}
+          </div>
+          <div className="hiraola-product_content">
+            <div className="product-desc_info">
+              <h6>
+                <Link className="product-name" href={href}>
+                  {product.title}
+                </Link>
+              </h6>
+              <RatingStars rating={product.rating} />
+              <div className="price-box">
+                <span className="new-price">{formatMoney(product.price)}</span>
+                {product.compareAtPrice && (
+                  <span className="old-price">{formatMoney(product.compareAtPrice)}</span>
+                )}
+              </div>
+              <div className="product-short_desc">
+                <p>{product.description}</p>
+              </div>
+            </div>
+            <div className="add-actions">
+              <ul>
+                <li>
+                  <AddToCartButton className="hiraola-add_cart" product={product}>
+                    Añadir al carrito
+                  </AddToCartButton>
+                </li>
+                <li>
+                  <CompareButton className="hiraola-add_compare" product={product} />
+                </li>
+                <li>
+                  <WishlistButton className="hiraola-add_compare" product={product} />
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ShopBrowser({
+  products,
+  sidebar,
+  view = "grid",
+  columns = 3,
+}: {
+  products: Product[];
+  sidebar?: "left" | "right";
+  view?: ShopView;
+  columns?: 3 | 4;
+}) {
+  const maxPrice = Math.max(1, Math.ceil(Math.max(...products.map(priceNum))));
+  const currency = products[0]?.price.currencyCode ?? "USD";
+  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [priceMax, setPriceMax] = useState(maxPrice);
+  const [sort, setSort] = useState("relevance");
+
+  // Deep-linking: /shop-left-sidebar?cat=Oshún (from "Comprar por Orisha" or a
+  // category link) pre-selects that filter on load.
+  useEffect(() => {
+    const cat = new URLSearchParams(window.location.search).get("cat");
+    if (cat) setSelectedCats([cat]);
+  }, []);
+
+  // Categories are derived from the products' own tags. Split into piece-types and
+  // Orishas so the sidebar shows two clean filter groups.
+  const { typeCats, orishaCats } = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach((p) =>
+      p.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)),
+    );
+    const all = [...counts.entries()].map(([name, count]) => ({ name, count }));
+    return {
+      typeCats: all
+        .filter((c) => !ORISHA_NAMES.includes(c.name))
+        .sort((a, b) => b.count - a.count),
+      orishaCats: all
+        .filter((c) => ORISHA_NAMES.includes(c.name))
+        .sort((a, b) => ORISHA_NAMES.indexOf(a.name) - ORISHA_NAMES.indexOf(b.name)),
+    };
+  }, [products]);
+
+  const filtered = useMemo(() => {
+    let list = products.filter((p) => priceNum(p) <= priceMax);
+    if (selectedCats.length) {
+      list = list.filter((p) => p.tags.some((t) => selectedCats.includes(t)));
+    }
+    const sorted = [...list];
+    switch (sort) {
+      case "name-asc":
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "name-desc":
+        sorted.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case "price-asc":
+        sorted.sort((a, b) => priceNum(a) - priceNum(b));
+        break;
+      case "price-desc":
+        sorted.sort((a, b) => priceNum(b) - priceNum(a));
+        break;
+      case "rating":
+        sorted.sort((a, b) => b.rating - a.rating);
+        break;
+    }
+    return sorted;
+  }, [products, selectedCats, priceMax, sort]);
+
+  function toggleCat(name: string) {
+    setSelectedCats((s) =>
+      s.includes(name) ? s.filter((x) => x !== name) : [...s, name],
+    );
+  }
+
+  const catCheckbox = (c: { name: string; count: number }) => (
+    <li key={c.name}>
+      <label style={{ cursor: "pointer", display: "block" }}>
+        <input
+          type="checkbox"
+          checked={selectedCats.includes(c.name)}
+          onChange={() => toggleCat(c.name)}
+          style={{ marginRight: 8 }}
+        />
+        {c.name} ({c.count})
+      </label>
+    </li>
+  );
+
+  const productAreaClass = sidebar
+    ? `col-lg-9 ${sidebar === "left" ? "order-1 order-lg-2" : "order-1 order-lg-1"}`
+    : "col-lg-12";
+  const gridModifier = sidebar ? "gridview-3" : `gridview-${columns}`;
+  // 2 per row on phones (col-6) → tighter, premium catalogue; 3-4 on desktop.
+  const colClass =
+    !sidebar && columns === 4 ? "col-6 col-lg-3" : "col-6 col-lg-4";
+  const wrapClass =
+    view === "list"
+      ? "shop-product-wrap grid listview row"
+      : `shop-product-wrap grid ${gridModifier} row`;
+
+  const sidebarColumn = (
+    <div
+      className={`col-lg-3 ${
+        sidebar === "left" ? "order-2 order-lg-1" : "order-2 order-lg-2"
+      }`}
+    >
+      <div className="hiraola-sidebar-catagories_area">
+        {/* Price filter */}
+        <div className="hiraola-sidebar_categories">
+          <div className="hiraola-categories_title">
+            <h5>Precio</h5>
+          </div>
+          <div className="price-filter">
+            <input
+              type="range"
+              min={0}
+              max={maxPrice}
+              value={priceMax}
+              onChange={(e) => setPriceMax(Number(e.target.value))}
+              style={{ width: "100%" }}
+            />
+            <div className="price-slider-amount">
+              <div className="label-input">
+                <label>Hasta: </label>
+                <strong>
+                  {formatMoney({ amount: String(priceMax), currencyCode: currency })}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Piece-type filter */}
+        <div className="hiraola-sidebar_categories">
+          <div className="hiraola-categories_title">
+            <h5>Tipo de pieza</h5>
+          </div>
+          <ul className="sidebar-checkbox_list">{typeCats.map(catCheckbox)}</ul>
+        </div>
+
+        {/* Orisha filter */}
+        {orishaCats.length > 0 && (
+          <div className="hiraola-sidebar_categories">
+            <div className="hiraola-categories_title">
+              <h5>Por Orisha</h5>
+            </div>
+            <ul className="sidebar-checkbox_list">{orishaCats.map(catCheckbox)}</ul>
+          </div>
+        )}
+
+        {selectedCats.length > 0 && (
+          <a
+            onClick={() => setSelectedCats([])}
+            style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
+          >
+            Limpiar filtros
+          </a>
+        )}
+      </div>
+      <div className="sidebar-banner_area">
+        <div className="banner-item img-hover_effect">
+          <Link href="#">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/images/banner/1_1.jpg" alt="Shop Banner" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="hiraola-content_wrapper">
+      <div className="container">
+        <div className="row">
+          {sidebar === "left" && sidebarColumn}
+          <div className={productAreaClass}>
+            <div className="shop-toolbar">
+              <div className="product-view-mode">
+                <Link
+                  className={view === "grid" ? "active grid-3" : "grid-3"}
+                  href="/shop-3-column"
+                  title="Grid View"
+                >
+                  <i className="fa fa-th" />
+                </Link>
+                <Link
+                  className={view === "list" ? "active list" : "list"}
+                  href="/shop-list-fullwidth"
+                  title="List View"
+                >
+                  <i className="fa fa-th-list" />
+                </Link>
+              </div>
+              <div className="product-item-selection_area">
+                <div className="product-short">
+                  <label className="select-label">Ordenar por:</label>
+                  <select
+                    className="nice-select"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                  >
+                    {SORTS.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {filtered.length === 0 ? (
+              <p style={{ padding: "30px 0", color: "#a99d83" }}>
+                Ningún producto coincide con los filtros.{" "}
+                <a
+                  onClick={() => {
+                    setSelectedCats([]);
+                    setPriceMax(maxPrice);
+                  }}
+                  style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
+                >
+                  Restablecer
+                </a>
+              </p>
+            ) : (
+              <div className={wrapClass}>
+                {view === "list"
+                  ? filtered.map((product) => (
+                      <ListProductItem key={product.id} product={product} />
+                    ))
+                  : filtered.map((product) => (
+                      <div className={colClass} key={product.id}>
+                        <div className="slide-item">
+                          <ProductCard product={product} />
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            )}
+          </div>
+          {sidebar === "right" && sidebarColumn}
+        </div>
+      </div>
+    </div>
+  );
+}
