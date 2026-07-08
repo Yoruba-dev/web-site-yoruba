@@ -1,0 +1,8 @@
+# Netlify build configuration for the Next.js storefront.
+# Netlify auto-detects Next.js and installs its Next runtime plugin; this file
+# just pins the build command and a Node version compatible with Next.js 16.
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
