@@ -49,8 +49,9 @@ export async function shopifyFetch<T>(
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
-    // Cache product data for an hour; tune per page as needed.
-    next: { revalidate: 60 * 60 },
+    // Catalogue refreshes from Shopify ~every 60s (near-real-time). For truly
+    // instant updates, add a Shopify product webhook → an /api/revalidate route.
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
