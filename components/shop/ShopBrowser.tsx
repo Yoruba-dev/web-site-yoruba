@@ -102,6 +102,7 @@ export default function ShopBrowser({
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [priceMax, setPriceMax] = useState(maxPrice);
   const [sort, setSort] = useState("relevance");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Deep-linking: /shop-left-sidebar?cat=Oshún (from "Comprar por Orisha" or a
   // category link) pre-selects that filter on load.
@@ -186,65 +187,73 @@ export default function ShopBrowser({
       ? "shop-product-wrap grid listview row"
       : `shop-product-wrap grid ${gridModifier} row`;
 
+  // The filter controls (price + type + Orisha). Reused in the desktop sidebar
+  // AND the mobile "Filtrar" panel, so on phones the filters sit at the TOP
+  // (behind a toggle) instead of buried at the bottom of the page.
+  const filterControls = (
+    <div className="hiraola-sidebar-catagories_area">
+      {/* Price filter */}
+      <div className="hiraola-sidebar_categories">
+        <div className="hiraola-categories_title">
+          <h5>Precio</h5>
+        </div>
+        <div className="price-filter">
+          <input
+            type="range"
+            min={0}
+            max={maxPrice}
+            value={priceMax}
+            onChange={(e) => setPriceMax(Number(e.target.value))}
+            style={{ width: "100%" }}
+          />
+          <div className="price-slider-amount">
+            <div className="label-input">
+              <label>Hasta: </label>
+              <strong>
+                {formatMoney({ amount: String(priceMax), currencyCode: currency })}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Piece-type filter */}
+      <div className="hiraola-sidebar_categories">
+        <div className="hiraola-categories_title">
+          <h5>Tipo de pieza</h5>
+        </div>
+        <ul className="sidebar-checkbox_list">{typeCats.map(catCheckbox)}</ul>
+      </div>
+
+      {/* Orisha filter */}
+      {orishaCats.length > 0 && (
+        <div className="hiraola-sidebar_categories">
+          <div className="hiraola-categories_title">
+            <h5>Por Orisha</h5>
+          </div>
+          <ul className="sidebar-checkbox_list">{orishaCats.map(catCheckbox)}</ul>
+        </div>
+      )}
+
+      {selectedCats.length > 0 && (
+        <a
+          onClick={() => setSelectedCats([])}
+          style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
+        >
+          Limpiar filtros
+        </a>
+      )}
+    </div>
+  );
+
+  // Desktop sidebar column (hidden on phones — phones use the toggle above the grid).
   const sidebarColumn = (
     <div
-      className={`col-lg-3 ${
-        sidebar === "left" ? "order-2 order-lg-1" : "order-2 order-lg-2"
+      className={`col-lg-3 d-none d-lg-block ${
+        sidebar === "left" ? "order-lg-1" : "order-lg-2"
       }`}
     >
-      <div className="hiraola-sidebar-catagories_area">
-        {/* Price filter */}
-        <div className="hiraola-sidebar_categories">
-          <div className="hiraola-categories_title">
-            <h5>Precio</h5>
-          </div>
-          <div className="price-filter">
-            <input
-              type="range"
-              min={0}
-              max={maxPrice}
-              value={priceMax}
-              onChange={(e) => setPriceMax(Number(e.target.value))}
-              style={{ width: "100%" }}
-            />
-            <div className="price-slider-amount">
-              <div className="label-input">
-                <label>Hasta: </label>
-                <strong>
-                  {formatMoney({ amount: String(priceMax), currencyCode: currency })}
-                </strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Piece-type filter */}
-        <div className="hiraola-sidebar_categories">
-          <div className="hiraola-categories_title">
-            <h5>Tipo de pieza</h5>
-          </div>
-          <ul className="sidebar-checkbox_list">{typeCats.map(catCheckbox)}</ul>
-        </div>
-
-        {/* Orisha filter */}
-        {orishaCats.length > 0 && (
-          <div className="hiraola-sidebar_categories">
-            <div className="hiraola-categories_title">
-              <h5>Por Orisha</h5>
-            </div>
-            <ul className="sidebar-checkbox_list">{orishaCats.map(catCheckbox)}</ul>
-          </div>
-        )}
-
-        {selectedCats.length > 0 && (
-          <a
-            onClick={() => setSelectedCats([])}
-            style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
-          >
-            Limpiar filtros
-          </a>
-        )}
-      </div>
+      {filterControls}
       <div className="sidebar-banner_area">
         <div className="banner-item img-hover_effect">
           <Link href="#">
@@ -256,12 +265,30 @@ export default function ShopBrowser({
     </div>
   );
 
+  // Mobile-only "Filtrar" toggle + collapsible panel (shown at the top of the grid).
+  const mobileFilters = sidebar ? (
+    <div className="d-lg-none" style={{ marginBottom: 18 }}>
+      <button
+        type="button"
+        onClick={() => setShowFilters((v) => !v)}
+        className="hiraola-btn hiraola-btn_fullwidth"
+        style={{ width: "100%" }}
+      >
+        <i className="fa fa-filter" style={{ marginRight: 8 }} />
+        {showFilters ? "Ocultar filtros" : "Filtrar"}
+        {selectedCats.length > 0 ? ` (${selectedCats.length})` : ""}
+      </button>
+      {showFilters && <div style={{ marginTop: 16 }}>{filterControls}</div>}
+    </div>
+  ) : null;
+
   return (
     <div className="hiraola-content_wrapper">
       <div className="container">
         <div className="row">
           {sidebar === "left" && sidebarColumn}
           <div className={productAreaClass}>
+            {mobileFilters}
             <div className="shop-toolbar">
               <div className="product-view-mode">
                 <Link

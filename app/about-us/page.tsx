@@ -89,7 +89,6 @@ export default function AboutUsPage() {
               <div className="col-lg-3 col-md-6" key={v.title}>
                 <div
                   style={{
-                    border: "1px solid var(--dk-border)",
                     borderRadius: 12,
                     padding: "26px 22px",
                     height: "100%",
