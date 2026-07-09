@@ -25,6 +25,14 @@ export default function StructuredData() {
       postalCode: "33175",
       addressCountry: "US",
     },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: SITE.contact.geo.lat,
+      longitude: SITE.contact.geo.lng,
+    },
+    hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      SITE.contact.mapQuery,
+    )}`,
     sameAs: [SITE.social.instagram, SITE.social.facebook, SITE.social.tiktok],
     openingHoursSpecification: [
       {

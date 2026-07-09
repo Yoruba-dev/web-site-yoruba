@@ -21,6 +21,7 @@ export const SITE = {
     email: "pedro.yoruba.jewelry16@gmail.com",
     address: "11865 SW 26th St. c-41, Miami, FL 33175",
     mapQuery: "11865 SW 26th St c-41, Miami, FL 33175",
+    geo: { lat: 25.7477721, lng: -80.3897371 },
   },
   // Business hours (open days/times). Sunday closed.
   hours: [
