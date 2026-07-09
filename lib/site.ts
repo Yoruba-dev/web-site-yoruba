@@ -39,4 +39,6 @@ export const SITE = {
     facebook: "https://www.facebook.com/profile.php?id=100083098098837",
     tiktok: "https://www.tiktok.com/@pedro_joyero_olofin",
   },
+  // Google Analytics 4 measurement ID.
+  analytics: { gaId: "G-YRQD06WQYY" },
 } as const;
