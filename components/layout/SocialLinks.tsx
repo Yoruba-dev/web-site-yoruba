@@ -1,8 +1,8 @@
 import { SITE } from "@/lib/site";
 
 // The brand's social + WhatsApp links, in one place. Only the accounts the
-// business actually has (Instagram, TikTok, WhatsApp). TikTok has no icon in the
-// template's FontAwesome build, so it uses an inline SVG that always renders.
+// business actually has. TikTok has no icon in the template's FontAwesome build,
+// so it uses an inline SVG that always renders.
 export default function SocialLinks({ className = "" }: { className?: string }) {
   return (
     <div className={`hiraola-social_link ${className}`}>
@@ -10,6 +10,11 @@ export default function SocialLinks({ className = "" }: { className?: string }) 
         <li className="instagram">
           <a href={SITE.social.instagram} target="_blank" rel="noreferrer" title="Instagram">
             <i className="fab fa-instagram" />
+          </a>
+        </li>
+        <li className="facebook">
+          <a href={SITE.social.facebook} target="_blank" rel="noreferrer" title="Facebook">
+            <i className="fab fa-facebook" />
           </a>
         </li>
         <li className="tiktok">

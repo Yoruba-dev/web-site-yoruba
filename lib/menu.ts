@@ -21,24 +21,23 @@ export interface MenuItem {
 }
 
 export const MAIN_MENU: MenuItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop-left-sidebar" },
-  { label: "Blog", href: "/blog-left-sidebar" },
+  { label: "Inicio", href: "/" },
+  { label: "Tienda", href: "/shop-left-sidebar" },
   {
-    label: "Pages",
+    label: "Páginas",
     href: "/my-account",
     dropdown: [
-      { label: "My Account", href: "/my-account" },
-      { label: "Login | Register", href: "/login-register" },
-      { label: "Wishlist", href: "/wishlist" },
-      { label: "Cart", href: "/cart" },
-      { label: "Checkout", href: "/checkout" },
-      { label: "Compare", href: "/compare" },
-      { label: "FAQ", href: "/faq" },
+      { label: "Mi cuenta", href: "/my-account" },
+      { label: "Iniciar sesión", href: "/login-register" },
+      { label: "Lista de deseos", href: "/wishlist" },
+      { label: "Carrito", href: "/cart" },
+      { label: "Pago", href: "/checkout" },
+      { label: "Comparar", href: "/compare" },
+      { label: "Preguntas frecuentes", href: "/faq" },
     ],
   },
-  { label: "About Us", href: "/about-us" },
-  { label: "Contact", href: "/contact" },
+  { label: "Nosotros", href: "/about-us" },
+  { label: "Contacto", href: "/contact" },
 ];
 
 // "Shop by categories" list (kept for reference / future use).

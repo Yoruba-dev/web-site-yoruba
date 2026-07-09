@@ -2,16 +2,15 @@ import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ContactForm from "@/components/contact/ContactForm";
 import SocialLinks from "@/components/layout/SocialLinks";
+import StoreMap from "@/components/layout/StoreMap";
 import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Contacto" };
+export const metadata: Metadata = {
+  title: "Contacto",
+  description: `Contáctanos: WhatsApp, teléfono, correo y nuestra tienda en ${SITE.contact.address}. Joyería Yoruba hecha a mano en Miami.`,
+};
 
 export default function ContactPage() {
-  // Classic Google Maps embed (no API key needed) centred on the real shop address.
-  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(
-    SITE.contact.mapQuery,
-  )}&output=embed`;
-
   return (
     <>
       <Breadcrumb title="Contacto" crumbs={[{ label: "Contacto" }]} />
@@ -19,12 +18,7 @@ export default function ContactPage() {
       <div className="contact-main-page">
         <div className="container">
           <div id="google-map">
-            <iframe
-              title={`Ubicación de ${SITE.name}`}
-              src={mapSrc}
-              style={{ width: "100%", height: "100%", border: 0 }}
-              loading="lazy"
-            />
+            <StoreMap height={420} />
           </div>
         </div>
         <div className="container">

@@ -1,175 +1,165 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
+import StoreMap from "@/components/layout/StoreMap";
+import SocialLinks from "@/components/layout/SocialLinks";
+import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: "About Us" };
+export const metadata: Metadata = {
+  title: "Nosotros",
+  description:
+    "La historia de Pedro Yoruba Jewelry: joyería Yoruba hecha a mano en Miami, con devoción a los Orishas. Oro 10k, 14k y 18k por encargo — Idde, elekes, herramientas y atributos.",
+};
 
-const team = [
-  { name: "Timothy Beck", role: "IT Expert", img: "/assets/images/about-us/team/1.jpg" },
-  { name: "Sarah Sanchez", role: "Web Designer", img: "/assets/images/about-us/team/2.jpg" },
-  { name: "Edwin Adams", role: "Content Writer", img: "/assets/images/about-us/team/3.jpg" },
-  { name: "Anny Adams", role: "Marketing officer", img: "/assets/images/about-us/team/4.jpg" },
-];
-
-const counters = [
-  { icon: "ion-ios-briefcase-outline", count: "2169", label: "Project Done" },
-  { icon: "ion-ios-wineglass-outline", count: "869", label: "Awards Winned" },
-  { icon: "ion-ios-lightbulb-outline", count: "689", label: "Hours Worked" },
-  { icon: "ion-happy-outline", count: "2169", label: "Happy Customer" },
+const values = [
+  {
+    title: "Hecho a mano",
+    text: "Cada pieza se elabora a mano en nuestro taller de Miami, con paciencia y cuidado.",
+  },
+  {
+    title: "Oro de verdad",
+    text: "Trabajamos oro de 10k, 14k y 18k — calidad que perdura y se hereda.",
+  },
+  {
+    title: "Por encargo",
+    text: "Diseñamos tu pieza única, a tu medida y a la de tu santo. Pieza por pieza.",
+  },
+  {
+    title: "Con devoción",
+    text: "Honramos la tradición Yoruba (Lucumí) con respeto en cada detalle.",
+  },
 ];
 
 export default function AboutUsPage() {
   return (
     <>
-      <Breadcrumb title="About Us" crumbs={[{ label: "About Us" }]} />
-      {/* Begin Hiraola's About Us Area */}
+      <Breadcrumb title="Nosotros" crumbs={[{ label: "Nosotros" }]} />
+
+      {/* Historia */}
       <div className="about-us-area">
         <div className="container">
-          <div className="row">
-            <div className="col-lg-6 col-md-7 d-flex align-items-center">
+          <div className="row align-items-center">
+            <div className="col-lg-6 col-md-7">
               <div className="overview-content">
                 <h2>
-                  Welcome To <span>Hiraola&apos;s</span> Store!
+                  Donde la fe <span>se lleva puesta</span>
                 </h2>
                 <p className="short_desc">
-                  We Provide Lorem ipsum, dolor sit amet consectetur adipisicing elit. Repudiandae
-                  nisi fuga facilis, consequuntur, maiores eveniet voluptatum, omnis possimus
-                  temporibus aspernatur nobis animi in exercitationem vitae nulla! Adipisci ullam
-                  illum quisquam. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolorem,
-                  nulla veniam? Magni aliquid asperiores magnam. Veniam ex tenetur.
+                  Pedro Yoruba Jewelry nació de una verdad sencilla: la fe también se
+                  lleva puesta. En un taller de Miami, cada joya se hace a mano, con
+                  paciencia y devoción. No son solo adornos —son <strong>Idde, elekes,
+                  herramientas y atributos de los Orishas</strong>: oro de 10k, 14k y 18k
+                  trabajado con el respeto que la religión Yoruba (Lucumí) merece.
+                </p>
+                <p className="short_desc">
+                  Detrás de cada encargo hay horas de trabajo, sacrificio y amor. Amor por
+                  el oficio de joyero, y amor por la tradición que da sentido a cada pieza.
+                  Para nosotros una joya no es un lujo vacío: es un compromiso con Olodumare
+                  y los Orishas, un símbolo de fe que acompaña a quien la lleva.
+                </p>
+                <p className="short_desc">
+                  Trabajamos <strong>por encargo</strong>, pieza por pieza, para que cada
+                  joya sea tan única como la persona y el santo al que honra. Ese es nuestro
+                  orgullo: cuidar cada detalle como si fuera para nuestra propia familia de
+                  religión. Gracias por confiar en nosotros para llevar tu fe en oro.
                 </p>
                 <div className="hiraola-about-us_btn-area">
                   <Link className="about-us_btn" href="/shop-left-sidebar">
-                    Shop Now
+                    Ver la colección
                   </Link>
                 </div>
               </div>
             </div>
             <div className="col-lg-6 col-md-5">
-              <div className="overview-img text-center img-hover_effect">
-                <a href="#">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="img-full"
-                    src="/assets/images/about-us/1.jpg"
-                    alt="Hiraola's About Us Image"
-                  />
+              <div className="overview-img text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="img-full"
+                  src={SITE.logo.main}
+                  alt={`${SITE.name} — joyería Yoruba hecha a mano en Miami`}
+                  style={{ maxWidth: 320, margin: "0 auto" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Valores */}
+          <div className="row about-values" style={{ marginTop: 40 }}>
+            {values.map((v) => (
+              <div className="col-lg-3 col-md-6" key={v.title}>
+                <div
+                  style={{
+                    border: "1px solid var(--dk-border)",
+                    borderRadius: 12,
+                    padding: "26px 22px",
+                    height: "100%",
+                    background: "var(--dk-surface)",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{ color: "var(--pyj-gold)", fontSize: 26, marginBottom: 10 }}
+                    aria-hidden="true"
+                  >
+                    ✦
+                  </div>
+                  <h5 style={{ color: "var(--dk-head)", marginBottom: 8 }}>{v.title}</h5>
+                  <p style={{ color: "var(--dk-text)", fontSize: 14, margin: 0 }}>
+                    {v.text}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Visítanos */}
+      <div className="about-us-area" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="hiraola-section_title" style={{ marginBottom: 24 }}>
+            <h4>Visítanos</h4>
+          </div>
+          <div className="row align-items-center">
+            <div className="col-lg-5">
+              <div className="overview-content">
+                <p className="short_desc">
+                  <strong>{SITE.contact.address}</strong>
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, marginBottom: 18 }}>
+                  {SITE.hours.map((h) => (
+                    <li
+                      key={h.day}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        maxWidth: 300,
+                        padding: "3px 0",
+                        color: "var(--dk-text)",
+                      }}
+                    >
+                      <span>{h.day}</span>
+                      <span>{h.value}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={SITE.contact.whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="about-us_btn"
+                >
+                  Escríbenos por WhatsApp
                 </a>
+                <SocialLinks />
               </div>
+            </div>
+            <div className="col-lg-7">
+              <StoreMap height={360} />
             </div>
           </div>
         </div>
       </div>
-      {/* Hiraola's About Us Area End Here */}
-
-      {/* Begin Hiraola's Project Countdown Area */}
-      <div className="project-count-area">
-        <div className="container">
-          <div className="row">
-            {counters.map((c) => (
-              <div key={c.label} className="col-lg-3 col-md-6 col-sm-6">
-                <div className="single-count text-center">
-                  <div className="count-icon">
-                    <span className={c.icon} />
-                  </div>
-                  <div className="count-title">
-                    <h2 className="count">{c.count}</h2>
-                    <span>{c.label}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Hiraola's Project Countdown Area End Here */}
-
-      {/* Begin Hiraola's Team Area */}
-      <div className="team-area">
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <div className="section_title-2">
-                <h4>Our Team</h4>
-              </div>
-            </div>
-          </div>
-          <div className="row">
-            {team.map((member) => (
-              <div key={member.name} className="col-lg-3 col-md-6 col-sm-6">
-                <div className="team-member">
-                  <div className="team-thumb img-hover_effect">
-                    <a href="#">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={member.img} alt="Our Team Member" />
-                    </a>
-                  </div>
-                  <div className="team-content text-center">
-                    <h3>{member.name}</h3>
-                    <p>{member.role}</p>
-                    <a href="#">info@example.com</a>
-                    <div className="hiraola-social_link">
-                      <ul>
-                        <li className="facebook">
-                          <a
-                            href="https://www.facebook.com"
-                            data-bs-toggle="tooltip"
-                            target="_blank"
-                            title="Facebook"
-                          >
-                            <i className="fab fa-facebook" />
-                          </a>
-                        </li>
-                        <li className="twitter">
-                          <a
-                            href="https://twitter.com"
-                            data-bs-toggle="tooltip"
-                            target="_blank"
-                            title="Twitter"
-                          >
-                            <i className="fab fa-twitter-square" />
-                          </a>
-                        </li>
-                        <li className="youtube">
-                          <a
-                            href="https://www.youtube.com"
-                            data-bs-toggle="tooltip"
-                            target="_blank"
-                            title="Youtube"
-                          >
-                            <i className="fab fa-youtube" />
-                          </a>
-                        </li>
-                        <li className="google-plus">
-                          <a
-                            href="https://www.plus.google.com/discover"
-                            data-bs-toggle="tooltip"
-                            target="_blank"
-                            title="Google Plus"
-                          >
-                            <i className="fab fa-google-plus" />
-                          </a>
-                        </li>
-                        <li className="instagram">
-                          <a
-                            href="https://rss.com"
-                            data-bs-toggle="tooltip"
-                            target="_blank"
-                            title="Instagram"
-                          >
-                            <i className="fab fa-instagram" />
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Hiraola's Team Area End Here */}
     </>
   );
 }

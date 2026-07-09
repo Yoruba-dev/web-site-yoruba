@@ -34,7 +34,8 @@ export const SITE = {
   ],
   // Only the social accounts the business actually has.
   social: {
-    instagram: "https://instagram.com/pedroyorubajewelry/",
+    instagram: "https://www.instagram.com/pedroyorubajewelry/",
+    facebook: "https://www.facebook.com/profile.php?id=100083098098837",
     tiktok: "https://www.tiktok.com/@pedro_joyero_olofin",
   },
 } as const;

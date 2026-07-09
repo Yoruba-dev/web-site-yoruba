@@ -1,55 +1,60 @@
 "use client";
 
 import { useState } from "react";
+import { SITE } from "@/lib/site";
 
 const faqs = [
   {
     id: "One",
-    question: "How do I know which ring size to order?",
-    answer:
-      "Every ring listing includes a detailed size guide. If you are unsure, we recommend visiting a local jeweller to have your finger professionally measured, or you can request a complimentary ring sizer from our customer care team before placing your order.",
+    question: "¿Dónde están ubicados?",
+    answer: `Estamos en ${SITE.contact.address}. Puedes visitarnos, recoger tu pedido o escribirnos por WhatsApp al ${SITE.contact.phone}.`,
   },
   {
     id: "Two",
-    question: "Is your jewellery made from genuine precious metals?",
+    question: "¿Cuál es el horario de atención?",
     answer:
-      "Yes. All of our pieces are crafted from solid gold, sterling silver or platinum as stated in each product description. Every item is hallmarked and arrives with a certificate of authenticity.",
+      "Lunes a viernes de 10:00 AM a 5:00 PM, sábados de 10:00 AM a 4:00 PM, y domingos cerrado.",
   },
   {
     id: "Three",
-    question: "Are the diamonds and gemstones ethically sourced?",
-    answer:
-      "We are committed to responsible sourcing. Our diamonds are conflict-free and conform to the Kimberley Process, and our coloured gemstones are obtained from suppliers who follow fair and sustainable mining practices.",
+    question: "¿Necesito cita para visitarlos?",
+    answer: `Sí, te recomendamos agendar una cita para atenderte mejor. Escríbenos por WhatsApp al ${SITE.contact.phone} y coordinamos el día y la hora.`,
   },
   {
     id: "Four",
-    question: "Do you offer engraving or custom design services?",
+    question: "¿Hacen piezas por encargo o personalizadas?",
     answer:
-      "Absolutely. Most rings, pendants and bracelets can be personalised with engraving. For bespoke commissions, our in-house designers will work with you from initial sketch to the finished piece.",
+      "Sí. La mayoría de nuestras piezas —Idde, herramientas, anillos, esclavas y más— se hacen por encargo, a tu medida y a la de tu santo. Cuéntanos lo que buscas y lo diseñamos para ti.",
   },
   {
     id: "Five",
-    question: "What is your return and exchange policy?",
+    question: "¿Con qué quilates de oro trabajan?",
     answer:
-      "Unworn items in their original packaging may be returned within 30 days for a full refund or exchange. Personalised and engraved pieces are made to order and are therefore non-returnable unless faulty.",
+      "Trabajamos oro de 10k, 14k y 18k. En cada pieza te indicamos el quilataje y te asesoramos según tu presupuesto y preferencia.",
   },
   {
     id: "Six",
-    question: "How should I care for and clean my jewellery?",
+    question: "¿Qué formas de pago aceptan?",
     answer:
-      "Store each piece separately to avoid scratches, keep it away from perfume and chlorine, and clean it gently with a soft cloth. We include detailed care instructions with every order and offer a complimentary annual cleaning service in store.",
+      "Aceptamos tarjetas VISA, MasterCard, American Express y Discover, tarjetas de débito y pagos móviles sin contacto (NFC). No aceptamos cheques.",
   },
   {
     id: "Seven",
-    question: "Is my order insured during shipping?",
+    question: "¿Ofrecen reparación de joyas?",
     answer:
-      "Yes. Every order is fully insured and dispatched using a tracked, signature-required courier service, so your jewellery is protected from the moment it leaves us until it reaches your door.",
+      "Sí, ofrecemos servicios de reparación. Tráenos tu pieza o escríbenos por WhatsApp para revisarla y darte un estimado.",
   },
   {
     id: "Eight",
-    question: "Do you provide a warranty on your jewellery?",
+    question: "¿Puedo recoger mi pedido o hacen envíos?",
     answer:
-      "All of our jewellery comes with a warranty covering manufacturing defects. We also offer repair and resizing services to keep your treasured pieces looking their best for years to come.",
+      "Puedes recoger tu pedido en la tienda o en la puerta (curbside), y también ofrecemos entrega a domicilio. Coordinamos contigo la mejor opción.",
+  },
+  {
+    id: "Nine",
+    question: "¿Cuánto tarda una pieza por encargo?",
+    answer:
+      "Depende de la pieza y del diseño; algunos encargos toman alrededor de un mes. Escríbenos por WhatsApp y te damos un tiempo estimado según lo que necesites.",
   },
 ];
 

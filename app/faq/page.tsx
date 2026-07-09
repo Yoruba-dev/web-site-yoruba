@@ -2,12 +2,19 @@ import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import FaqAccordion from "@/components/faq/FaqAccordion";
 
-export const metadata: Metadata = { title: "FAQ" };
+export const metadata: Metadata = {
+  title: "Preguntas frecuentes",
+  description:
+    "Ubicación, horario, citas, piezas por encargo, quilates de oro, formas de pago, reparaciones y envíos de Pedro Yoruba Jewelry en Miami.",
+};
 
 export default function FaqPage() {
   return (
     <>
-      <Breadcrumb title="FAQ" crumbs={[{ label: "FAQ" }]} />
+      <Breadcrumb
+        title="Preguntas frecuentes"
+        crumbs={[{ label: "Preguntas frecuentes" }]}
+      />
       {/* Begin Hiraola's Frequently Area */}
       <div className="frequently-area">
         <div className="container">
@@ -15,12 +22,14 @@ export default function FaqPage() {
             <div className="col-md-12">
               <div className="frequently-content">
                 <div className="frequently-desc">
-                  <h3>Below are frequently asked questions, you may find the answer for yourself</h3>
+                  <h3>
+                    Aquí respondemos las preguntas más comunes. Si no encuentras lo que
+                    buscas, escríbenos por WhatsApp.
+                  </h3>
                   <p>
-                    Discover everything you need to know about our handcrafted fine jewellery — from
-                    choosing the right ring size and caring for precious metals to our sourcing,
-                    shipping and returns policies. If you cannot find the answer you are looking for,
-                    our customer care team is always happy to help.
+                    Somos una joyería Yoruba hecha a mano en Miami: Idde, elekes,
+                    herramientas y atributos de los Orishas en oro de 10k, 14k y 18k, la
+                    mayoría por encargo. Con gusto te asesoramos en tu pieza.
                   </p>
                 </div>
               </div>

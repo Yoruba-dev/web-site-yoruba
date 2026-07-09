@@ -6,19 +6,52 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import NewsletterPopup from "@/components/layout/NewsletterPopup";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import StructuredData from "@/components/layout/StructuredData";
 import { CartProvider } from "@/lib/cart-context";
 import { CompareProvider } from "@/lib/compare-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { AccountProvider } from "@/lib/account-context";
 import { SITE } from "@/lib/site";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedroyorubajewelry.netlify.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: `${SITE.name} — Handcrafted Fine Jewellery`,
+    default: `${SITE.name} — Joyería Yoruba en Oro · Miami`,
     template: `%s | ${SITE.name}`,
   },
   description: SITE.tagline,
-  icons: { icon: "/assets/images/favicon.ico" },
+  keywords: [
+    "joyería yoruba",
+    "santería",
+    "orishas",
+    "idde de orula",
+    "elekes",
+    "herramientas de santo",
+    "oro 10k 14k 18k",
+    "joyería miami",
+    "joyas por encargo",
+    "pedro yoruba jewelry",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "es_US",
+    url: siteUrl,
+    siteName: SITE.name,
+    title: `${SITE.name} — Joyería Yoruba en Oro`,
+    description: SITE.tagline,
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: SITE.name }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE.name,
+    description: SITE.tagline,
+    images: ["/og-image.png"],
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -27,9 +60,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className="template-color-1">
         <Stylesheets />
+        <StructuredData />
         <AccountProvider>
         <CartProvider>
           <WishlistProvider>
