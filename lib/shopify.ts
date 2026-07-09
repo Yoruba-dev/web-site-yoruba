@@ -50,9 +50,10 @@ export async function shopifyFetch<T>(
       "X-Shopify-Storefront-Access-Token": token,
     },
     body: JSON.stringify({ query, variables }),
-    // Catalogue refreshes from Shopify ~every 60s (near-real-time). For truly
-    // instant updates, add a Shopify product webhook → an /api/revalidate route.
-    next: { revalidate: 60 },
+    // Time-based safety net (~60s) PLUS a "shopify" cache tag so a Shopify product
+    // webhook hitting /api/revalidate can refresh the whole catalogue on demand
+    // (updates show in seconds instead of waiting for the 60s window).
+    next: { revalidate: 60, tags: ["shopify"] },
   });
 
   if (!res.ok) {
