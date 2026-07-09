@@ -158,6 +158,13 @@ function reshape(p: ShopifyProduct): Product {
   };
 }
 
+interface ProductsPage {
+  products: {
+    edges: { node: ShopifyProduct }[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  };
+}
+
 export async function shopifyGetProducts(first = 24): Promise<Product[]> {
   // Shopify's Storefront API caps `first` at 250 per request, so page through
   // in chunks of 250 until we've collected `first` products (or run out).
@@ -166,12 +173,7 @@ export async function shopifyGetProducts(first = 24): Promise<Product[]> {
   let after: string | null = null;
 
   while (out.length < first) {
-    const data = await shopifyFetch<{
-      products: {
-        edges: { node: ShopifyProduct }[];
-        pageInfo: { hasNextPage: boolean; endCursor: string | null };
-      };
-    }>(
+    const data: ProductsPage = await shopifyFetch<ProductsPage>(
       /* GraphQL */ `
         ${PRODUCT_FRAGMENT}
         query Products($first: Int!, $after: String) {
