@@ -1,10 +1,13 @@
+import { Fragment } from "react";
 import { getProducts } from "@/lib/products";
+import { ORISHA_NAMES } from "@/lib/orishas";
+import type { Product } from "@/lib/types";
 import HeroSlider from "@/components/home/HeroSlider";
 import ProductSlider from "@/components/product/ProductSlider";
-import ProductTabs from "@/components/home/ProductTabs";
 import BannerGrid from "@/components/home/BannerGrid";
 import StaticBanner from "@/components/home/StaticBanner";
 import OrishaShowcase from "@/components/home/OrishaShowcase";
+import CategorySection from "@/components/home/CategorySection";
 import SectionTitle from "@/components/ui/SectionTitle";
 
 const SHIPPING = [
@@ -14,23 +17,33 @@ const SHIPPING = [
   { icon: "4.png", title: "Calidad garantizada", text: "Acabado artesanal" },
 ];
 
-// rotate an array so each tabbed section leads with different items
-function rotate<T>(arr: T[], by: number): T[] {
-  if (arr.length === 0) return arr;
-  const n = by % arr.length;
-  return [...arr.slice(n), ...arr.slice(0, n)];
+// Top piece-type categories (by product count) for the strategic home rows —
+// biggest categories lead. Orisha tags are excluded (they have their own showcase).
+function topCategories(products: Product[], limit: number): string[] {
+  const counts = new Map<string, number>();
+  products.forEach((p) =>
+    p.tags.forEach((t) => {
+      if (!ORISHA_NAMES.includes(t)) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }),
+  );
+  return [...counts.entries()]
+    .filter(([, n]) => n >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name]) => name);
 }
 
-// Full Home Two layout (ported from index-2.html):
-// hero → shipping → New Arrival → tabs → banner → tabs → banner → tabs.
+// Home Two layout: hero → shipping → Orishas → Novedades → banner → category
+// rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
-  const all = await getProducts(60);
+  const all = await getProducts(150);
+  const cats = topCategories(all, 6);
 
   return (
     <>
       <HeroSlider />
 
-      {/* Shipping bar (Two) */}
+      {/* Shipping bar */}
       <div className="hiraola-shipping_area hiraola-shipping_area-2">
         <div className="container">
           <div className="shipping-nav">
@@ -57,7 +70,7 @@ export default async function HomePage() {
       {/* Shop by Orisha — Santería identity section */}
       <OrishaShowcase />
 
-      {/* New Arrival (5-up slider) */}
+      {/* Novedades (5-up slider) */}
       <div className="hiraola-product_area">
         <div className="container">
           <div className="row">
@@ -65,29 +78,29 @@ export default async function HomePage() {
               <SectionTitle title="Novedades" />
             </div>
             <div className="col-lg-12">
-              <ProductSlider products={all.slice(0, 10)} />
+              <ProductSlider products={all.slice(0, 12)} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Featured Product promo banner (-25% Off This Week) */}
+      {/* Featured Product promo banner */}
       <StaticBanner />
 
-      {/* Tabbed: New Products */}
-      <ProductTabs products={all} title="Piezas para los Orishas" />
-
-      {/* Promo banners (2-up) */}
-      <BannerGrid images={["1_5.jpg", "1_6.jpg"]} colClass="col-lg-6" />
-
-      {/* Tabbed: Featured Products */}
-      <ProductTabs products={rotate(all, 4)} title="Hechas a Mano" />
-
-      {/* Promo banners (3-up) */}
-      <BannerGrid images={["1_5.jpg", "1_6.jpg", "1_5.jpg"]} colClass="col-lg-4" fluid />
-
-      {/* Tabbed: Trending Products */}
-      <ProductTabs products={rotate(all, 8)} title="Lo Más Buscado" />
+      {/* Category rows — organized by piece type, biggest first */}
+      {cats.map((cat, i) => (
+        <Fragment key={cat}>
+          <CategorySection
+            title={cat}
+            products={all.filter((p) => p.tags.includes(cat)).slice(0, 12)}
+            href={`/shop-left-sidebar?cat=${encodeURIComponent(cat)}`}
+          />
+          {i === 1 && <BannerGrid images={["1_5.jpg", "1_6.jpg"]} colClass="col-lg-6" />}
+          {i === 3 && (
+            <BannerGrid images={["1_5.jpg", "1_6.jpg", "1_5.jpg"]} colClass="col-lg-4" fluid />
+          )}
+        </Fragment>
+      ))}
     </>
   );
 }
