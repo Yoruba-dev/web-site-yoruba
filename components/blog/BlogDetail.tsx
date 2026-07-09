@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BlogSidebar from "@/components/blog/BlogSidebar";
+import SocialLinks from "@/components/layout/SocialLinks";
 import type { BlogPost } from "@/lib/blog-data";
 
 // Faithful port of the single-post markup from blog-details-left-sidebar.html
@@ -150,54 +151,7 @@ export default function BlogDetail({
                 <Link href="#">Necklaces</Link>,&nbsp;
                 <Link href="#">Diamond</Link>
               </div>
-              <div className="hiraola-social_link">
-                <ul>
-                  <li className="facebook">
-                    <a
-                      href="https://www.facebook.com"
-                      data-bs-toggle="tooltip"
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Facebook"
-                    >
-                      <i className="fab fa-facebook" />
-                    </a>
-                  </li>
-                  <li className="twitter">
-                    <a
-                      href="https://twitter.com"
-                      data-bs-toggle="tooltip"
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Twitter"
-                    >
-                      <i className="fab fa-twitter-square" />
-                    </a>
-                  </li>
-                  <li className="google-plus">
-                    <a
-                      href="https://www.plus.google.com/discover"
-                      data-bs-toggle="tooltip"
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Google Plus"
-                    >
-                      <i className="fab fa-google-plus" />
-                    </a>
-                  </li>
-                  <li className="instagram">
-                    <a
-                      href="https://rss.com"
-                      data-bs-toggle="tooltip"
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Instagram"
-                    >
-                      <i className="fab fa-instagram" />
-                    </a>
-                  </li>
-                </ul>
-              </div>
+              <SocialLinks />
               <div className="hiraola-comment-section">
                 <h3>03 comment</h3>
                 <ul>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import ElekeBar from "./ElekeBar";
+import SocialLinks from "./SocialLinks";
 
 export default function Footer() {
   return (
@@ -23,30 +24,7 @@ export default function Footer() {
                 <div className="widget-short_desc">
                   <p>{SITE.tagline}</p>
                 </div>
-                <div className="hiraola-social_link">
-                  <ul>
-                    <li className="facebook">
-                      <a href={SITE.social.facebook} target="_blank" title="Facebook" rel="noreferrer">
-                        <i className="fab fa-facebook" />
-                      </a>
-                    </li>
-                    <li className="twitter">
-                      <a href={SITE.social.twitter} target="_blank" title="Twitter" rel="noreferrer">
-                        <i className="fab fa-twitter-square" />
-                      </a>
-                    </li>
-                    <li className="instagram">
-                      <a href={SITE.social.instagram} target="_blank" title="Instagram" rel="noreferrer">
-                        <i className="fab fa-instagram" />
-                      </a>
-                    </li>
-                    <li className="pinterest">
-                      <a href={SITE.social.pinterest} target="_blank" title="Pinterest" rel="noreferrer">
-                        <i className="fab fa-pinterest" />
-                      </a>
-                    </li>
-                  </ul>
-                </div>
+                <SocialLinks />
               </div>
             </div>
             <div className="col-lg-8">
@@ -68,22 +46,31 @@ export default function Footer() {
                   <div className="col-lg-5">
                     <div className="footer-widgets_info">
                       <div className="footer-widgets_title">
-                        <h6>About Us</h6>
+                        <h6>Contacto</h6>
                       </div>
                       <div className="widgets-essential_stuff">
                         <ul>
                           <li className="hiraola-address">
                             <i className="ion-ios-location" />
-                            <span>Address:</span> {SITE.contact.address}
+                            <span>Dirección:</span> {SITE.contact.address}
                           </li>
                           <li className="hiraola-phone">
                             <i className="ion-ios-telephone" />
-                            <span>Call Us:</span>{" "}
-                            <a href={`tel:${SITE.contact.phone}`}>{SITE.contact.phone}</a>
+                            <span>Teléfono:</span>{" "}
+                            <a href={`tel:${SITE.contact.phoneTel}`}>{SITE.contact.phone}</a>
+                            {" · "}
+                            <a href={`tel:${SITE.contact.phoneAltTel}`}>{SITE.contact.phoneAlt}</a>
+                          </li>
+                          <li className="hiraola-phone">
+                            <i className="fab fa-whatsapp" />
+                            <span>WhatsApp:</span>{" "}
+                            <a href={SITE.contact.whatsapp} target="_blank" rel="noreferrer">
+                              {SITE.contact.phone}
+                            </a>
                           </li>
                           <li className="hiraola-email">
                             <i className="ion-android-mail" />
-                            <span>Email:</span>{" "}
+                            <span>Correo:</span>{" "}
                             <a href={`mailto:${SITE.contact.email}`}>{SITE.contact.email}</a>
                           </li>
                         </ul>

@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ContactForm from "@/components/contact/ContactForm";
+import SocialLinks from "@/components/layout/SocialLinks";
+import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Contact" };
+export const metadata: Metadata = { title: "Contacto" };
 
 export default function ContactPage() {
+  // Classic Google Maps embed (no API key needed) centred on the real shop address.
+  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(
+    SITE.contact.mapQuery,
+  )}&output=embed`;
+
   return (
     <>
-      <Breadcrumb title="Contact" crumbs={[{ label: "Contact" }]} />
+      <Breadcrumb title="Contacto" crumbs={[{ label: "Contacto" }]} />
       {/* Begin Contact Main Page Area */}
       <div className="contact-main-page">
         <div className="container">
           <div id="google-map">
             <iframe
-              title="Hiraola Store Location"
-              src="https://www.google.com/maps?q=New+York&output=embed"
+              title={`Ubicación de ${SITE.name}`}
+              src={mapSrc}
               style={{ width: "100%", height: "100%", border: 0 }}
               loading="lazy"
             />
@@ -24,37 +31,76 @@ export default function ContactPage() {
           <div className="row">
             <div className="col-lg-5 offset-lg-1 col-md-12 order-1 order-lg-2">
               <div className="contact-page-side-content">
-                <h3 className="contact-page-title">Contact Us</h3>
+                <h3 className="contact-page-title">Contáctanos</h3>
                 <p className="contact-page-message">
-                  Claritas est etiam processus dynamicus, qui sequitur mutationem consuetudium
-                  lectorum. Mirum est notare quam littera gothica, quam nunc putamus parum claram
-                  anteposuerit litterarum formas human.
+                  ¿Buscas una pieza por encargo o tienes una pregunta sobre tu Idde,
+                  herramientas o joyas para los Orishas? Escríbenos por WhatsApp o
+                  llámanos — con gusto te atendemos.
                 </p>
+                <a
+                  href={SITE.contact.whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hiraola-btn"
+                  style={{ display: "inline-block", marginBottom: 26 }}
+                >
+                  Escríbenos por WhatsApp
+                </a>
+
                 <div className="single-contact-block">
                   <h4>
-                    <i className="fa fa-fax" /> Address
+                    <i className="fa fa-map-marker" /> Dirección
                   </h4>
-                  <p>123 Main Street, Anytown, CA 12345 – USA</p>
+                  <p>{SITE.contact.address}</p>
                 </div>
+
                 <div className="single-contact-block">
                   <h4>
-                    <i className="fa fa-phone" /> Phone
+                    <i className="fa fa-phone" /> Teléfono
                   </h4>
-                  <p>Mobile: (08) 123 456 789</p>
-                  <p>Hotline: 1009 678 456</p>
+                  <p>
+                    <a href={`tel:${SITE.contact.phoneTel}`}>{SITE.contact.phone}</a>
+                  </p>
+                  <p>
+                    <a href={`tel:${SITE.contact.phoneAltTel}`}>{SITE.contact.phoneAlt}</a>
+                  </p>
                 </div>
+
+                <div className="single-contact-block">
+                  <h4>
+                    <i className="fa fa-envelope" /> Correo
+                  </h4>
+                  <p>
+                    <a href={`mailto:${SITE.contact.email}`}>{SITE.contact.email}</a>
+                  </p>
+                </div>
+
                 <div className="single-contact-block last-child">
                   <h4>
-                    <i className="fa fa-envelope-o" /> Email
+                    <i className="fa fa-clock" /> Horario
                   </h4>
-                  <p>yourmail@domain.com</p>
-                  <p>support@hastech.company</p>
+                  {SITE.hours.map((h) => (
+                    <p
+                      key={h.day}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        maxWidth: 280,
+                        margin: "2px 0",
+                      }}
+                    >
+                      <span>{h.day}</span>
+                      <span>{h.value}</span>
+                    </p>
+                  ))}
                 </div>
+
+                <SocialLinks />
               </div>
             </div>
             <div className="col-lg-6 col-md-12 order-2 order-lg-1">
               <div className="contact-form-content">
-                <h3 className="contact-page-title">Tell Us Your Message</h3>
+                <h3 className="contact-page-title">Escríbenos un mensaje</h3>
                 <ContactForm />
               </div>
             </div>
