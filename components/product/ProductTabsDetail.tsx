@@ -3,9 +3,9 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { SITE } from "@/lib/site";
-import CustomizerLoader from "@/components/customizer/CustomizerLoader";
+import Product3DViewer from "@/components/product/Product3DViewer";
 
-type TabKey = "description" | "customize" | "details" | "reviews";
+type TabKey = "description" | "view3d" | "details" | "reviews";
 
 // Description / Details / Reviews tabs for the single-product page. All content is
 // real: the description comes straight from Shopify, details are the product's own
@@ -18,6 +18,7 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
     active === key ? "tab-pane active show" : "tab-pane";
 
   const category = product.tags[0];
+  const has3d = Boolean(product.model3d?.glb);
 
   return (
     <div className="hiraola-product-tab_area-2 sp-product-tab_area">
@@ -39,18 +40,20 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                       <span>Descripción</span>
                     </a>
                   </li>
-                  <li>
-                    <a
-                      className={tabLink("customize")}
-                      href="#customize"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setActive("customize");
-                      }}
-                    >
-                      <span>✦ Personaliza tu pieza</span>
-                    </a>
-                  </li>
+                  {has3d && (
+                    <li>
+                      <a
+                        className={tabLink("view3d")}
+                        href="#view3d"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setActive("view3d");
+                        }}
+                      >
+                        <span>✦ Ver en 3D / AR</span>
+                      </a>
+                    </li>
+                  )}
                   <li>
                     <a
                       className={tabLink("details")}
@@ -92,19 +95,27 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                   </div>
                 </div>
 
-                {/* Personaliza tu pieza — configurador 3D en vivo (grabado + metal) */}
-                <div id="customize" className={tabPane("customize")} role="tabpanel">
-                  {active === "customize" && (
-                    <CustomizerLoader
-                      requireAuth={false}
-                      pieceName={product.title}
-                      price={Number(product.price.amount) || undefined}
-                      productHandle={product.handle}
-                      image={product.images[0]?.url}
-                      variantId={product.variants[0]?.id}
-                    />
-                  )}
-                </div>
+                {/* Ver en 3D / AR — modelo 3D real desde Shopify con realidad aumentada */}
+                {has3d && product.model3d && (
+                  <div id="view3d" className={tabPane("view3d")} role="tabpanel">
+                    {active === "view3d" && (
+                      <>
+                        <p style={{ marginBottom: 16, color: "#a99d83", fontSize: 14 }}>
+                          Gira la pieza en 360°, acércala, y en tu celular toca{" "}
+                          <strong style={{ color: "var(--pyj-gold)" }}>
+                            &ldquo;Ver en tu espacio&rdquo;
+                          </strong>{" "}
+                          para verla en tamaño real con realidad aumentada.
+                        </p>
+                        <Product3DViewer
+                          model={product.model3d}
+                          poster={product.images[0]?.url}
+                          alt={product.title}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Detalles — real product fields */}
                 <div id="details" className={tabPane("details")} role="tabpanel">

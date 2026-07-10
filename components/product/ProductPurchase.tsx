@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
-import { useAccount } from "@/lib/account-context";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import type { Product } from "@/lib/types";
@@ -13,7 +11,6 @@ import type { Product } from "@/lib/types";
 // (dark → gold on hover) applies exactly.
 export default function ProductPurchase({ product }: { product: Product }) {
   const { addItem } = useCart();
-  const { isLoggedIn, hydrated } = useAccount();
   const [qty, setQty] = useState(1);
 
   return (
@@ -49,14 +46,6 @@ export default function ProductPurchase({ product }: { product: Product }) {
           </li>
         </ul>
       </div>
-      {hydrated && isLoggedIn && (
-        <Link
-          href={`/personalizar?handle=${product.handle}`}
-          className="cz-product-btn"
-        >
-          ✦ Personalizar con grabado 3D
-        </Link>
-      )}
     </>
   );
 }

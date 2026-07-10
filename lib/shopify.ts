@@ -96,6 +96,17 @@ const PRODUCT_FRAGMENT = /* GraphQL */ `
         }
       }
     }
+    media(first: 10) {
+      edges {
+        node {
+          mediaContentType
+          ... on Model3d {
+            alt
+            sources { url format }
+          }
+        }
+      }
+    }
   }
 `;
 
@@ -124,6 +135,15 @@ interface ShopifyProduct {
       };
     }[];
   };
+  media?: {
+    edges: {
+      node: {
+        mediaContentType: string;
+        alt?: string | null;
+        sources?: { url: string; format: string }[];
+      };
+    }[];
+  };
 }
 
 function reshape(p: ShopifyProduct): Product {
@@ -135,6 +155,20 @@ function reshape(p: ShopifyProduct): Product {
     altText: e.node.altText ?? p.title,
   }));
   if (images.length === 1) images.push(images[0]);
+
+  // First real 3D model uploaded to the product (Shopify serves GLB + auto-USDZ).
+  const modelNode = p.media?.edges
+    .map((e) => e.node)
+    .find((n) => n.mediaContentType === "MODEL_3D" && n.sources?.length);
+  const model3d = modelNode?.sources?.length
+    ? {
+        glb:
+          modelNode.sources.find((s) => s.format === "glb")?.url ??
+          modelNode.sources[0].url,
+        usdz: modelNode.sources.find((s) => s.format === "usdz")?.url,
+        alt: modelNode.alt ?? p.title,
+      }
+    : null;
 
   return {
     id: p.id,
@@ -156,6 +190,7 @@ function reshape(p: ShopifyProduct): Product {
       price: e.node.price as Money,
       availableForSale: e.node.availableForSale,
     })),
+    model3d,
   };
 }
 

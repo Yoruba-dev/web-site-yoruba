@@ -18,6 +18,14 @@ export interface ProductVariant {
   availableForSale: boolean;
 }
 
+export interface Model3D {
+  /** GLB model URL — used for the on-page 3D viewer and Android AR. */
+  glb: string;
+  /** USDZ URL for iOS AR (Shopify auto-generates it from the GLB). */
+  usdz?: string;
+  alt?: string;
+}
+
 export interface Product {
   id: string;
   handle: string;
@@ -36,6 +44,8 @@ export interface Product {
   availableForSale: boolean;
   tags: string[];
   variants: ProductVariant[];
+  /** Real 3D model (from Shopify product media), when the piece has one. */
+  model3d?: Model3D | null;
 }
 
 export interface Collection {
