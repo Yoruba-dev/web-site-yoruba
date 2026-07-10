@@ -38,5 +38,6 @@ Variables necesarias en `.env.local`:
 
 - ✅ **Visor 3D + AR:** en vivo. Sube un `.glb` a un producto y aparece solo.
 - ✅ **Lectura desde Shopify** (`Model3d` media) → `Product.model3d`.
-- ⏳ **Script de generación con Meshy:** se conecta en cuanto se provea
-  `MESHY_API_KEY` (para no escribir la integración a ciegas contra la API).
+- ✅ **Script de generación con Meshy:** `scripts/generate-3d.mjs` (image → 3D →
+  sube a Shopify). Requiere `MESHY_API_KEY` (ya en `.env.local`) y un
+  `SHOPIFY_ADMIN_API_TOKEN` con `write_products` para subir los modelos.
