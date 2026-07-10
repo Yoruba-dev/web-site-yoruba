@@ -90,19 +90,52 @@ async function generateGlb(imageUrl) {
   }
 }
 
-/** Attach a .glb (by URL) to a product as a Shopify 3D model. Shopify downloads
- *  it, processes it and auto-generates the iOS AR (.usdz). */
-async function attachModel(productId, glbUrl, alt) {
-  const data = await admin(
+/** Attach a .glb to a product as a Shopify 3D model. Shopify rejects remote URLs
+ *  for 3D, so we do a staged upload (download → upload to Shopify's bucket →
+ *  attach). Shopify then processes it and auto-generates the iOS AR (.usdz). */
+async function attachModel(productId, glbUrl, filename, alt) {
+  // 1) download the generated .glb
+  const buf = Buffer.from(await (await fetch(glbUrl)).arrayBuffer());
+  // 2) create a staged upload target
+  const staged = await admin(
+    `mutation($input: [StagedUploadInput!]!) {
+       stagedUploadsCreate(input: $input) {
+         stagedTargets { url resourceUrl parameters { name value } }
+         userErrors { field message }
+       }
+     }`,
+    {
+      input: [
+        {
+          filename,
+          mimeType: "model/gltf-binary",
+          httpMethod: "POST",
+          resource: "MODEL_3D",
+          fileSize: String(buf.length),
+        },
+      ],
+    },
+  );
+  const target = staged.stagedUploadsCreate.stagedTargets[0];
+  if (!target)
+    throw new Error("stagedUploadsCreate: " + JSON.stringify(staged.stagedUploadsCreate.userErrors));
+  // 3) POST the file to the staged target
+  const form = new FormData();
+  for (const param of target.parameters) form.append(param.name, param.value);
+  form.append("file", new Blob([buf], { type: "model/gltf-binary" }), filename);
+  const up = await fetch(target.url, { method: "POST", body: form });
+  if (!up.ok && up.status !== 204) throw new Error(`staged upload: ${up.status}`);
+  // 4) attach the uploaded file to the product as a 3D model
+  const created = await admin(
     `mutation($id: ID!, $media: [CreateMediaInput!]!) {
        productCreateMedia(productId: $id, media: $media) {
          media { status }
          mediaUserErrors { field message }
        }
      }`,
-    { id: productId, media: [{ originalSource: glbUrl, mediaContentType: "MODEL_3D", alt }] },
+    { id: productId, media: [{ originalSource: target.resourceUrl, mediaContentType: "MODEL_3D", alt }] },
   );
-  const errs = data.productCreateMedia.mediaUserErrors;
+  const errs = created.productCreateMedia.mediaUserErrors;
   if (errs?.length) throw new Error("productCreateMedia: " + JSON.stringify(errs));
 }
 
@@ -133,7 +166,7 @@ for (const p of products) {
   console.log(`• ${p.title} (${p.handle})`);
   try {
     const glb = await generateGlb(p.featuredImage.url);
-    await attachModel(p.id, glb, p.title);
+    await attachModel(p.id, glb, `${p.handle}.glb`, p.title);
     console.log(`   attached to Shopify ✓\n`);
     ok++;
   } catch (e) {
