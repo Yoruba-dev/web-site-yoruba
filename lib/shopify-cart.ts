@@ -47,8 +47,9 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
   if (!DOMAIN || !TOKEN) throw new Error("Shopify is not configured.");
 
   const cartLines = lines.map((l) => ({
-    // Real Shopify ProductVariant GID once the catalogue is live (see lib/products.ts).
-    merchandiseId: l.id,
+    // Real Shopify ProductVariant GID. Custom (engraved) pieces carry the product's
+    // real variant in `merchandiseId` and a synthetic `id` for local uniqueness.
+    merchandiseId: l.merchandiseId ?? l.id,
     quantity: l.quantity,
     attributes: lineAttributes(l),
   }));

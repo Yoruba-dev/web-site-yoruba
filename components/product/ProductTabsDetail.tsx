@@ -101,6 +101,7 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                       price={Number(product.price.amount) || undefined}
                       productHandle={product.handle}
                       image={product.images[0]?.url}
+                      variantId={product.variants[0]?.id}
                     />
                   )}
                 </div>

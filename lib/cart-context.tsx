@@ -11,8 +11,10 @@ import {
 import type { Product } from "./types";
 
 export interface CartLine {
-  /** variant id — unique per cart line */
+  /** local unique id for this cart line (may be synthetic for custom pieces) */
   id: string;
+  /** real Shopify ProductVariant GID sent at checkout; falls back to `id`. */
+  merchandiseId?: string;
   productHandle: string;
   title: string;
   image: string;

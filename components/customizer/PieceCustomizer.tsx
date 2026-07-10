@@ -229,6 +229,7 @@ export default function PieceCustomizer({
   productHandle = "pieza-personalizada",
   image = "",
   modelUrl,
+  variantId,
 }: {
   pieceName?: string;
   price?: number;
@@ -236,6 +237,8 @@ export default function PieceCustomizer({
   image?: string;
   /** When set, the product's own generated .glb loads as the default piece. */
   modelUrl?: string;
+  /** Real Shopify ProductVariant GID — so the customized piece checks out correctly. */
+  variantId?: string;
 }) {
   // If this product has a real generated model, make it the first/default piece.
   const models: PieceModel[] = useMemo(
@@ -316,6 +319,7 @@ export default function PieceCustomizer({
     const preview = capture();
     addLine({
       id: `${productHandle}-custom-${Date.now()}`,
+      merchandiseId: variantId,
       productHandle,
       title: `${pieceName} (personalizada)`,
       image: image || preview,

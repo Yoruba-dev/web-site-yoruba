@@ -22,6 +22,7 @@ export default function CustomizerLoader({
   productHandle?: string;
   image?: string;
   modelUrl?: string;
+  variantId?: string;
 }) {
   const { isLoggedIn, hydrated } = useAccount();
   const [next, setNext] = useState("/personalizar");
