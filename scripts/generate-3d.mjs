@@ -78,10 +78,10 @@ async function generateGlb(imageUrls) {
     ai_model: "latest", // Meshy 6 — most accurate reconstruction of the piece
     should_texture: true,
     enable_pbr: true, // realistic metal response (gold / silver)
-    hd_texture: true, // 4K base-colour texture → crisp surface/engraving detail
+    hd_texture: false, // 2K texture — detailed but keeps files light (fast web + AR)
     image_enhancement: true, // clean up the input photo for a better model
     remove_lighting: true, // strip baked highlights/shadows so PBR looks right
-    target_polycount: 120000, // high geometric detail (still web/AR-loadable)
+    target_polycount: 40000, // balanced geometry → ~5-10 MB models, smooth AR
   };
   const multi = imageUrls.length > 1;
   const endpoint = multi ? "/multi-image-to-3d" : "/image-to-3d";
