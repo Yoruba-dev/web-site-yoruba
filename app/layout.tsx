@@ -15,7 +15,7 @@ import { AccountProvider } from "@/lib/account-context";
 import { SITE } from "@/lib/site";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedroyorubajewelry.netlify.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
