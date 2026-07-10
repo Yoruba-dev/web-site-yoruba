@@ -1977,3 +1977,45 @@ body.template-color-1 {
 .hiraola-footer_area .hiraola-social_link > ul > li > a {
   border-radius: 50% !important;
 }
+
+/* ============================================================================
+   Featured "Anillo de Ifá" banner → full-bleed, edge-to-edge across the screen.
+   (Neutralise the .container max-width + Bootstrap row/col gutters so the promo
+   image spans the full viewport; the content keeps a comfortable left gutter.)
+   ============================================================================ */
+.static-banner_area > .container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.static-banner_area > .container > .row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+.static-banner_area > .container > .row > [class*="col-"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.static-banner_area .static-banner-content {
+  padding-left: clamp(22px, 6vw, 90px) !important;
+  padding-right: 22px;
+}
+
+/* ============================================================================
+   No sticky hover-lift / image-zoom on TOUCH devices (mobile). On phones the
+   :hover state stays "stuck" after a tap; disable the motion for a clean list.
+   Desktop (mouse) keeps the hover.
+   ============================================================================ */
+@media (hover: none) {
+  .single_product:hover,
+  .orisha-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: var(--dk-border) !important;
+  }
+  .single_product:hover .product-img img,
+  .orisha-card:hover .eleke {
+    transform: none !important;
+  }
+}
