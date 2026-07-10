@@ -70,25 +70,32 @@ async function meshy(pathname, init) {
   return res.json();
 }
 
-/** image → textured .glb URL (polls until the task finishes). */
-async function generateGlb(imageUrl) {
-  const { result: taskId } = await meshy("/image-to-3d", {
+/** image(s) → textured .glb URL (polls until the task finishes). Uses Meshy's
+ *  multi-image endpoint when a product has 2+ photos (front + back) for a more
+ *  accurate, detailed model; otherwise the single-image endpoint. */
+async function generateGlb(imageUrls) {
+  const quality = {
+    ai_model: "latest", // Meshy 6 — most accurate reconstruction of the piece
+    should_texture: true,
+    enable_pbr: true, // realistic metal response (gold / silver)
+    hd_texture: true, // 4K base-colour texture → crisp surface/engraving detail
+    image_enhancement: true, // clean up the input photo for a better model
+    remove_lighting: true, // strip baked highlights/shadows so PBR looks right
+    target_polycount: 120000, // high geometric detail (still web/AR-loadable)
+  };
+  const multi = imageUrls.length > 1;
+  const endpoint = multi ? "/multi-image-to-3d" : "/image-to-3d";
+  const body = multi
+    ? { image_urls: imageUrls.slice(0, 4), ...quality }
+    : { image_url: imageUrls[0], ...quality };
+  const { result: taskId } = await meshy(endpoint, {
     method: "POST",
-    body: JSON.stringify({
-      image_url: imageUrl,
-      ai_model: "latest", // Meshy 6 — most accurate reconstruction of the piece
-      should_texture: true,
-      enable_pbr: true, // realistic metal response (gold / silver)
-      hd_texture: true, // 4K base-colour texture → crisp engraving/surface detail
-      image_enhancement: true, // clean up the input photo for a better model
-      remove_lighting: true, // strip baked highlights/shadows so PBR looks right
-      target_polycount: 120000, // high geometric detail (still web/AR-loadable)
-    }),
+    body: JSON.stringify(body),
   });
-  process.stdout.write(`   meshy ${taskId} `);
+  process.stdout.write(`   meshy ${multi ? "multi" : "single"} ${taskId} `);
   for (;;) {
     await sleep(8000);
-    const t = await meshy(`/image-to-3d/${taskId}`);
+    const t = await meshy(`${endpoint}/${taskId}`);
     if (t.status === "SUCCEEDED") {
       process.stdout.write(" ✓\n");
       return t.model_urls.glb;
@@ -155,7 +162,7 @@ const data = await admin(
   `{ products(first: 200) {
        edges { node {
          id title handle
-         featuredImage { url }
+         images(first: 4) { edges { node { url } } }
          media(first: 10) { edges { node { mediaContentType } } }
        } }
    } }`,
@@ -163,7 +170,8 @@ const data = await admin(
 
 let products = data.products.edges
   .map((e) => e.node)
-  .filter((p) => p.featuredImage?.url)
+  .map((p) => ({ ...p, imageUrls: (p.images?.edges || []).map((e) => e.node.url) }))
+  .filter((p) => p.imageUrls.length)
   // skip products that already have a 3D model
   .filter((p) => !p.media.edges.some((m) => m.node.mediaContentType === "MODEL_3D"));
 if (onlyHandle) products = products.filter((p) => p.handle === onlyHandle);
@@ -174,7 +182,7 @@ let ok = 0;
 for (const p of products) {
   console.log(`• ${p.title} (${p.handle})`);
   try {
-    const glb = await generateGlb(p.featuredImage.url);
+    const glb = await generateGlb(p.imageUrls);
     await attachModel(p.id, glb, `${p.handle}.glb`, p.title);
     console.log(`   attached to Shopify ✓\n`);
     ok++;

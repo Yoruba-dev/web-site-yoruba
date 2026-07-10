@@ -14,7 +14,7 @@ const GOLD = "#e3b23c";
 const GOLD_LIGHT = "#f2d896";
 const BORDER = "1px solid rgba(227,178,60,0.32)";
 
-const BADGES = ["↻ Gíralo 360°", "🔍 Acércalo al detalle", "📱 Ver en tu espacio (AR)"];
+const BADGES = ["Girar 360°", "Acercar al detalle", "Ver en tu espacio · AR"];
 
 export default function Product3DViewer({
   model,
@@ -73,7 +73,7 @@ export default function Product3DViewer({
         boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
       },
     },
-    "📱 Ver en tu espacio",
+    "Ver en tu espacio",
   );
 
   const viewer = ready
@@ -84,7 +84,9 @@ export default function Product3DViewer({
           "ios-src": model.usdz,
           poster,
           alt: alt ?? "Modelo 3D de la pieza",
-          ar: "",
+          // React 19 maps `ar` to the element property — must be a truthy boolean,
+          // NOT "" (empty string is falsy → AR silently disabled).
+          ar: true,
           "ar-modes": "webxr scene-viewer quick-look",
           "ar-scale": "auto",
           "camera-controls": "",
@@ -139,7 +141,7 @@ export default function Product3DViewer({
       <div style={{ position: "relative", border: BORDER, overflow: "hidden" }}>{viewer}</div>
 
       <p style={{ color: "#8c8168", fontSize: 12.5, margin: "12px 0 0", fontStyle: "italic" }}>
-        📱 ¿En computadora? Abre esta página en tu teléfono y toca{" "}
+        ¿En computadora? Abre esta página en tu teléfono y toca{" "}
         <strong style={{ color: GOLD_LIGHT }}>&ldquo;Ver en tu espacio&rdquo;</strong> para la
         experiencia de realidad aumentada.
       </p>

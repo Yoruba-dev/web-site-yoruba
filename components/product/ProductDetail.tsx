@@ -111,7 +111,6 @@ export default function ProductDetail({
                       lineHeight: 1.5,
                     }}
                   >
-                    🛡️{" "}
                     <strong style={{ color: "var(--pyj-gold)" }}>
                       Garantía de por vida
                     </strong>{" "}
