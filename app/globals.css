@@ -1959,3 +1959,21 @@ body.template-color-1 {
     flex-basis: 100%;
   }
 }
+
+/* ============================================================================
+   SHARP CORNERS — squared, architectural luxury look (no rounded borders,
+   site-wide). Genuine circular icon-buttons / count badges / scroll-top are
+   re-rounded below so they stay perfect circles.
+   ============================================================================ */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+#scrollUp,
+.minicart-count,
+.header-bottom_area-2 .header-right_area > ul > li > a,
+.header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn,
+.hiraola-footer_area .hiraola-social_link > ul > li > a {
+  border-radius: 50% !important;
+}

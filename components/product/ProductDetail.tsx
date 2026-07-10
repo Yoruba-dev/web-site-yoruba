@@ -3,7 +3,6 @@ import { SITE } from "@/lib/site";
 import { formatMoney, money } from "@/lib/utils";
 import RatingStars from "@/components/ui/RatingStars";
 import ProductPurchase from "@/components/product/ProductPurchase";
-import ProductShare from "@/components/product/ProductShare";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductTabsDetail from "@/components/product/ProductTabsDetail";
 import ProductSlider from "@/components/product/ProductSlider";
@@ -129,7 +128,6 @@ export default function ProductDetail({
                       ))}
                     </div>
                   )}
-                  <ProductShare product={product} />
                 </div>
               </div>
             </div>

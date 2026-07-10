@@ -76,10 +76,13 @@ async function generateGlb(imageUrl) {
     method: "POST",
     body: JSON.stringify({
       image_url: imageUrl,
+      ai_model: "latest", // Meshy 6 — most accurate reconstruction of the piece
       should_texture: true,
-      enable_pbr: true,
-      // keep models web/AR-friendly (a full-detail mesh can be 30 MB+)
-      target_polycount: 30000,
+      enable_pbr: true, // realistic metal response (gold / silver)
+      hd_texture: true, // 4K base-colour texture → crisp engraving/surface detail
+      image_enhancement: true, // clean up the input photo for a better model
+      remove_lighting: true, // strip baked highlights/shadows so PBR looks right
+      target_polycount: 120000, // high geometric detail (still web/AR-loadable)
     }),
   });
   process.stdout.write(`   meshy ${taskId} `);

@@ -99,20 +99,11 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                 {has3d && product.model3d && (
                   <div id="view3d" className={tabPane("view3d")} role="tabpanel">
                     {active === "view3d" && (
-                      <>
-                        <p style={{ marginBottom: 16, color: "#a99d83", fontSize: 14 }}>
-                          Gira la pieza en 360°, acércala, y en tu celular toca{" "}
-                          <strong style={{ color: "var(--pyj-gold)" }}>
-                            &ldquo;Ver en tu espacio&rdquo;
-                          </strong>{" "}
-                          para verla en tamaño real con realidad aumentada.
-                        </p>
-                        <Product3DViewer
-                          model={product.model3d}
-                          poster={product.images[0]?.url}
-                          alt={product.title}
-                        />
-                      </>
+                      <Product3DViewer
+                        model={product.model3d}
+                        poster={product.images[0]?.url}
+                        alt={product.title}
+                      />
                     )}
                   </div>
                 )}
