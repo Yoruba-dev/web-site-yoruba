@@ -11,7 +11,12 @@ const PieceCustomizer = dynamic(() => import("./PieceCustomizer"), {
   loading: () => <div className="customizer-loading">Cargando el visor 3D…</div>,
 });
 
-export default function CustomizerLoader(props: {
+export default function CustomizerLoader({
+  requireAuth = true,
+  ...props
+}: {
+  /** When false, the 3D customizer is open to everyone (no account gate). */
+  requireAuth?: boolean;
   pieceName?: string;
   price?: number;
   productHandle?: string;
@@ -28,9 +33,9 @@ export default function CustomizerLoader(props: {
   return (
     <div className="customizer-area">
       <div className="container">
-        {!hydrated ? (
+        {requireAuth && !hydrated ? (
           <div className="customizer-loading">Cargando…</div>
-        ) : isLoggedIn ? (
+        ) : !requireAuth || isLoggedIn ? (
           <PieceCustomizer {...props} />
         ) : (
           // Personalization is exclusive to customers with an account.

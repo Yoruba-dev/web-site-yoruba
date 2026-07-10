@@ -3,8 +3,9 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { SITE } from "@/lib/site";
+import CustomizerLoader from "@/components/customizer/CustomizerLoader";
 
-type TabKey = "description" | "details" | "reviews";
+type TabKey = "description" | "customize" | "details" | "reviews";
 
 // Description / Details / Reviews tabs for the single-product page. All content is
 // real: the description comes straight from Shopify, details are the product's own
@@ -36,6 +37,18 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                       }}
                     >
                       <span>Descripción</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      className={tabLink("customize")}
+                      href="#customize"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActive("customize");
+                      }}
+                    >
+                      <span>✦ Personaliza tu pieza</span>
                     </a>
                   </li>
                   <li>
@@ -79,6 +92,19 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                   </div>
                 </div>
 
+                {/* Personaliza tu pieza — configurador 3D en vivo (grabado + metal) */}
+                <div id="customize" className={tabPane("customize")} role="tabpanel">
+                  {active === "customize" && (
+                    <CustomizerLoader
+                      requireAuth={false}
+                      pieceName={product.title}
+                      price={Number(product.price.amount) || undefined}
+                      productHandle={product.handle}
+                      image={product.images[0]?.url}
+                    />
+                  )}
+                </div>
+
                 {/* Detalles — real product fields */}
                 <div id="details" className={tabPane("details")} role="tabpanel">
                   <table className="table table-bordered specification-inner_stuff">
@@ -88,6 +114,12 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                           <strong>Marca</strong>
                         </td>
                         <td>{SITE.name}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Garantía</strong>
+                        </td>
+                        <td>De por vida en todas nuestras piezas</td>
                       </tr>
                       {category && (
                         <tr>

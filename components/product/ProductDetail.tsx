@@ -100,6 +100,24 @@ export default function ProductDetail({
                     </ul>
                   </div>
                   <ProductPurchase product={product} />
+                  <div
+                    style={{
+                      margin: "18px 0 4px",
+                      padding: "11px 15px",
+                      background: "rgba(202,162,58,0.08)",
+                      border: "1px solid rgba(202,162,58,0.25)",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      color: "#a99d83",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    🛡️{" "}
+                    <strong style={{ color: "var(--pyj-gold)" }}>
+                      Garantía de por vida
+                    </strong>{" "}
+                    en todas nuestras piezas · Hecho a mano en Miami con devoción.
+                  </div>
                   {product.tags.length > 0 && (
                     <div className="hiraola-tag-line">
                       <h6>Etiquetas:</h6>{" "}

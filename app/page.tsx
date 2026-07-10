@@ -14,7 +14,7 @@ const SHIPPING = [
   { icon: "1.png", title: "Envío a todo USA", text: "En pedidos sobre $75" },
   { icon: "2.png", title: "Hecho a mano", text: "Oro 10k, plata y acero" },
   { icon: "3.png", title: "Piezas por encargo", text: "Para cada Oricha" },
-  { icon: "4.png", title: "Calidad garantizada", text: "Acabado artesanal" },
+  { icon: "4.png", title: "Garantía de por vida", text: "En todas nuestras piezas" },
 ];
 
 // Top piece-type categories (by product count) for the strategic home rows —
@@ -37,7 +37,12 @@ function topCategories(products: Product[], limit: number): string[] {
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   const all = await getProducts(150);
-  const cats = topCategories(all, 6);
+  // "Herramientas de Santo" gets its own featured, religion-framed row up top, so
+  // keep it out of the generic category rows below (avoid showing it twice).
+  const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
+  const cats = topCategories(all, 7)
+    .filter((c) => c !== "Herramientas")
+    .slice(0, 6);
 
   return (
     <>
@@ -69,6 +74,14 @@ export default async function HomePage() {
 
       {/* Shop by Orisha — Santería identity section */}
       <OrishaShowcase />
+
+      {/* Herramientas de Santo — featured, religion-focused (specialty of the house) */}
+      <CategorySection
+        title="Herramientas de Santo"
+        subtitle="Instrumentos sagrados de cada Oricha — forjados a mano para tu Ocha e Ifá. Piezas de fundamento para el culto, la coronación y el trono."
+        products={herramientas.slice(0, 12)}
+        href="/shop-left-sidebar?cat=Herramientas"
+      />
 
       {/* Novedades (5-up slider) */}
       <div className="hiraola-product_area">

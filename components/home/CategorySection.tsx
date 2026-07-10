@@ -8,10 +8,12 @@ export default function CategorySection({
   title,
   products,
   href,
+  subtitle,
 }: {
   title: string;
   products: Product[];
   href: string;
+  subtitle?: string;
 }) {
   if (products.length === 0) return null;
   return (
@@ -29,7 +31,14 @@ export default function CategorySection({
                 gap: 10,
               }}
             >
-              <h4 style={{ margin: 0 }}>{title}</h4>
+              <div>
+                <h4 style={{ margin: 0 }}>{title}</h4>
+                {subtitle && (
+                  <p style={{ margin: "6px 0 0", fontSize: 14, color: "#a99d83", maxWidth: 640 }}>
+                    {subtitle}
+                  </p>
+                )}
+              </div>
               <Link
                 href={href}
                 style={{
