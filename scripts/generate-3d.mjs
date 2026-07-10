@@ -74,7 +74,13 @@ async function meshy(pathname, init) {
 async function generateGlb(imageUrl) {
   const { result: taskId } = await meshy("/image-to-3d", {
     method: "POST",
-    body: JSON.stringify({ image_url: imageUrl, should_texture: true, enable_pbr: true }),
+    body: JSON.stringify({
+      image_url: imageUrl,
+      should_texture: true,
+      enable_pbr: true,
+      // keep models web/AR-friendly (a full-detail mesh can be 30 MB+)
+      target_polycount: 30000,
+    }),
   });
   process.stdout.write(`   meshy ${taskId} `);
   for (;;) {
