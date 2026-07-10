@@ -34,6 +34,19 @@ export const getProductByHandle = cache(
   },
 );
 
+/** A representative image for a category (the first catalogue product tagged with
+ *  it) — used as the breadcrumb banner background when browsing that category. */
+export async function getCategoryImage(
+  category: string | undefined,
+): Promise<string | undefined> {
+  if (!category) return undefined;
+  const products = await getProducts(250);
+  const match = products.find(
+    (p) => p.tags.includes(category) && p.images[0]?.url,
+  );
+  return match?.images[0]?.url;
+}
+
 /** Convenience slices for the homepage sections. */
 export async function getHomeSections() {
   const products = await getProducts(24);

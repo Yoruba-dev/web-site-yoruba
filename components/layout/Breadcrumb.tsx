@@ -5,16 +5,31 @@ export interface Crumb {
   href?: string;
 }
 
-// Ported from the template's `.breadcrumb-area` (background comes from style.css).
+// Ported from the template's `.breadcrumb-area`. When `bgImage` is given (e.g. the
+// category being browsed, or the product's own photo), it replaces the default
+// banner image — stacked under a dark gradient so the title stays legible.
 export default function Breadcrumb({
   title,
   crumbs = [],
+  bgImage,
 }: {
   title: string;
   crumbs?: Crumb[];
+  bgImage?: string;
 }) {
   return (
-    <div className="breadcrumb-area">
+    <div
+      className={`breadcrumb-area${bgImage ? " has-bg" : ""}`}
+      style={
+        bgImage
+          ? {
+              backgroundImage: `linear-gradient(rgba(15,11,7,0.52), rgba(15,11,7,0.74)), url(${bgImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : undefined
+      }
+    >
       <div className="container">
         <div className="breadcrumb-content">
           <h2>{title}</h2>

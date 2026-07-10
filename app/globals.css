@@ -299,6 +299,11 @@ body.template-color-1 {
   background-color: var(--dk-bg);
   box-shadow: inset 0 0 0 2000px rgba(13, 10, 7, 0.84);
 }
+/* When a category / product image is used as the banner, the inline gradient
+   already handles legibility — drop the heavy flat scrim so the piece shows. */
+.breadcrumb-area.has-bg {
+  box-shadow: none !important;
+}
 .breadcrumb-content h2 {
   color: #fff !important;
 }
