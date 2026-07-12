@@ -21,6 +21,8 @@ export interface WishlistItem {
   price: number;
   currencyCode: string;
   available: boolean;
+  /** Shopify tags — lets the commerce policy decide made-to-order vs buyable. */
+  tags?: string[];
 }
 
 interface WishlistContextValue {
@@ -69,6 +71,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
           price: Number(product.price.amount),
           currencyCode: product.price.currencyCode,
           available: product.availableForSale,
+          tags: product.tags,
         },
       ];
     });

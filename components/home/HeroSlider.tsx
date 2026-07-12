@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Slider, { type Settings } from "react-slick";
+import { SITE } from "@/lib/site";
 
 type ArrowProps = {
   className?: string;
@@ -25,39 +26,9 @@ function NextArrow({ className, style, onClick }: ArrowProps) {
   );
 }
 
-interface Slide {
-  bg: string;
-  animation: string;
-  eyebrow: string;
-  eyebrowRest: string;
-  title: string;
-  subtitle: string;
-  price: string;
-}
-
-// Home Two hero: full-width slider (slider_area-2) using the original bg-4 / bg-5
-// background images (assets/images/slider/4.jpg & 5.jpg).
-const SLIDES: Slide[] = [
-  {
-    bg: "bg-4",
-    animation: "animation-style-01",
-    eyebrow: "Hecho a mano",
-    eyebrowRest: "en Miami",
-    title: "Joyería Yoruba",
-    subtitle: "Tradición que se lleva puesta",
-    price: "$30",
-  },
-  {
-    bg: "bg-5",
-    animation: "animation-style-02",
-    eyebrow: "Por encargo",
-    eyebrowRest: "Oro 10k · 14k · 18k",
-    title: "Oro para los Orishas",
-    subtitle: "Idde · Opele · Dijes en oro fino",
-    price: "$60",
-  },
-];
-
+// Home hero: full-bleed image carousel driven by the store's real Shopify
+// homepage banners (SITE.heroSlides). The banners are pre-designed (text baked
+// in), so each slide is just the image — no overlay copy or scrim.
 const settings: Settings = {
   infinite: true,
   arrows: true,
@@ -76,9 +47,9 @@ const settings: Settings = {
 };
 
 export default function HeroSlider() {
-  // react-slick measures the slide width once and only recomputes on a resize event.
-  // After SSR + hydration on a phone (no resize) the fade slide can be mis-sized /
-  // positioned off-screen, leaving the hero blank. Nudge a resize after mount so slick
+  // react-slick measures the slide width once and only recomputes on a resize
+  // event. After SSR + hydration on a phone (no resize) the fade slide can be
+  // mis-sized, leaving the hero blank. Nudge a resize after mount so slick
   // recomputes and the active slide paints.
   useEffect(() => {
     const fire = () => window.dispatchEvent(new Event("resize"));
@@ -91,28 +62,19 @@ export default function HeroSlider() {
   }, []);
 
   return (
-    <div className="hiraola-slider_area-2">
+    <div className="hiraola-slider_area-2 hero-banner_slider">
       <Slider {...settings} className="main-slider">
-        {SLIDES.map((slide) => (
-          <div key={slide.bg} className={`single-slide ${slide.animation} ${slide.bg}`}>
-            <div className="container">
-              <div className="slider-content">
-                <h5>
-                  <span>{slide.eyebrow}</span> {slide.eyebrowRest}
-                </h5>
-                <h2>{slide.title}</h2>
-                <h3>{slide.subtitle}</h3>
-                <h4>
-                  Desde <span>{slide.price}</span>
-                </h4>
-                <div className="hiraola-btn-ps_center slide-btn">
-                  <Link className="hiraola-btn" href="/shop-left-sidebar">
-                    Ver Colección
-                  </Link>
-                </div>
-              </div>
-              <div className="slider-progress" />
-            </div>
+        {SITE.heroSlides.map((slide) => (
+          <div key={slide.image} className="hero-banner_slide">
+            <Link href={slide.href} aria-label={slide.alt}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={slide.image}
+                alt={slide.alt}
+                width={slide.width}
+                height={slide.height}
+              />
+            </Link>
           </div>
         ))}
       </Slider>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useWishlist, type WishlistItem } from "@/lib/wishlist-context";
 import { useCart } from "@/lib/cart-context";
+import { CONSULT_LABEL, isMadeToOrder, whatsappConsultUrl } from "@/lib/commerce";
 import { formatMoney } from "@/lib/utils";
 
 export default function WishlistView() {
@@ -88,7 +89,16 @@ export default function WishlistView() {
                         )}
                       </td>
                       <td className="hiraola-product_add-cart">
-                        {it.available ? (
+                        {isMadeToOrder(it.tags) ? (
+                          <a
+                            className="hiraola-cart_btn"
+                            href={whatsappConsultUrl({ title: it.title })}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {CONSULT_LABEL}
+                          </a>
+                        ) : it.available ? (
                           <a
                             className="hiraola-cart_btn"
                             onClick={() => moveToCart(it)}

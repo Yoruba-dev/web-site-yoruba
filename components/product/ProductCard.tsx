@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
 import RatingStars from "@/components/ui/RatingStars";
-import AddToCartButton from "./AddToCartButton";
+import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 
@@ -32,9 +32,9 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="add-actions">
           <ul>
             <li>
-              <AddToCartButton className="hiraola-add_cart" product={product}>
+              <PurchaseButton className="hiraola-add_cart" product={product} iconOnly>
                 <i className="ion-bag" />
-              </AddToCartButton>
+              </PurchaseButton>
             </li>
             <li>
               <CompareButton className="hiraola-add_compare" product={product} />

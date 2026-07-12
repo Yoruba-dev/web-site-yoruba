@@ -974,6 +974,21 @@ textarea:focus-visible,
 }
 
 /*
+ * Full-bleed image hero (SITE.heroSlides — the store's Shopify banners). These
+ * slides use .hero-banner_slide (not .single-slide), so the text scrim above
+ * does NOT apply. The image fills the slide width and keeps its aspect ratio.
+ */
+.hero-banner_slider .hero-banner_slide a {
+  display: block;
+  line-height: 0;
+}
+.hero-banner_slider .hero-banner_slide img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/*
  * Product detail gallery thumbnails (Tab Style). The template sized these small
  * via the slick thumbnail slider; we replaced slick with React state, so size
  * them here: a row of small thumbnails under the main image, active one gold.

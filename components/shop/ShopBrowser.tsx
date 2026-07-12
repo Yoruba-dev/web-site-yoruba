@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
-import AddToCartButton from "@/components/product/AddToCartButton";
+import PurchaseButton from "@/components/product/PurchaseButton";
 import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
 import RatingStars from "@/components/ui/RatingStars";
@@ -67,9 +67,9 @@ function ListProductItem({ product }: { product: Product }) {
             <div className="add-actions">
               <ul>
                 <li>
-                  <AddToCartButton className="hiraola-add_cart" product={product}>
+                  <PurchaseButton className="hiraola-add_cart" product={product}>
                     Añadir al carrito
-                  </AddToCartButton>
+                  </PurchaseButton>
                 </li>
                 <li>
                   <CompareButton className="hiraola-add_compare" product={product} />

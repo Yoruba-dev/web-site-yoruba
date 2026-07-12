@@ -41,4 +41,26 @@ export const SITE = {
   },
   // Google Analytics 4 measurement ID.
   analytics: { gaId: "G-YRQD06WQYY" },
+  // Home hero carousel — the banner images from the Shopify store's homepage
+  // slideshow (Shopify admin › Content › Files). These are designed banners with
+  // their own baked-in text, shown full-bleed (no overlay). To change the hero,
+  // update these URLs or add/remove slides here — nothing else to touch.
+  heroSlides: [
+    {
+      image:
+        "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/BANNERS_NUEVOS_PEDRO.png?v=1742513250",
+      alt: "Pedro Yoruba Jewelry — joyería Yoruba hecha a mano en Miami",
+      href: "/shop-left-sidebar",
+      width: 1640,
+      height: 924,
+    },
+    {
+      image:
+        "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/BANNERS_NUEVOS_PEDRO_1.png?v=1742563916",
+      alt: "Piezas por encargo para los Orishas — oro 10k, 14k y 18k",
+      href: "/shop-left-sidebar",
+      width: 1640,
+      height: 924,
+    },
+  ],
 } as const;
