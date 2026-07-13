@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // ---------------------------------------------------------------------------
 // Content-Security-Policy for this headless storefront.
@@ -23,7 +24,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://cdn.shopify.com https://*.myshopify.com https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.myshopify.com https://cdn.shopify.com https://cdn.jsdelivr.net https://*.google-analytics.com https://*.googletagmanager.com https://*.analytics.google.com",
+  "connect-src 'self' https://*.myshopify.com https://cdn.shopify.com https://cdn.jsdelivr.net https://*.google-analytics.com https://*.googletagmanager.com https://*.analytics.google.com https://*.sentry.io https://*.ingest.us.sentry.io",
   "media-src 'self' data: blob: https://cdn.shopify.com https://*.myshopify.com",
   "worker-src 'self' blob:",
   "frame-src 'self' https://*.myshopify.com",
@@ -62,4 +63,11 @@ const nextConfig: NextConfig = {
   // images: { remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com" }] },
 };
 
-export default nextConfig;
+// Wrap with Sentry. This runs at build time (webpack) and is what wires the
+// client/server SDK correctly. Source-map upload is disabled (no auth token
+// needed); error capture still works. Preserves the config above (headers/CSP).
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  sourcemaps: { disable: true },
+  telemetry: false,
+});
