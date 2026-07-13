@@ -2917,3 +2917,14 @@ body.template-color-1 {
   letter-spacing: 1px;
   margin: 0 0 28px;
 }
+
+/* Real review stars (Judge.me) on the product page. */
+.pyj-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 2px 0 14px;
+}
+.pyj-stars-icons { color: var(--pyj-gold, #cda557); font-size: 14px; letter-spacing: 2px; }
+.pyj-stars-icons .fa-star-o { color: rgba(205, 165, 87, 0.4); }
+.pyj-stars-count { font-size: 13px; color: #a99d83; }

@@ -1,4 +1,5 @@
 import type { Product } from "@/lib/types";
+import type { Rating } from "@/lib/judgeme";
 import ProductShowcase from "@/components/product/ProductShowcase";
 import ProductTabsDetail from "@/components/product/ProductTabsDetail";
 import ProductSlider from "@/components/product/ProductSlider";
@@ -10,11 +11,13 @@ import ProductSlider from "@/components/product/ProductSlider";
 export default function ProductDetail({
   product,
   related,
+  rating = null,
   galleryPosition = "left",
   showSale = false,
 }: {
   product: Product;
   related: Product[];
+  rating?: Rating | null;
   galleryPosition?: "left" | "right";
   showSale?: boolean;
 }) {
@@ -26,6 +29,7 @@ export default function ProductDetail({
           <div className="sp-nav">
             <ProductShowcase
               product={product}
+              rating={rating}
               galleryPosition={galleryPosition}
               showSale={showSale}
             />

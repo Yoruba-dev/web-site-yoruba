@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
+import type { Rating } from "@/lib/judgeme";
 import ProductGallery from "./ProductGallery";
 import ProductBuyBox from "./ProductBuyBox";
+import ReviewStars from "./ReviewStars";
 
 // The interactive top row of the product page (gallery column + content column).
 // Owns the selected variant so the two stay in sync: picking a size updates the
@@ -11,10 +13,12 @@ import ProductBuyBox from "./ProductBuyBox";
 // photo (via `featuredUrl`).
 export default function ProductShowcase({
   product,
+  rating = null,
   galleryPosition = "left",
   showSale = false,
 }: {
   product: Product;
+  rating?: Rating | null;
   galleryPosition?: "left" | "right";
   showSale?: boolean;
 }) {
@@ -50,6 +54,7 @@ export default function ProductShowcase({
             </h5>
           </div>
           <span className="reference">Referencia: {product.handle}</span>
+          <ReviewStars rating={rating} />
           <ProductBuyBox
             product={product}
             showSale={showSale}

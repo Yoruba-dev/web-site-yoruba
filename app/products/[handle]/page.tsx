@@ -4,6 +4,7 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductDetail from "@/components/product/ProductDetail";
 import JsonLd from "@/components/seo/JsonLd";
 import { getCategoryImage, getProductByHandle, getProducts } from "@/lib/products";
+import { getProductRating } from "@/lib/judgeme";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import { SITE } from "@/lib/site";
 
@@ -77,6 +78,9 @@ export default async function ProductPage({ params }: { params: Params }) {
     ...others.filter((p) => !matched.includes(p)),
   ].slice(0, 8);
 
+  // Real review rating from Judge.me (null when the piece has no reviews yet).
+  const rating = await getProductRating(product.handle);
+
   // Breadcrumb banner = the image of the category this piece belongs to
   // (falls back to the piece's own photo).
   const category = product.tags.find((t) => !ORISHA_NAMES.includes(t));
@@ -139,6 +143,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       <ProductDetail
         product={product}
         related={related}
+        rating={rating}
         galleryPosition="left"
         showSale={Boolean(product.compareAtPrice)}
       />
