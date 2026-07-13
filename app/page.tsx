@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { getProducts } from "@/lib/products";
+import { getNewArrivals, getProducts } from "@/lib/products";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import type { Product } from "@/lib/types";
 import HeroSlider from "@/components/home/HeroSlider";
@@ -8,7 +8,6 @@ import BannerGrid from "@/components/home/BannerGrid";
 import StaticBanner from "@/components/home/StaticBanner";
 import OrishaShowcase from "@/components/home/OrishaShowcase";
 import CategorySection from "@/components/home/CategorySection";
-import SectionTitle from "@/components/ui/SectionTitle";
 
 const SHIPPING = [
   { icon: "1.png", title: "Envío a todo USA", text: "En pedidos sobre $75" },
@@ -37,6 +36,7 @@ function topCategories(products: Product[], limit: number): string[] {
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   const all = await getProducts(150);
+  const newArrivals = await getNewArrivals(10);
   // "Herramientas de Santo" gets its own featured, religion-framed row up top, so
   // keep it out of the generic category rows below (avoid showing it twice).
   const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
@@ -47,6 +47,24 @@ export default async function HomePage() {
   return (
     <>
       <HeroSlider />
+
+      {/* Recién llegado — front-and-center right under the hero so a new piece
+          (like the Virgen de la Caridad) is seen without any searching. */}
+      <section className="pyj-newarrivals">
+        <div className="container">
+          <div className="pyj-newarrivals_head">
+            <span className="pyj-eyebrow">✦ Recién llegado ✦</span>
+            <h2>Novedades</h2>
+            <p>Las últimas piezas que llegaron al taller — véelas antes que nadie.</p>
+          </div>
+          <ProductSlider products={newArrivals} />
+          <div className="pyj-newarrivals_cta">
+            <a href="/shop-left-sidebar" className="pyj-btn-gold">
+              Ver toda la colección
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Shipping bar */}
       <div className="hiraola-shipping_area hiraola-shipping_area-2">
@@ -82,20 +100,6 @@ export default async function HomePage() {
         products={herramientas.slice(0, 12)}
         href="/shop-left-sidebar?cat=Herramientas"
       />
-
-      {/* Novedades (5-up slider) */}
-      <div className="hiraola-product_area">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-12">
-              <SectionTitle title="Novedades" />
-            </div>
-            <div className="col-lg-12">
-              <ProductSlider products={all.slice(0, 12)} />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Featured Product promo banner */}
       <StaticBanner />

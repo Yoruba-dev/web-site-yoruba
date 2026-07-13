@@ -3,6 +3,7 @@ import type { Product } from "./types";
 import { MOCK_PRODUCTS } from "./mock-data";
 import {
   isShopifyConfigured,
+  shopifyGetNewArrivals,
   shopifyGetProductByHandle,
   shopifyGetProducts,
 } from "./shopify";
@@ -16,6 +17,19 @@ export const getProducts = cache(async (limit = 24): Promise<Product[]> => {
       return (await shopifyGetProducts(limit)).slice(0, limit);
     } catch (err) {
       console.error("[shopify] getProducts failed, using mock data:", err);
+    }
+  }
+  return MOCK_PRODUCTS.slice(0, limit);
+});
+
+/** Newest products first, for the home "Recién llegado" showcase. Falls back to
+ *  the head of the mock catalogue when Shopify isn't configured. */
+export const getNewArrivals = cache(async (limit = 10): Promise<Product[]> => {
+  if (isShopifyConfigured()) {
+    try {
+      return await shopifyGetNewArrivals(limit);
+    } catch (err) {
+      console.error("[shopify] getNewArrivals failed, using mock data:", err);
     }
   }
   return MOCK_PRODUCTS.slice(0, limit);

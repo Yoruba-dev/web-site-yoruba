@@ -16,6 +16,8 @@ export interface ProductVariant {
   title: string;
   price: Money;
   availableForSale: boolean;
+  /** Variant-specific image URL (Shopify variant featured image), if assigned. */
+  image?: string;
 }
 
 export interface Model3D {
@@ -44,6 +46,9 @@ export interface Product {
   availableForSale: boolean;
   tags: string[];
   variants: ProductVariant[];
+  /** Label of the primary variant option (e.g. "Tamaño"); undefined for
+   *  single-variant products or Shopify's default "Title" option. */
+  optionName?: string;
   /** Real 3D model (from Shopify product media), when the piece has one. */
   model3d?: Model3D | null;
 }

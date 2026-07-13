@@ -83,8 +83,11 @@ const PRODUCT_FRAGMENT = /* GraphQL */ `
     compareAtPriceRange {
       minVariantPrice { amount currencyCode }
     }
-    images(first: 2) {
+    images(first: 20) {
       edges { node { url altText } }
+    }
+    options {
+      name
     }
     variants(first: 20) {
       edges {
@@ -93,6 +96,7 @@ const PRODUCT_FRAGMENT = /* GraphQL */ `
           title
           availableForSale
           price { amount currencyCode }
+          image { url }
         }
       }
     }
@@ -125,6 +129,7 @@ interface ShopifyProduct {
   priceRange: { minVariantPrice: ShopifyMoney };
   compareAtPriceRange: { minVariantPrice: ShopifyMoney };
   images: { edges: { node: { url: string; altText: string | null } }[] };
+  options?: { name: string }[];
   variants: {
     edges: {
       node: {
@@ -132,6 +137,7 @@ interface ShopifyProduct {
         title: string;
         availableForSale: boolean;
         price: ShopifyMoney;
+        image?: { url: string } | null;
       };
     }[];
   };
@@ -189,7 +195,11 @@ function reshape(p: ShopifyProduct): Product {
       title: e.node.title,
       price: e.node.price as Money,
       availableForSale: e.node.availableForSale,
+      image: e.node.image?.url,
     })),
+    // Primary option label for the variant selector, skipping Shopify's default
+    // single-variant "Title" option (which carries no real choice).
+    optionName: p.options?.find((o) => o.name && o.name !== "Title")?.name,
     model3d,
   };
 }
@@ -226,6 +236,24 @@ export async function shopifyGetProducts(first = 24): Promise<Product[]> {
     after = data.products.pageInfo.endCursor;
   }
   return out;
+}
+
+/** Newest products first (by creation date) — powers the home "Recién llegado"
+ *  section so a freshly added piece is seen immediately, no searching. */
+export async function shopifyGetNewArrivals(n = 10): Promise<Product[]> {
+  const data = await shopifyFetch<ProductsPage>(
+    /* GraphQL */ `
+      ${PRODUCT_FRAGMENT}
+      query NewArrivals($n: Int!) {
+        products(first: $n, sortKey: CREATED_AT, reverse: true) {
+          edges { node { ...ProductCard } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    `,
+    { n },
+  );
+  return data.products.edges.map((e) => reshape(e.node));
 }
 
 export async function shopifyGetProductByHandle(

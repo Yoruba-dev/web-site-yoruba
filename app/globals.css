@@ -993,18 +993,65 @@ textarea:focus-visible,
  * via the slick thumbnail slider; we replaced slick with React state, so size
  * them here: a row of small thumbnails under the main image, active one gold.
  */
+/* Thumbnail carousel: a single horizontal row that scrolls sideways (with
+ * arrows) instead of wrapping into a tall grid when there are many photos. */
+.pyj-thumb-strip {
+  position: relative;
+  margin-top: 15px;
+}
 .sp-img_area .sp-img_slider {
   display: flex !important;
-  flex-wrap: wrap;
+  flex-wrap: nowrap !important;
   gap: 10px !important;
-  margin-top: 15px !important;
+  margin-top: 0 !important;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.sp-img_area .sp-img_slider::-webkit-scrollbar {
+  display: none;
+}
+/* Leave room for the arrows when the strip overflows. */
+.pyj-thumb-strip.has-nav .sp-img_slider {
+  padding: 2px 34px;
 }
 .sp-img_area .sp-img_slider > a {
   flex: 0 0 auto !important;
-  width: 90px !important;
+  width: 84px !important;
+  scroll-snap-align: start;
   border: 1px solid #e5e5e5 !important;
   cursor: pointer;
   transition: border-color 0.2s ease;
+}
+/* Round gold arrow buttons over the ends of the strip. */
+.pyj-thumb-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dk-surface, #18130d);
+  color: var(--pyj-gold, #cda557);
+  border: 1px solid var(--pyj-gold, #cda557);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pyj-thumb-nav:hover {
+  background: var(--pyj-gold, #cda557);
+  color: #0d0a07;
+}
+.pyj-thumb-nav.prev {
+  left: 0;
+}
+.pyj-thumb-nav.next {
+  right: 0;
 }
 .sp-img_area .sp-img_slider > a.active,
 .sp-img_area .sp-img_slider > a:hover {
@@ -2038,4 +2085,211 @@ body.template-color-1 {
   .orisha-card:hover .eleke {
     transform: none !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Product variant selector (ProductBuyBox) — size/option cards on the product
+   page. Dark + gold theme; each option shows the variant's photo, name and
+   price, with a clear gold selected-state + check so the customer always knows
+   exactly which variant (and price) they are buying.
+--------------------------------------------------------------------------- */
+.pyj-variant-select {
+  margin: 6px 0 24px;
+}
+.pyj-variant-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #a99d83;
+  margin-bottom: 12px;
+}
+.pyj-variant-chosen {
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  font-size: 13px;
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-variant-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+.pyj-variant-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 44px 10px 10px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--dk-surface, #18130d);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.28));
+  color: var(--dk-text, #cdc1a8);
+  transition: border-color 0.18s ease, background 0.18s ease,
+    box-shadow 0.18s ease, transform 0.12s ease;
+}
+.pyj-variant-btn:hover {
+  border-color: var(--pyj-gold, #cda557);
+  transform: translateY(-1px);
+}
+.pyj-variant-btn.is-selected {
+  border-color: var(--pyj-gold, #cda557);
+  background: rgba(205, 165, 87, 0.1);
+  box-shadow: inset 0 0 0 1px var(--pyj-gold, #cda557);
+}
+.pyj-variant-thumb {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  object-fit: cover;
+  background: #0d0a07;
+  border: 1px solid rgba(205, 165, 87, 0.2);
+}
+.pyj-variant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.pyj-variant-name {
+  font-size: 15px;
+  color: var(--dk-head, #ece2cd);
+}
+.pyj-variant-btn.is-selected .pyj-variant-name {
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-variant-price {
+  font-size: 13px;
+  color: #a99d83;
+}
+/* Round check on the right; only inked in when selected. */
+.pyj-variant-check {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(205, 165, 87, 0.4);
+}
+.pyj-variant-btn.is-selected .pyj-variant-check {
+  border-color: var(--pyj-gold, #cda557);
+  background: var(--pyj-gold, #cda557);
+}
+.pyj-variant-btn.is-selected .pyj-variant-check::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #0d0a07;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.pyj-variant-btn.is-soldout {
+  opacity: 0.55;
+}
+.pyj-variant-btn.is-soldout .pyj-variant-name {
+  text-decoration: line-through;
+}
+
+/* Custom-order / other-karat WhatsApp note under the product buy box. */
+.pyj-custom-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 11px 15px;
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px solid rgba(37, 211, 102, 0.35);
+  border-radius: 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dk-text, #cdc1a8);
+  text-decoration: none;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.pyj-custom-note:hover {
+  background: rgba(37, 211, 102, 0.14);
+  border-color: rgba(37, 211, 102, 0.6);
+  color: var(--dk-head, #ece2cd);
+}
+.pyj-custom-note .fa {
+  color: #25d366;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.pyj-custom-note strong {
+  color: var(--pyj-gold, #cda557);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   Home "Recién llegado / Novedades" showcase — the prominent section right
+   under the hero so new pieces are seen immediately. Raised panel, gold eyebrow
+   and a ceremonial heading to draw the eye.
+--------------------------------------------------------------------------- */
+.pyj-newarrivals {
+  position: relative;
+  padding: 58px 0 50px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(205, 165, 87, 0.08), transparent 60%),
+    var(--dk-raised, #1d160d);
+  border-top: 1px solid rgba(205, 165, 87, 0.18);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.18);
+}
+.pyj-newarrivals_head {
+  text-align: center;
+  margin-bottom: 34px;
+}
+.pyj-eyebrow {
+  display: inline-block;
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: var(--pyj-gold, #cda557);
+  margin-bottom: 6px;
+}
+.pyj-newarrivals_head h2 {
+  font-family: "Cinzel", serif;
+  font-size: 34px;
+  letter-spacing: 2px;
+  color: var(--dk-head, #ece2cd);
+  margin: 0 0 10px;
+}
+.pyj-newarrivals_head p {
+  font-size: 15px;
+  color: #a99d83;
+  margin: 0;
+}
+.pyj-newarrivals_cta {
+  text-align: center;
+  margin-top: 32px;
+}
+.pyj-btn-gold {
+  display: inline-block;
+  padding: 13px 40px;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  text-decoration: none;
+  transition: filter 0.18s ease, transform 0.12s ease;
+}
+.pyj-btn-gold:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  color: #0d0a07;
 }
