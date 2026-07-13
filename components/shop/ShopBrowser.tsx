@@ -6,7 +6,6 @@ import ProductCard from "@/components/product/ProductCard";
 import PurchaseButton from "@/components/product/PurchaseButton";
 import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
-import RatingStars from "@/components/ui/RatingStars";
 import { formatMoney } from "@/lib/utils";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import type { Product } from "@/lib/types";
@@ -14,16 +13,21 @@ import type { Product } from "@/lib/types";
 type ShopView = "grid" | "list";
 
 const SORTS = [
-  { value: "relevance", label: "Relevancia" },
+  { value: "relevance", label: "Organizado por tipo" },
   { value: "name-asc", label: "Nombre, A a Z" },
   { value: "name-desc", label: "Nombre, Z a A" },
   { value: "price-asc", label: "Precio, menor a mayor" },
   { value: "price-desc", label: "Precio, mayor a menor" },
-  { value: "rating", label: "Mejor valorados" },
 ];
 
 function priceNum(p: Product) {
   return Number(p.price.amount);
+}
+
+/** The piece's type category (first non-Orisha tag) — used to group the default
+ *  catalogue view so all rings / tools / pendants sit together, not scattered. */
+function primaryType(p: Product): string {
+  return p.tags.find((t) => !ORISHA_NAMES.includes(t)) ?? "￿";
 }
 
 function ListProductItem({ product }: { product: Product }) {
@@ -53,7 +57,6 @@ function ListProductItem({ product }: { product: Product }) {
                   {product.title}
                 </Link>
               </h6>
-              <RatingStars rating={product.rating} />
               <div className="price-box">
                 <span className="new-price">{formatMoney(product.price)}</span>
                 {product.compareAtPrice && (
@@ -136,6 +139,11 @@ export default function ShopBrowser({
     }
     const sorted = [...list];
     switch (sort) {
+      case "relevance":
+        // Group by piece type (stable) so same-type pieces cluster together
+        // and, within a type, the best-selling order from Shopify is kept.
+        sorted.sort((a, b) => primaryType(a).localeCompare(primaryType(b)));
+        break;
       case "name-asc":
         sorted.sort((a, b) => a.title.localeCompare(b.title));
         break;
@@ -148,9 +156,6 @@ export default function ShopBrowser({
       case "price-desc":
         sorted.sort((a, b) => priceNum(b) - priceNum(a));
         break;
-      case "rating":
-        sorted.sort((a, b) => b.rating - a.rating);
-        break;
     }
     return sorted;
   }, [products, selectedCats, priceMax, sort]);
@@ -161,19 +166,24 @@ export default function ShopBrowser({
     );
   }
 
-  const catCheckbox = (c: { name: string; count: number }) => (
-    <li key={c.name}>
-      <label style={{ cursor: "pointer", display: "block" }}>
-        <input
-          type="checkbox"
-          checked={selectedCats.includes(c.name)}
-          onChange={() => toggleCat(c.name)}
-          style={{ marginRight: 8 }}
-        />
-        {c.name} ({c.count})
-      </label>
-    </li>
-  );
+  // Compact toggle chip — replaces long checkbox lists so the filter panel is
+  // short and scannable (a single wrapping row per group) instead of a tall,
+  // scroll-heavy column.
+  const catChip = (c: { name: string; count: number }) => {
+    const on = selectedCats.includes(c.name);
+    return (
+      <button
+        key={c.name}
+        type="button"
+        className={`pyj-chip${on ? " is-on" : ""}`}
+        onClick={() => toggleCat(c.name)}
+        aria-pressed={on}
+      >
+        {c.name}
+        <span className="pyj-chip-count">{c.count}</span>
+      </button>
+    );
+  };
 
   const productAreaClass = sidebar
     ? `col-lg-9 ${sidebar === "left" ? "order-1 order-lg-2" : "order-1 order-lg-1"}`
@@ -222,7 +232,7 @@ export default function ShopBrowser({
         <div className="hiraola-categories_title">
           <h5>Tipo de pieza</h5>
         </div>
-        <ul className="sidebar-checkbox_list">{typeCats.map(catCheckbox)}</ul>
+        <div className="pyj-chips">{typeCats.map(catChip)}</div>
       </div>
 
       {/* Orisha filter */}
@@ -231,17 +241,18 @@ export default function ShopBrowser({
           <div className="hiraola-categories_title">
             <h5>Por Orisha</h5>
           </div>
-          <ul className="sidebar-checkbox_list">{orishaCats.map(catCheckbox)}</ul>
+          <div className="pyj-chips">{orishaCats.map(catChip)}</div>
         </div>
       )}
 
       {selectedCats.length > 0 && (
-        <a
+        <button
+          type="button"
+          className="pyj-clear-filters"
           onClick={() => setSelectedCats([])}
-          style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
         >
-          Limpiar filtros
-        </a>
+          Limpiar filtros ({selectedCats.length})
+        </button>
       )}
     </div>
   );

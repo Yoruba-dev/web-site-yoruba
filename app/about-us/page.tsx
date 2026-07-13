@@ -9,6 +9,22 @@ export const metadata: Metadata = {
   title: "Nosotros",
   description:
     "La historia de Pedro Yoruba Jewelry: joyería Yoruba hecha a mano en Miami, con devoción a los Orishas. Oro 10k, 14k y 18k por encargo — Idde, elekes, herramientas y atributos.",
+  keywords: [
+    "sobre pedro yoruba jewelry",
+    "joyería yoruba miami",
+    "taller de joyería santería",
+    "orfebre lucumí",
+    "joyas orishas hechas a mano",
+  ],
+  alternates: { canonical: "/about-us" },
+  openGraph: {
+    type: "website",
+    title: "Nosotros — Pedro Yoruba Jewelry",
+    description:
+      "Joyería Yoruba hecha a mano en Miami, con devoción a los Orishas. Oro 10k, 14k y 18k por encargo.",
+    url: "/about-us",
+    locale: "es_US",
+  },
 };
 
 const values = [

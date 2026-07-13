@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
-import RatingStars from "@/components/ui/RatingStars";
 import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
@@ -69,7 +68,6 @@ export default function ProductCard({ product }: { product: Product }) {
               </li>
             </ul>
           </div>
-          <RatingStars rating={product.rating} />
         </div>
       </div>
     </div>

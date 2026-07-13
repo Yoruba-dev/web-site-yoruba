@@ -35,7 +35,13 @@ function topCategories(products: Product[], limit: number): string[] {
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   const all = await getProducts(150);
-  const newArrivals = await getNewArrivals(16);
+  // "Novedades" blends the most recently added pieces with the best-valued
+  // (best-selling) ones: newest first, then popular pieces not already shown.
+  // `all` comes back in Shopify BEST_SELLING order, so its head = top pieces.
+  const recent = await getNewArrivals(12);
+  const recentIds = new Set(recent.map((p) => p.id));
+  const bestValued = all.filter((p) => !recentIds.has(p.id)).slice(0, 12);
+  const newArrivals = [...recent, ...bestValued].slice(0, 20);
   // "Herramientas de Santo" gets its own featured, religion-framed row up top, so
   // keep it out of the generic category rows below (avoid showing it twice).
   const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
@@ -54,7 +60,7 @@ export default async function HomePage() {
           <div className="pyj-newarrivals_head">
             <span className="pyj-eyebrow">✦ Recién llegado ✦</span>
             <h2>Novedades</h2>
-            <p>Las últimas piezas que llegaron al taller — véelas antes que nadie.</p>
+            <p>Lo más nuevo y lo más querido del taller — véelo antes que nadie.</p>
           </div>
           <ProductSlider products={newArrivals} autoplay />
           <div className="pyj-newarrivals_cta">

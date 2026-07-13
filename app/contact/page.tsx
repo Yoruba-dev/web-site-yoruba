@@ -8,6 +8,20 @@ import { SITE } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Contacto",
   description: `Contáctanos: WhatsApp, teléfono, correo y nuestra tienda en ${SITE.contact.address}. Joyería Yoruba hecha a mano en Miami.`,
+  keywords: [
+    "contacto pedro yoruba jewelry",
+    "joyería yoruba miami dirección",
+    "whatsapp joyería santería",
+    "joyas orishas por encargo miami",
+  ],
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    type: "website",
+    title: "Contacto — Pedro Yoruba Jewelry",
+    description: `WhatsApp, teléfono y nuestra tienda en ${SITE.contact.address}. Joyería Yoruba hecha a mano en Miami.`,
+    url: "/contact",
+    locale: "es_US",
+  },
 };
 
 export default function ContactPage() {

@@ -2085,6 +2085,13 @@ body.template-color-1 {
   .orisha-card:hover .eleke {
     transform: none !important;
   }
+  /* Touch devices: the image "add-actions" overlay is a hover reveal, so the
+     first tap only triggers :hover (showing it) and a second tap is needed to
+     open the product — the classic double-tap. Hide the overlay entirely on
+     touch so a single tap goes straight into the product page. */
+  .single_product .product-img .add-actions {
+    display: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -2292,4 +2299,475 @@ body.template-color-1 {
   filter: brightness(1.08);
   transform: translateY(-1px);
   color: #0d0a07;
+}
+
+/* ---------------------------------------------------------------------------
+   Equal-height product cards. Titles run 1–2 lines; reserving two lines (and
+   making the card a full-height flex column) keeps the price + rating aligned
+   across a row so the catalogue grid reads as an even, organised grid.
+--------------------------------------------------------------------------- */
+.shop-product-wrap.row {
+  align-items: stretch;
+}
+.shop-product-wrap [class*="col-"] {
+  display: flex;
+}
+.shop-product-wrap .slide-item {
+  width: 100%;
+}
+.single_product {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+.single_product .hiraola-product_content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.single_product .product-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+  line-height: 1.25;
+}
+
+/* ---------------------------------------------------------------------------
+   Shop filter chips — compact toggle pills that replace the long checkbox
+   lists, so the filter panel is short and professional (one wrapping row per
+   group) instead of a tall, scroll-heavy column.
+--------------------------------------------------------------------------- */
+.pyj-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pyj-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--dk-text, #cdc1a8);
+  background: var(--dk-surface, #18130d);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.28));
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.pyj-chip:hover {
+  border-color: var(--pyj-gold, #cda557);
+}
+.pyj-chip.is-on {
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  border-color: transparent;
+  font-weight: 600;
+}
+.pyj-chip-count {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.pyj-chip.is-on .pyj-chip-count {
+  opacity: 0.85;
+}
+.pyj-clear-filters {
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--pyj-gold, #cda557);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Even, consistent product cards — uniform border, background and inner spacing
+   so the whole grid reads as one tidy set regardless of the (varied) photos. */
+.shop-product-wrap .single_product,
+.pyj-newarrivals .single_product {
+  background: var(--dk-surface, #18130d);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.2));
+}
+.shop-product-wrap .single_product .hiraola-product_content,
+.pyj-newarrivals .single_product .hiraola-product_content {
+  padding: 16px 16px 18px;
+}
+/* Keep the price row + wishlist on one tidy baseline across every card. */
+.single_product .product-desc_info .price-box {
+  margin-top: auto;
+}
+
+/* ===========================================================================
+   LUXURY CART + COMPARE — card layouts that replace the old Excel-like tables.
+   =========================================================================== */
+.pyj-empty {
+  text-align: center;
+  padding: 70px 20px;
+}
+.pyj-empty p {
+  color: var(--dk-text, #cdc1a8);
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+/* ---- Cart ---- */
+.pyj-cart {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 30px;
+  align-items: start;
+  padding: 10px 0 60px;
+}
+.pyj-cart-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pyj-cart-line {
+  display: grid;
+  grid-template-columns: 92px 1fr auto auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, var(--dk-raised, #1d160d), var(--dk-surface, #18130d));
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.2));
+  border-radius: 14px;
+  transition: border-color 0.2s ease, transform 0.12s ease;
+}
+.pyj-cart-line:hover {
+  border-color: rgba(205, 165, 87, 0.45);
+}
+.pyj-cart-thumb {
+  display: block;
+}
+.pyj-cart-thumb img {
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(205, 165, 87, 0.25);
+}
+.pyj-cart-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.pyj-cart-title {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  color: var(--dk-head, #ece2cd) !important;
+  line-height: 1.35;
+  transition: color 0.18s ease;
+}
+.pyj-cart-title:hover {
+  color: var(--pyj-gold, #cda557) !important;
+}
+.pyj-cart-note {
+  font-size: 12px;
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-cart-unit {
+  font-size: 13px;
+  color: #a99d83;
+}
+/* Quantity stepper */
+.pyj-cart-qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.3));
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pyj-cart-qty button {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: none;
+  color: var(--pyj-gold, #cda557);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.pyj-cart-qty button:hover {
+  background: var(--pyj-gold, #cda557);
+  color: #0d0a07;
+}
+.pyj-cart-qty span {
+  min-width: 34px;
+  text-align: center;
+  color: var(--dk-head, #ece2cd);
+  font-size: 15px;
+}
+.pyj-cart-sub {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--pyj-gold, #cda557);
+  white-space: nowrap;
+  min-width: 92px;
+  text-align: right;
+}
+.pyj-cart-remove {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #8a7d63;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.pyj-cart-remove:hover {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.5);
+}
+/* Cart summary */
+.pyj-cart-summary {
+  position: sticky;
+  top: 20px;
+  padding: 26px 24px;
+  background: linear-gradient(180deg, var(--dk-raised, #1d160d), var(--dk-surface, #18130d));
+  border: 1px solid rgba(205, 165, 87, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+.pyj-cart-summary h2 {
+  font-family: "Cinzel", serif;
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--pyj-gold-light, #e4c89d);
+  margin: 0 0 18px;
+}
+.pyj-sum-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+  color: var(--dk-text, #cdc1a8);
+  font-size: 14px;
+}
+.pyj-sum-row.muted span:last-child {
+  color: #8a7d63;
+  font-size: 12.5px;
+}
+.pyj-sum-row.total {
+  border-bottom: none;
+  padding-top: 15px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dk-head, #ece2cd);
+}
+.pyj-sum-row.total span:last-child {
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-cart-checkout {
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+}
+.pyj-cart-continue {
+  display: block;
+  text-align: center;
+  margin-top: 14px;
+  color: #a99d83 !important;
+  font-size: 13px;
+  transition: color 0.18s ease;
+}
+.pyj-cart-continue:hover {
+  color: var(--pyj-gold, #cda557) !important;
+}
+.pyj-cart-trust {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: #8a7d63;
+  line-height: 1.6;
+}
+
+/* ---- Compare ---- */
+.pyj-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 10px 0 26px;
+}
+.pyj-compare-card {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: linear-gradient(180deg, var(--dk-raised, #1d160d), var(--dk-surface, #18130d));
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.22));
+  border-radius: 16px;
+  transition: border-color 0.2s ease, transform 0.14s ease;
+}
+.pyj-compare-card:hover {
+  border-color: rgba(205, 165, 87, 0.5);
+  transform: translateY(-2px);
+}
+.pyj-compare-remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(13, 10, 7, 0.7);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.3));
+  color: #a99d83;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.pyj-compare-remove:hover {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.6);
+}
+.pyj-compare-thumb img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(205, 165, 87, 0.2);
+}
+.pyj-compare-name {
+  margin: 0;
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.pyj-compare-name a {
+  color: var(--dk-head, #ece2cd) !important;
+  transition: color 0.18s ease;
+}
+.pyj-compare-name a:hover {
+  color: var(--pyj-gold, #cda557) !important;
+}
+.pyj-compare-price {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-compare-specs {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pyj-compare-specs > div {
+  border-top: 1px solid var(--dk-border, rgba(205, 165, 87, 0.16));
+  padding-top: 9px;
+}
+.pyj-compare-specs dt {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8a7d63;
+  margin-bottom: 3px;
+}
+.pyj-compare-specs dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--dk-text, #cdc1a8);
+  line-height: 1.5;
+}
+.pyj-compare-specs dd.in {
+  color: #2e9e63;
+}
+.pyj-compare-specs dd.out {
+  color: #c0392b;
+}
+.pyj-compare-specs dd.desc {
+  font-size: 12.5px;
+  color: #a99d83;
+}
+.pyj-compare-card .pyj-btn-gold {
+  margin-top: auto;
+  text-align: center;
+}
+.pyj-compare-actions {
+  padding-bottom: 60px;
+}
+.pyj-compare-clear {
+  padding: 11px 26px;
+  background: transparent;
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.35));
+  border-radius: 999px;
+  color: var(--dk-text, #cdc1a8);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.pyj-compare-clear:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+/* ---- Shop filter panel polish (cleaner, aligned, less boxy) ---- */
+.hiraola-sidebar_categories {
+  background: var(--dk-surface, #18130d);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+  border-radius: 14px;
+  padding: 18px 18px 20px;
+  margin-bottom: 16px;
+}
+.hiraola-categories_title h5 {
+  font-family: "Cinzel", serif;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #e4c89d);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+}
+
+/* Mobile stacking for cart + compare */
+@media (max-width: 991px) {
+  .pyj-cart {
+    grid-template-columns: 1fr;
+  }
+  .pyj-cart-summary {
+    position: static;
+  }
+}
+@media (max-width: 575px) {
+  .pyj-cart-line {
+    grid-template-columns: 70px 1fr auto;
+    grid-template-areas:
+      "thumb info remove"
+      "thumb qty sub";
+    gap: 10px 14px;
+  }
+  .pyj-cart-thumb {
+    grid-area: thumb;
+  }
+  .pyj-cart-thumb img {
+    width: 70px;
+    height: 70px;
+  }
+  .pyj-cart-info {
+    grid-area: info;
+  }
+  .pyj-cart-qty {
+    grid-area: qty;
+  }
+  .pyj-cart-sub {
+    grid-area: sub;
+    text-align: left;
+    min-width: 0;
+  }
+  .pyj-cart-remove {
+    grid-area: remove;
+    justify-self: end;
+  }
 }

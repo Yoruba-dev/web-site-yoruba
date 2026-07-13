@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
-import RatingStars from "@/components/ui/RatingStars";
 import ProductGallery from "./ProductGallery";
 import ProductBuyBox from "./ProductBuyBox";
 
@@ -51,7 +50,6 @@ export default function ProductShowcase({
             </h5>
           </div>
           <span className="reference">Referencia: {product.handle}</span>
-          <RatingStars rating={product.rating} />
           <ProductBuyBox
             product={product}
             showSale={showSale}
