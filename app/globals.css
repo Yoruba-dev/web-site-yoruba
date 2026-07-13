@@ -2928,3 +2928,84 @@ body.template-color-1 {
 .pyj-stars-icons { color: var(--pyj-gold, #cda557); font-size: 14px; letter-spacing: 2px; }
 .pyj-stars-icons .fa-star-o { color: rgba(205, 165, 87, 0.4); }
 .pyj-stars-count { font-size: 13px; color: #a99d83; }
+
+/* ===========================================================================
+   Error + 404 pages — branded, calm, with a clear way back into the store.
+   =========================================================================== */
+.pyj-error-page {
+  padding: 80px 0 100px;
+  text-align: center;
+}
+.pyj-error-page .pyj-eyebrow {
+  display: block;
+  font-size: 26px;
+  color: var(--pyj-gold, #cda557);
+  margin-bottom: 10px;
+}
+.pyj-error-page h1 {
+  font-family: "Cinzel", serif;
+  font-size: clamp(26px, 5vw, 36px);
+  color: var(--dk-head, #ece2cd);
+  margin: 0 0 14px;
+  letter-spacing: 0.5px;
+}
+.pyj-error-page p {
+  max-width: 52ch;
+  margin: 0 auto 30px;
+  color: #a99d83;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.pyj-error-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pyj-error-home {
+  color: #a99d83 !important;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  transition: color 0.18s ease;
+}
+.pyj-error-home:hover {
+  color: var(--pyj-gold, #cda557) !important;
+}
+.pyj-404-code {
+  font-family: "Cinzel", serif;
+  font-size: clamp(80px, 18vw, 150px);
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+
+/* Loading skeletons — subtle gold shimmer over the dark surface. */
+.pyj-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--dk-surface, #18130d);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.14));
+}
+.pyj-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(205, 165, 87, 0.1),
+    transparent
+  );
+  animation: pyj-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes pyj-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pyj-skel::after { animation: none; }
+}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ArticleBody from "@/components/blog/ArticleBody";
+import SafeImage from "@/components/ui/SafeImage";
 import JsonLd from "@/components/seo/JsonLd";
 import { getArticle, isPublished, publishedArticles } from "@/lib/blog-data";
 import { SITE } from "@/lib/site";
@@ -140,8 +141,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 {others.map((o) => (
                   <article className="pyj-blog-card" key={o.slug}>
                     <Link href={`/blog/${o.slug}`} className="pyj-blog-cover">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={o.cover} alt={o.title} />
+                      <SafeImage src={o.cover} alt={o.title} />
                       <span className="pyj-blog-tag">{o.category}</span>
                     </Link>
                     <div className="pyj-blog-body">

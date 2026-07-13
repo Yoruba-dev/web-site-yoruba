@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatMoney } from "@/lib/utils";
+import SafeImage from "@/components/ui/SafeImage";
 
 export default function CartView() {
   const { lines, subtotal, currencyCode, removeItem, updateQty } = useCart();
@@ -32,8 +33,7 @@ export default function CartView() {
             {lines.map((l) => (
               <div className="pyj-cart-line" key={l.id}>
                 <Link href={`/products/${l.productHandle}`} className="pyj-cart-thumb">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={l.image} alt={l.title} />
+                  <SafeImage src={l.image} alt={l.title} />
                 </Link>
 
                 <div className="pyj-cart-info">

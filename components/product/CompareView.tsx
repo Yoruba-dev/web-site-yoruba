@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCompare } from "@/lib/compare-context";
 import { formatMoney } from "@/lib/utils";
+import SafeImage from "@/components/ui/SafeImage";
 
 export default function CompareView() {
   const { items, remove, clear } = useCompare();
@@ -45,8 +46,7 @@ export default function CompareView() {
               </button>
 
               <Link href={`/products/${it.handle}`} className="pyj-compare-thumb">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={it.image} alt={it.title} />
+                <SafeImage src={it.image} alt={it.title} />
               </Link>
 
               <h5 className="pyj-compare-name">

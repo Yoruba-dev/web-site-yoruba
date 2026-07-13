@@ -8,6 +8,7 @@ import NewsletterPopup from "@/components/layout/NewsletterPopup";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import StructuredData from "@/components/layout/StructuredData";
 import Analytics from "@/components/layout/Analytics";
+import ErrorReporter from "@/components/layout/ErrorReporter";
 import { CartProvider } from "@/lib/cart-context";
 import { CompareProvider } from "@/lib/compare-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
@@ -92,6 +93,7 @@ export default function RootLayout({
         <Stylesheets />
         <StructuredData />
         <Analytics />
+        <ErrorReporter />
         <AccountProvider>
         <CartProvider>
           <WishlistProvider>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
+import SafeImage from "@/components/ui/SafeImage";
 import { publishedArticles } from "@/lib/blog-data";
 
 // Re-check every 6 hours so queued (future-dated) articles go live on their own
@@ -57,8 +58,7 @@ export default function BlogPage() {
             {articles.map((a) => (
               <article className="pyj-blog-card" key={a.slug}>
                 <Link href={`/blog/${a.slug}`} className="pyj-blog-cover">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.cover} alt={a.title} />
+                  <SafeImage src={a.cover} alt={a.title} />
                   <span className="pyj-blog-tag">{a.category}</span>
                 </Link>
                 <div className="pyj-blog-body">

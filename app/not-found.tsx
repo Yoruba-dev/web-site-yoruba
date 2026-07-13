@@ -1,20 +1,28 @@
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 
+// Shown for any unknown URL (and any notFound() call). Branded + in Spanish,
+// with clear ways back into the store instead of a dead end.
 export default function NotFound() {
   return (
     <>
-      <Breadcrumb title="404 Error" crumbs={[{ label: "404" }]} />
-      <div className="error-area" style={{ padding: "80px 0", textAlign: "center" }}>
+      <Breadcrumb title="Página no encontrada" crumbs={[{ label: "404" }]} />
+      <div className="pyj-error-page pyj-404">
         <div className="container">
-          <h1 style={{ fontSize: 90, lineHeight: 1, color: "#cda557" }}>404</h1>
-          <h2 style={{ marginTop: 10 }}>Oops! Page not found</h2>
-          <p style={{ color: "#888", margin: "16px 0 28px" }}>
-            The page you are looking for doesn&apos;t exist or has been moved.
+          <div className="pyj-404-code">404</div>
+          <h1>No encontramos esta página</h1>
+          <p>
+            El enlace puede estar roto o la página se movió. Pero tenemos muchas
+            piezas esperándote.
           </p>
-          <Link href="/" className="hiraola-btn">
-            Back to Home
-          </Link>
+          <div className="pyj-error-actions">
+            <Link href="/" className="pyj-btn-gold">
+              Volver al inicio
+            </Link>
+            <Link href="/shop-left-sidebar" className="pyj-error-home">
+              Ver la colección
+            </Link>
+          </div>
         </div>
       </div>
     </>

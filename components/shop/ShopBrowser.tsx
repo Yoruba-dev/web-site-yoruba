@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
+import SafeImage from "@/components/ui/SafeImage";
 import PurchaseButton from "@/components/product/PurchaseButton";
 import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
@@ -39,10 +40,8 @@ function ListProductItem({ product }: { product: Product }) {
         <div className="single_product">
           <div className="product-img">
             <Link href={href}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="primary-img" src={primary?.url} alt={product.title} />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SafeImage className="primary-img" src={primary?.url} alt={product.title} />
+              <SafeImage
                 className="secondary-img"
                 src={secondary?.url ?? primary?.url}
                 alt={product.title}

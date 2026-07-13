@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ProductImage } from "@/lib/types";
+import SafeImage from "@/components/ui/SafeImage";
 
 // "Tab Style" gallery with hover-zoom (replaces the template's jQuery
 // elevateZoom): clicking a thumbnail switches the main image; hovering the main
@@ -84,8 +85,7 @@ export default function ProductGallery({
         onMouseLeave={() => setZoom(false)}
         onMouseMove={onMove}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <SafeImage
           className="zoompro"
           src={currentUrl}
           alt={currentAlt}
@@ -120,8 +120,7 @@ export default function ProductGallery({
               }}
               style={{ cursor: "pointer" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt={title} />
+              <SafeImage src={img.url} alt={title} />
             </a>
           ))}
         </div>

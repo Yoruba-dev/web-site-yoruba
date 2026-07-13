@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
+import SafeImage from "@/components/ui/SafeImage";
 import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
@@ -14,14 +15,12 @@ export default function ProductCard({ product }: { product: Product }) {
     <div className="single_product">
       <div className="product-img">
         <Link href={href}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <SafeImage
             className="primary-img"
             src={primary?.url}
             alt={primary?.altText ?? product.title}
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <SafeImage
             className="secondary-img"
             src={secondary?.url ?? primary?.url}
             alt={secondary?.altText ?? product.title}
