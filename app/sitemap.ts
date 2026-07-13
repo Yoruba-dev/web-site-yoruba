@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getProducts } from "@/lib/products";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedroyorubajewelry.netlify.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

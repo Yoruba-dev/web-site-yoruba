@@ -1,0 +1,129 @@
+{% comment %}
+  Pedro Yoruba Jewelry — Confirmación de envío
+  Pegar en: Shopify Admin → Configuración → Notificaciones → Notificaciones de
+  clientes → Confirmación de envío → Editar código (reemplazar TODO el HTML).
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tu pedido {{ order_name }} va en camino</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f3ede1;">
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+    ✦ Tu pedido {{ order_name }} ya va en camino{% if fulfillment.tracking_numbers.size > 0 %} — guía {{ fulfillment.tracking_numbers.first }}{% endif %}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3ede1;">
+    <tr><td align="center" style="padding:24px 12px;">
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:100%;">
+
+        <!-- Cabecera negra con logo -->
+        <tr><td align="center" style="background-color:#0d0a07; padding:30px 20px 22px;">
+          <img src="https://pedrojewelryyoruba.com/assets/images/logo/pedro-yoruba-transparent.png" width="170" alt="Pedro Yoruba Jewelry" style="display:block; max-width:170px;">
+          <p style="margin:12px 0 0; font-family:Georgia,'Times New Roman',serif; font-style:italic; font-size:13px; color:#cda557;">Donde la fe se lleva puesta</p>
+        </td></tr>
+
+        <!-- Franja Eleke -->
+        <tr><td>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td height="5" width="14%" style="background-color:#f6efe2; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="14%" style="background-color:#cda557; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="14%" style="background-color:#c0392b; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="15%" style="background-color:#1f5fa8; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="14%" style="background-color:#2e7d4f; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="14%" style="background-color:#7b241c; font-size:0; line-height:0;">&nbsp;</td>
+            <td height="5" width="15%" style="background-color:#000000; font-size:0; line-height:0;">&nbsp;</td>
+          </tr></table>
+        </td></tr>
+
+        <!-- Cuerpo -->
+        <tr><td style="background-color:#ffffff; padding:38px 40px 30px;">
+          <p style="margin:0 0 6px; font-family:Georgia,serif; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#98662e;">Pedido {{ order_name }}</p>
+          <h1 style="margin:0 0 16px; font-family:Georgia,'Times New Roman',serif; font-weight:normal; font-size:28px; color:#0d0a07;">{{ customer.first_name | default: "Hola" }}, tu pieza va en camino ✦</h1>
+          <p style="margin:0 0 26px; font-family:Georgia,serif; font-size:15px; line-height:1.7; color:#4a4235;">
+            Tu pedido salió de nuestro taller en Miami y ya está en manos de la
+            paquetería. Puedes seguirlo en todo momento con el botón de abajo.
+          </p>
+
+          {% if fulfillment.tracking_numbers.size > 0 %}
+          <!-- Datos de tracking -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px; background-color:#faf6ec; border:1px solid #e8ddc6;"><tr>
+            <td style="padding:18px 20px;">
+              <p style="margin:0 0 4px; font-family:Georgia,serif; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#98662e;">{% if fulfillment.tracking_company %}{{ fulfillment.tracking_company }}{% else %}Número de guía{% endif %}</p>
+              <p style="margin:0; font-family:Georgia,serif; font-size:18px; color:#0d0a07; letter-spacing:1px;">{{ fulfillment.tracking_numbers | join: ", " }}</p>
+            </td>
+          </tr></table>
+          {% endif %}
+
+          <!-- Botón -->
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 34px;"><tr>
+            <td style="background-color:#cda557;">
+              <a href="{% if fulfillment.tracking_url %}{{ fulfillment.tracking_url }}{% else %}{{ order_status_url }}{% endif %}" target="_blank" style="display:inline-block; padding:14px 38px; font-family:Georgia,serif; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#0d0a07; text-decoration:none; font-weight:bold;">Seguir mi envío</a>
+            </td>
+          </tr></table>
+
+          <!-- Línea divisoria -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td height="1" style="background-color:#e8ddc6; font-size:0; line-height:0;">&nbsp;</td>
+          </tr></table>
+
+          <!-- Artículos del envío -->
+          <p style="margin:26px 0 14px; font-family:Georgia,serif; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#98662e;">En este envío</p>
+          {% for line in fulfillment.fulfillment_line_items %}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;"><tr>
+            <td width="72" valign="top">
+              {% if line.line_item.image %}
+              <img src="{{ line.line_item.image | img_url: 'compact_cropped' }}" width="64" height="64" alt="{{ line.line_item.title }}" style="display:block; width:64px; height:64px; border:1px solid #e8ddc6;">
+              {% endif %}
+            </td>
+            <td valign="middle" style="padding-left:14px;">
+              <p style="margin:0; font-family:Georgia,serif; font-size:15px; color:#0d0a07;">{{ line.line_item.title }}</p>
+              <p style="margin:4px 0 0; font-family:Georgia,serif; font-size:13px; color:#8a7d63;">Cantidad: {{ line.quantity }}</p>
+            </td>
+          </tr></table>
+          {% endfor %}
+
+          {% if shipping_address %}
+          <p style="margin:20px 0 8px; font-family:Georgia,serif; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#98662e;">Va hacia</p>
+          <p style="margin:0; font-family:Georgia,serif; font-size:14px; line-height:1.6; color:#4a4235;">
+            {{ shipping_address.name }}<br>
+            {{ shipping_address.address1 }}{% if shipping_address.address2 != blank %}, {{ shipping_address.address2 }}{% endif %}<br>
+            {{ shipping_address.city }}, {{ shipping_address.province_code }} {{ shipping_address.zip }}
+          </p>
+          {% endif %}
+
+          <!-- Cuidado de la pieza -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:30px; background-color:#faf6ec; border:1px solid #e8ddc6;"><tr>
+            <td style="padding:16px 20px; font-family:Georgia,serif; font-size:13px; line-height:1.6; color:#4a4235;">
+              ✦ &nbsp;<strong style="color:#98662e;">Al recibir tu pieza:</strong> guárdala en su estuche cuando no la lleves y evita perfumes y químicos directos. Cualquier ajuste o reparación, escríbenos — tienes garantía de por vida.
+            </td>
+          </tr></table>
+        </td></tr>
+
+        <!-- Pie negro -->
+        <tr><td style="background-color:#0d0a07; padding:30px 40px;" align="center">
+          <p style="margin:0 0 6px; font-family:Georgia,serif; font-size:16px; color:#cda557;">Pedro Yoruba Jewelry</p>
+          <p style="margin:0 0 14px; font-family:Georgia,serif; font-size:12px; line-height:1.7; color:#8a7d63;">
+            11865 SW 26th St. c-41, Miami, FL 33175<br>
+            Lun–Vie 10 AM–5 PM · Sáb 10 AM–4 PM
+          </p>
+          <p style="margin:0 0 14px;">
+            <a href="https://wa.me/13055228490" style="font-family:Georgia,serif; font-size:13px; color:#cda557; text-decoration:none;">WhatsApp (305) 522-8490</a>
+          </p>
+          <p style="margin:0; font-family:Georgia,serif; font-size:12px;">
+            <a href="https://www.instagram.com/pedroyorubajewelry/" style="color:#8a7d63; text-decoration:none;">Instagram</a>
+            &nbsp;·&nbsp;
+            <a href="https://www.tiktok.com/@pedro_joyero_olofin" style="color:#8a7d63; text-decoration:none;">TikTok</a>
+            &nbsp;·&nbsp;
+            <a href="https://pedrojewelryyoruba.com" style="color:#8a7d63; text-decoration:none;">pedrojewelryyoruba.com</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

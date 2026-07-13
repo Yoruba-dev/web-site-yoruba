@@ -52,7 +52,33 @@ export const metadata: Metadata = {
     description: SITE.tagline,
     images: ["/og-image.png"],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  // Google Search Console ownership check — set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+  // in Netlify once the property is created (only needed for the meta-tag method).
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && {
+    verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION },
+  }),
+  applicationName: SITE.name,
+  authors: [{ name: SITE.name, url: siteUrl }],
+  creator: SITE.name,
+  publisher: SITE.name,
+  category: "shopping",
+  formatDetection: { telephone: true, email: true, address: true },
+};
+
+// Brand color for the browser UI around the page (mobile address bar, etc.).
+export const viewport = {
+  themeColor: "#0d0a07",
 };
 
 export default function RootLayout({

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import FaqAccordion from "@/components/faq/FaqAccordion";
+import JsonLd from "@/components/seo/JsonLd";
+import { FAQS } from "@/lib/faq-data";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
@@ -9,8 +11,21 @@ export const metadata: Metadata = {
 };
 
 export default function FaqPage() {
+  // schema.org FAQPage — makes the Q&A eligible for rich results and lets AI
+  // answer engines (ChatGPT, Perplexity, AI Overviews) quote answers directly.
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.answer },
+    })),
+  };
+
   return (
     <>
+      <JsonLd data={faqSchema} />
       <Breadcrumb
         title="Preguntas frecuentes"
         crumbs={[{ label: "Preguntas frecuentes" }]}

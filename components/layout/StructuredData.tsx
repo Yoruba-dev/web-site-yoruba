@@ -1,14 +1,18 @@
 import { SITE } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedroyorubajewelry.netlify.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
-// schema.org JewelryStore / LocalBusiness — helps Google show the business with
-// its address, hours, phone and social profiles in search + maps.
+// Global schema.org graph — JewelryStore (LocalBusiness) + WebSite. Helps
+// Google show the business with address/hours/phone in search + maps, and
+// gives AI answer engines (ChatGPT, Perplexity, AI Overviews) a machine-
+// readable identity for the brand. Product/FAQ/Breadcrumb schemas live on
+// their own pages; this file is only the site-wide identity.
 export default function StructuredData() {
-  const data = {
-    "@context": "https://schema.org",
+  const store = {
     "@type": "JewelryStore",
+    "@id": `${siteUrl}/#store`,
     name: SITE.name,
     description: SITE.tagline,
     url: siteUrl,
@@ -17,6 +21,11 @@ export default function StructuredData() {
     telephone: SITE.contact.phoneTel,
     email: SITE.contact.email,
     priceRange: "$$",
+    currenciesAccepted: "USD",
+    paymentAccepted: "Visa, MasterCard, American Express, Discover, Debit, NFC",
+    knowsLanguage: ["es", "en"],
+    keywords:
+      "joyería yoruba, santería, orishas, idde de orula, elekes, herramientas de santo, oro 10k 14k 18k, joyería miami",
     address: {
       "@type": "PostalAddress",
       streetAddress: "11865 SW 26th St. c-41",
@@ -48,9 +57,25 @@ export default function StructuredData() {
         closes: "16:00",
       },
     ],
+    makesOffer: {
+      "@type": "Offer",
+      itemOffered: {
+        "@type": "Service",
+        name: "Joyería por encargo para los Orishas",
+        description:
+          "Piezas únicas hechas a mano en oro 10k, 14k y 18k: Idde, elekes, herramientas y atributos de cada Oricha, a la medida.",
+      },
+    },
   };
 
-  // Content is fully static (site config only) with no HTML-special characters,
-  // so rendering the JSON as the <script> child is safe (no dangerouslySetInnerHTML).
-  return <script type="application/ld+json">{JSON.stringify(data)}</script>;
+  const website = {
+    "@type": "WebSite",
+    "@id": `${siteUrl}/#website`,
+    url: siteUrl,
+    name: SITE.name,
+    inLanguage: "es",
+    publisher: { "@id": `${siteUrl}/#store` },
+  };
+
+  return <JsonLd data={{ "@context": "https://schema.org", "@graph": [store, website] }} />;
 }
