@@ -2771,3 +2771,149 @@ body.template-color-1 {
     justify-self: end;
   }
 }
+
+/* ===========================================================================
+   DIARIO (blog) — listing grid + article reading view. Dark + gold, serif body
+   for a calm, editorial read that matches the brand.
+   =========================================================================== */
+.pyj-blog { padding: 44px 0 70px; }
+.pyj-blog-intro { text-align: center; margin-bottom: 40px; }
+.pyj-blog-intro h1 {
+  font-family: "Cinzel", serif;
+  font-size: clamp(30px, 5vw, 40px);
+  color: var(--dk-head, #ece2cd);
+  margin: 6px 0 12px;
+  letter-spacing: 1px;
+}
+.pyj-blog-intro p { color: #a99d83; max-width: 56ch; margin: 0 auto; }
+
+.pyj-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 26px;
+}
+.pyj-blog-card {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--dk-raised, #1d160d), var(--dk-surface, #18130d));
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.2));
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.14s ease;
+}
+.pyj-blog-card:hover {
+  border-color: rgba(205, 165, 87, 0.5);
+  transform: translateY(-3px);
+}
+.pyj-blog-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+.pyj-blog-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.pyj-blog-card:hover .pyj-blog-cover img { transform: scale(1.05); }
+.pyj-blog-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 60%, #98662e);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.pyj-blog-body { padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.pyj-blog-meta { font-size: 12px; letter-spacing: 0.04em; color: #8a7d63; }
+.pyj-blog-body h2 { margin: 0; font-size: 18px; line-height: 1.35; }
+.pyj-blog-body h2 a {
+  font-family: "Cinzel", serif;
+  color: var(--dk-head, #ece2cd) !important;
+  transition: color 0.18s ease;
+}
+.pyj-blog-body h2 a:hover { color: var(--pyj-gold, #cda557) !important; }
+.pyj-blog-body p { margin: 0; font-size: 14px; color: var(--dk-text, #cdc1a8); line-height: 1.6; }
+.pyj-blog-more {
+  margin-top: auto;
+  color: var(--pyj-gold, #cda557) !important;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.pyj-blog-more:hover { color: var(--pyj-gold-light, #e4c89d) !important; }
+
+/* Article reading view */
+.pyj-article-wrap { padding: 40px 0 70px; }
+.pyj-article {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.pyj-article-meta {
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #cda557);
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+}
+.pyj-article-body {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.75;
+  color: var(--dk-text, #cdc1a8);
+}
+.pyj-article-body p { margin: 0 0 22px; }
+.pyj-article-body h2 {
+  font-family: "Cinzel", serif;
+  font-size: 23px;
+  color: var(--dk-head, #ece2cd);
+  margin: 36px 0 14px;
+  letter-spacing: 0.5px;
+}
+.pyj-article-body ul { margin: 0 0 22px; padding-left: 4px; list-style: none; }
+.pyj-article-body li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 12px;
+}
+.pyj-article-body li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  color: var(--pyj-gold, #cda557);
+  font-size: 14px;
+  top: 4px;
+}
+.pyj-article-body strong { color: var(--dk-head, #ece2cd); font-weight: 600; }
+.pyj-article-body a {
+  color: var(--pyj-gold, #cda557);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.4);
+}
+.pyj-article-body a:hover { color: var(--pyj-gold-light, #e4c89d); }
+.pyj-article-cta {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+  text-align: center;
+}
+.pyj-article-more {
+  max-width: 1100px;
+  margin: 60px auto 0;
+  padding-top: 40px;
+  border-top: 1px solid var(--dk-border, rgba(205, 165, 87, 0.18));
+}
+.pyj-article-more h3 {
+  font-family: "Cinzel", serif;
+  text-align: center;
+  color: var(--pyj-gold-light, #e4c89d);
+  font-size: 20px;
+  letter-spacing: 1px;
+  margin: 0 0 28px;
+}

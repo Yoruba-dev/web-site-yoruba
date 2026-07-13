@@ -36,6 +36,7 @@ export const MAIN_MENU: MenuItem[] = [
       { label: "Preguntas frecuentes", href: "/faq" },
     ],
   },
+  { label: "Diario", href: "/blog" },
   { label: "Nosotros", href: "/about-us" },
   { label: "Contacto", href: "/contact" },
 ];
