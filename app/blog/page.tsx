@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
-import { ARTICLES } from "@/lib/blog-data";
+import { publishedArticles } from "@/lib/blog-data";
+
+// Re-check every 6 hours so queued (future-dated) articles go live on their own
+// once their publish date arrives — no manual rebuild needed.
+export const revalidate = 21600;
 
 export const metadata: Metadata = {
   title: "Diario — Tradición Yoruba y guía de joyería",
@@ -34,6 +38,7 @@ function fmtDate(iso: string): string {
 }
 
 export default function BlogPage() {
+  const articles = publishedArticles();
   return (
     <>
       <Breadcrumb title="Diario" crumbs={[{ label: "Diario" }]} />
@@ -49,7 +54,7 @@ export default function BlogPage() {
           </div>
 
           <div className="pyj-blog-grid">
-            {ARTICLES.map((a) => (
+            {articles.map((a) => (
               <article className="pyj-blog-card" key={a.slug}>
                 <Link href={`/blog/${a.slug}`} className="pyj-blog-cover">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

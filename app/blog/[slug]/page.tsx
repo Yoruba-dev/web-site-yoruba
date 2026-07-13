@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ArticleBody from "@/components/blog/ArticleBody";
 import JsonLd from "@/components/seo/JsonLd";
-import { ARTICLES, getArticle } from "@/lib/blog-data";
+import { getArticle, isPublished, publishedArticles } from "@/lib/blog-data";
 import { SITE } from "@/lib/site";
 
 const siteUrl =
@@ -12,9 +12,13 @@ const siteUrl =
 
 type Params = Promise<{ slug: string }>;
 
-// Pre-render every article at build time.
+// Re-check every 6 hours so a queued article becomes reachable on its date.
+export const revalidate = 21600;
+
+// Pre-render the articles that are already live; future-dated ones render
+// on-demand once their date passes (and 404 before it — see below).
 export function generateStaticParams() {
-  return ARTICLES.map((a) => ({ slug: a.slug }));
+  return publishedArticles().map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({
@@ -61,7 +65,8 @@ function fmtDate(iso: string): string {
 export default async function ArticlePage({ params }: { params: Params }) {
   const { slug } = await params;
   const a = getArticle(slug);
-  if (!a) notFound();
+  // Unknown slug, or a queued article whose publish date hasn't arrived yet.
+  if (!a || !isPublished(a)) notFound();
 
   const url = `${siteUrl}/blog/${a.slug}`;
   const articleSchema = {
@@ -96,7 +101,9 @@ export default async function ArticlePage({ params }: { params: Params }) {
     ],
   };
 
-  const others = ARTICLES.filter((x) => x.slug !== a.slug).slice(0, 3);
+  const others = publishedArticles()
+    .filter((x) => x.slug !== a.slug)
+    .slice(0, 3);
 
   return (
     <>

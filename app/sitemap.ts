@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getProducts } from "@/lib/products";
-import { ARTICLES } from "@/lib/blog-data";
+import { publishedArticles } from "@/lib/blog-data";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
@@ -17,8 +17,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/faq", priority: 0.6 },
   ];
 
-  // Blog articles — long-tail SEO landing pages.
-  const blogEntries: MetadataRoute.Sitemap = ARTICLES.map((a) => ({
+  // Blog articles — long-tail SEO landing pages (only the ones already live).
+  const blogEntries: MetadataRoute.Sitemap = publishedArticles().map((a) => ({
     url: `${siteUrl}/blog/${a.slug}`,
     lastModified: new Date(a.date + "T12:00:00"),
     changeFrequency: "monthly",
