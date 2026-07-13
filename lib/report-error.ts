@@ -5,8 +5,6 @@
 // `window` (e.g. Sentry's global), forwards to it. When the Sentry DSN is
 // configured we replace the body here with `Sentry.captureException`.
 
-import * as Sentry from "@sentry/nextjs";
-
 type Reporter = (error: unknown, context?: Record<string, unknown>) => void;
 
 interface WindowWithReporter extends Window {
@@ -21,13 +19,6 @@ export function reportError(
   // Always surface it in the console/server logs.
   // eslint-disable-next-line no-console
   console.error("[app-error]", error, context ?? "");
-
-  // Send to Sentry — a no-op until a DSN is configured (see instrumentation*).
-  try {
-    Sentry.captureException(error, context ? { extra: context } : undefined);
-  } catch {
-    /* never let reporting throw */
-  }
 
   if (typeof window === "undefined") return;
   const w = window as WindowWithReporter;
