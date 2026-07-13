@@ -71,9 +71,12 @@ const PRESETS = {
 export default function ProductSlider({
   products,
   className = "hiraola-product_slider",
+  autoplay = false,
 }: {
   products: Product[];
   className?: keyof typeof PRESETS;
+  /** Auto-rotate the carousel (used by the home "Novedades" showcase). */
+  autoplay?: boolean;
 }) {
   // react-slick picks slidesToShow from window.innerWidth but only re-reads it on a
   // resize event. After SSR + hydration on a phone (where no resize ever fires) it can
@@ -90,8 +93,12 @@ export default function ProductSlider({
     };
   }, []);
 
+  const settings: Settings = autoplay
+    ? { ...PRESETS[className], autoplay: true, autoplaySpeed: 3500, pauseOnHover: true }
+    : PRESETS[className];
+
   return (
-    <Slider {...PRESETS[className]} className={className}>
+    <Slider {...settings} className={className}>
       {products.map((product) => (
         <div className="slide-item" key={product.id}>
           <ProductCard product={product} />

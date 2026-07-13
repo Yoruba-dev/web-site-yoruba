@@ -62,8 +62,20 @@ export default async function ProductPage({ params }: { params: Params }) {
   const product = await getProductByHandle(handle);
   if (!product) notFound();
 
-  const all = await getProducts();
-  const related = all.filter((p) => p.handle !== handle).slice(0, 8);
+  // Truly related products: rank the catalogue by how many tags (category +
+  // Orisha) each piece shares with this one, most-shared first. If there aren't
+  // enough real matches, pad with other pieces so the slider is never empty.
+  const all = await getProducts(250);
+  const others = all.filter((p) => p.handle !== handle);
+  const shared = (p: (typeof others)[number]) =>
+    p.tags.filter((t) => product.tags.includes(t)).length;
+  const matched = others
+    .filter((p) => shared(p) > 0)
+    .sort((a, b) => shared(b) - shared(a));
+  const related = [
+    ...matched,
+    ...others.filter((p) => !matched.includes(p)),
+  ].slice(0, 8);
 
   // Breadcrumb banner = the image of the category this piece belongs to
   // (falls back to the piece's own photo).

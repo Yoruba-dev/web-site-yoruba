@@ -6,7 +6,6 @@ import HeroSlider from "@/components/home/HeroSlider";
 import ProductSlider from "@/components/product/ProductSlider";
 import BannerGrid from "@/components/home/BannerGrid";
 import StaticBanner from "@/components/home/StaticBanner";
-import OrishaShowcase from "@/components/home/OrishaShowcase";
 import CategorySection from "@/components/home/CategorySection";
 
 const SHIPPING = [
@@ -36,7 +35,7 @@ function topCategories(products: Product[], limit: number): string[] {
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   const all = await getProducts(150);
-  const newArrivals = await getNewArrivals(10);
+  const newArrivals = await getNewArrivals(16);
   // "Herramientas de Santo" gets its own featured, religion-framed row up top, so
   // keep it out of the generic category rows below (avoid showing it twice).
   const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
@@ -57,7 +56,7 @@ export default async function HomePage() {
             <h2>Novedades</h2>
             <p>Las últimas piezas que llegaron al taller — véelas antes que nadie.</p>
           </div>
-          <ProductSlider products={newArrivals} />
+          <ProductSlider products={newArrivals} autoplay />
           <div className="pyj-newarrivals_cta">
             <a href="/shop-left-sidebar" className="pyj-btn-gold">
               Ver toda la colección
@@ -89,9 +88,6 @@ export default async function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Shop by Orisha — Santería identity section */}
-      <OrishaShowcase />
 
       {/* Herramientas de Santo — featured, religion-focused (specialty of the house) */}
       <CategorySection

@@ -6,10 +6,13 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: "€",
 };
 
-/** Format money the way the template does: "£120.80". */
+/** Format money with a thousands separator: "$11,800.00". */
 export function formatMoney(money: Money): string {
   const symbol = CURRENCY_SYMBOLS[money.currencyCode] ?? "";
-  const value = Number(money.amount).toFixed(2);
+  const value = Number(money.amount).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   return `${symbol}${value}`;
 }
 

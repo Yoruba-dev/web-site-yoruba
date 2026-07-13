@@ -176,7 +176,7 @@ export default function ProductBuyBox({
             ) : (
               <a
                 className="qty-cart_btn"
-                href={whatsappConsultUrl(product)}
+                href={whatsappConsultUrl(product, variant)}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -197,7 +197,7 @@ export default function ProductBuyBox({
           order — the 14k upgrade is handled by WhatsApp consultation. */}
       <a
         className="pyj-custom-note"
-        href={whatsappConsultUrl(product)}
+        href={whatsappConsultUrl(product, variant, { karat: true })}
         target="_blank"
         rel="noreferrer"
       >

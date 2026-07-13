@@ -1,4 +1,9 @@
 import { SITE } from "./site";
+import type { Money } from "./types";
+import { formatMoney } from "./utils";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 // ---------------------------------------------------------------------------
 // Commerce / purchase policy — the single source of truth for HOW a piece can
@@ -61,14 +66,36 @@ export function canBuyDirectly(product: {
 export const CONSULT_LABEL = "Consultar por WhatsApp";
 
 /**
- * Builds the WhatsApp consultation link. Reuses the brand number from `SITE`
- * (never hardcoded here) and prefills a message naming the piece, so the
- * workshop knows exactly what the customer is asking for.
+ * Builds the WhatsApp order/consultation link. Reuses the brand number from
+ * `SITE` (never hardcoded here) and prefills a message that is clearly headed as
+ * a *special order placed from the website*, and — when a variant is selected —
+ * carries the exact chosen size/measurements, price and a link back to the
+ * piece, so the workshop receives an unambiguous, ready-to-process order.
+ *
+ * Backward compatible: passing just `{ title }` (e.g. from a product card or
+ * wishlist row) still produces a valid message.
  */
-export function whatsappConsultUrl(product?: { title?: string }): string {
-  const message = product?.title
-    ? `Hola, me interesa esta pieza por encargo: "${product.title}". ¿Me pueden ayudar con los detalles y el precio?`
-    : "Hola, quiero consultar por una pieza por encargo.";
+export function whatsappConsultUrl(
+  product?: { title?: string; handle?: string; price?: Money },
+  variant?: { title?: string; price?: Money },
+  opts?: { karat?: boolean },
+): string {
+  const price = variant?.price ?? product?.price;
+  const lines: string[] = [
+    "Hola 👋 Quiero hacer un *pedido especial desde la web* de Pedro Yoruba Jewelry.",
+    "",
+  ];
+  if (product?.title) lines.push(`📿 Pieza: ${product.title}`);
+  if (variant?.title) lines.push(`📏 Tamaño / medida: ${variant.title}`);
+  if (price) lines.push(`💰 Precio: ${formatMoney(price)}`);
+  if (product?.handle) lines.push(`🔗 ${SITE_URL}/products/${product.handle}`);
+  if (opts?.karat) {
+    lines.push("");
+    lines.push("Me gustaría en oro de *14k / 18k* (por encargo).");
+  }
+  lines.push("");
+  lines.push("¿Me ayudan a coordinar los detalles del pedido?");
+  const message = lines.join("\n");
   const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
   return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
 }
