@@ -27,7 +27,7 @@ export default function WholesaleBanner() {
               Escríbenos por WhatsApp
             </a>
             <Link className="pyj-wholesale_link" href="/mayoreo">
-              Ver programa al por mayor →
+              Ver programa mayorista →
             </Link>
           </div>
         </div>

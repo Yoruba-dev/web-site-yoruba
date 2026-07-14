@@ -42,7 +42,7 @@ export default function AnnouncementBar() {
           target="_blank"
           rel="noreferrer"
         >
-          <span className="pyj-annbar_tag">Al por mayor</span>
+          <span className="pyj-annbar_tag">Mayorista</span>
           <span>
             Surtimos a <strong>botánicas y tiendas</strong> — escríbenos por
             WhatsApp para catálogo y precios de mayorista
