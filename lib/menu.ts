@@ -18,6 +18,8 @@ export interface MenuItem {
   href: string;
   dropdown?: MenuLink[];
   megaColumns?: MenuColumn[];
+  /** Render this item accented in gold (used for the Mayoreo B2B link). */
+  highlight?: boolean;
 }
 
 export const MAIN_MENU: MenuItem[] = [

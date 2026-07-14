@@ -270,3 +270,72 @@ export async function shopifyGetProductByHandle(
   );
   return data.product ? reshape(data.product) : null;
 }
+
+// ---------------------------------------------------------------------------
+// Collections — power the home "Categorías de Productos" circles and the
+// /collections/[handle] listing pages. Read live from the Storefront API.
+// ---------------------------------------------------------------------------
+export interface ShopifyCollectionSummary {
+  handle: string;
+  title: string;
+  image: string | null;
+}
+
+export async function shopifyGetCollections(
+  first = 30,
+): Promise<ShopifyCollectionSummary[]> {
+  const data = await shopifyFetch<{
+    collections: {
+      edges: {
+        node: { handle: string; title: string; image: { url: string } | null };
+      }[];
+    };
+  }>(
+    /* GraphQL */ `
+      query Collections($first: Int!) {
+        collections(first: $first, sortKey: TITLE) {
+          edges { node { handle title image { url } } }
+        }
+      }
+    `,
+    { first },
+  );
+  return data.collections.edges.map((e) => ({
+    handle: e.node.handle,
+    title: e.node.title,
+    image: e.node.image?.url ?? null,
+  }));
+}
+
+export async function shopifyGetCollectionProducts(
+  handle: string,
+  first = 48,
+): Promise<{ title: string; description: string; products: Product[] } | null> {
+  const data = await shopifyFetch<{
+    collection: {
+      title: string;
+      description: string;
+      products: { edges: { node: ShopifyProduct }[] };
+    } | null;
+  }>(
+    /* GraphQL */ `
+      ${PRODUCT_FRAGMENT}
+      query CollectionProducts($handle: String!, $first: Int!) {
+        collection(handle: $handle) {
+          title
+          description
+          products(first: $first, sortKey: BEST_SELLING) {
+            edges { node { ...ProductCard } }
+          }
+        }
+      }
+    `,
+    { handle, first },
+  );
+  if (!data.collection) return null;
+  return {
+    title: data.collection.title,
+    description: data.collection.description,
+    products: data.collection.products.edges.map((e) => reshape(e.node)),
+  };
+}

@@ -36,7 +36,11 @@ export default function Footer() {
                     </div>
                     <div className="footer-widgets">
                       <ul>
-                        <li><Link href="/shop">Prices drop</Link></li>
+                        <li>
+                          <Link href="/mayoreo" className="pyj-nav-mayoreo">
+                            Mayoreo / Botánicas
+                          </Link>
+                        </li>
                         <li><Link href="/shop">New products</Link></li>
                         <li><Link href="/shop">Best sales</Link></li>
                         <li><Link href="/contact">Contact us</Link></li>
@@ -117,7 +121,7 @@ export default function Footer() {
                 <div className="footer-links">
                   <ul>
                     <li><Link href="/shop">Online Shopping</Link></li>
-                    <li><Link href="/shop">Promotions</Link></li>
+                    <li><Link href="/mayoreo">Mayoreo</Link></li>
                     <li><Link href="/my-account">My Orders</Link></li>
                     <li><Link href="/faq">Help</Link></li>
                     <li><Link href="/contact">Customer Service</Link></li>

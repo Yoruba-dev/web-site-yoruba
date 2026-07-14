@@ -99,3 +99,23 @@ export function whatsappConsultUrl(
   const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
   return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
 }
+
+/** Label for the wholesale / mayoreo call-to-action. */
+export const WHOLESALE_LABEL = "Escríbenos por WhatsApp";
+
+/**
+ * Builds the WhatsApp link for the WHOLESALE (mayoreo) channel — the B2B route
+ * for botánicas, santeros and shops that buy to resell. Prefills a message that
+ * is clearly headed as a wholesale enquiry so it lands tagged and doesn't get
+ * confused with a normal retail order. Reuses the brand number from `SITE`.
+ */
+export function whatsappWholesaleUrl(): string {
+  const message = [
+    "Hola 👋 Escribo por *mayoreo / compra al por mayor* en Pedro Yoruba Jewelry.",
+    "",
+    "Tengo una botánica / tienda y me interesa revender sus piezas.",
+    "¿Me comparten el catálogo y los precios de mayorista?",
+  ].join("\n");
+  const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
+  return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
+}

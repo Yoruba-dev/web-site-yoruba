@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Lato:ital,wght@0,400;0,700;1,400&display=swap");
 
 /* ===========================================================================
  * Pedro Yoruba Jewelry — BRAND LAYER (palette + typography)
@@ -12,6 +12,16 @@
   --pyj-gold-light: #f2d896; /* bright cream gold */
   --pyj-black: #18120b; /* softer warm dark (not pure black) */
   --pyj-cream: #f6efe2; /* warm off-white */
+  /* ---------------------------------------------------------------------------
+   * Global type system — EXACTLY three families, used everywhere:
+   *   --font-display : Cinzel (serif caps)         → headings + buttons
+   *   --font-accent  : Cormorant Garamond (italic) → eyebrows / hero sub-lines
+   *   --font-body    : Lato (sans)                 → all body / UI / prices / forms
+   * Keeping to these three stops stray Rubik/Teko/system fonts from creeping in.
+   * ------------------------------------------------------------------------- */
+  --font-display: "Cinzel", Georgia, serif;
+  --font-accent: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   /* Orisha (eleke) accent colours */
   --orisha-obatala: #efe6d2;
   --orisha-oshun: #d8a72c;
@@ -1246,6 +1256,7 @@ body.template-color-1 {
   background-position: 0% 50% !important;
   color: #2c1f0a !important;
   border: none !important;
+  font-family: var(--font-display) !important;
   font-weight: 700 !important;
   letter-spacing: 0.09em !important;
   text-transform: uppercase !important;
@@ -2041,7 +2052,8 @@ body.template-color-1 {
 .minicart-count,
 .header-bottom_area-2 .header-right_area > ul > li > a,
 .header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn,
-.hiraola-footer_area .hiraola-social_link > ul > li > a {
+.hiraola-footer_area .hiraola-social_link > ul > li > a,
+.pyj-catcircle_img {
   border-radius: 50% !important;
 }
 
@@ -3008,4 +3020,558 @@ body.template-color-1 {
 }
 @media (prefers-reduced-motion: reduce) {
   .pyj-skel::after { animation: none; }
+}
+
+/* ===========================================================================
+   Mayoreo (wholesale / B2B) — announcement bar, nav highlight, home banner,
+   and the /mayoreo landing page. Reuses the brand gold + dark surfaces.
+=========================================================================== */
+
+/* Global announcement bar (dismissible) — above the eleke seal + header. */
+.pyj-annbar {
+  background: linear-gradient(135deg, #1c1509, #2a1f10);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.28);
+}
+.pyj-annbar_inner {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pyj-annbar_msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: var(--dk-text, #d6cbb2);
+  font-size: 13.5px;
+  line-height: 1.35;
+  text-decoration: none;
+  text-align: center;
+}
+.pyj-annbar_msg strong {
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-annbar_tag {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pyj-annbar_more {
+  color: var(--pyj-gold, #cda557);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.pyj-annbar_more:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-annbar_close {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--dk-text, #d6cbb2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.pyj-annbar_close:hover {
+  opacity: 1;
+  color: var(--pyj-gold, #cda557);
+}
+
+/* Nav "Mayoreo" gold highlight (desktop + mobile + footer). Selectors are made
+   specific enough to beat the template's own !important nav-colour rules. */
+.pyj-nav-mayoreo,
+.main-menu_area > nav > ul > li > a.pyj-nav-mayoreo,
+.mobile-menu a .mm-text.pyj-nav-mayoreo,
+.footer-widgets ul li a.pyj-nav-mayoreo {
+  color: var(--pyj-gold, #cda557) !important;
+  font-weight: 600;
+}
+.main-menu_area > nav > ul > li > a.pyj-nav-mayoreo:hover,
+.footer-widgets ul li a.pyj-nav-mayoreo:hover {
+  color: var(--pyj-gold-light, #f2d896) !important;
+}
+
+/* Home wholesale banner card. */
+.pyj-wholesale {
+  padding: 30px 0;
+}
+.pyj-wholesale_card {
+  position: relative;
+  border-radius: 14px;
+  padding: 40px 30px;
+  text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(205, 165, 87, 0.12), transparent 60%),
+    var(--dk-surface, #221a10);
+  border: 1px solid rgba(205, 165, 87, 0.28);
+}
+.pyj-wholesale_card h2 {
+  font-family: "Cinzel", serif;
+  font-size: 28px;
+  letter-spacing: 1.5px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 4px 0 12px;
+}
+.pyj-wholesale_card p {
+  color: var(--dk-text, #d6cbb2);
+  font-size: 15px;
+  max-width: 640px;
+  margin: 0 auto 22px;
+}
+.pyj-wholesale_cta {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pyj-wholesale_link {
+  color: var(--pyj-gold, #cda557);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.pyj-wholesale_link:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+
+/* /mayoreo landing — hero, steps, final CTA band. */
+.pyj-mayoreo_hero {
+  text-align: center;
+  padding: 44px 0 10px;
+}
+.pyj-mayoreo_hero h1 {
+  font-family: "Cinzel", serif;
+  font-size: 34px;
+  letter-spacing: 1.5px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 6px 0 14px;
+}
+.pyj-mayoreo_hero p {
+  color: var(--dk-text, #d6cbb2);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0 auto 24px;
+}
+.pyj-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.pyj-step {
+  flex: 1 1 240px;
+  background: var(--dk-surface, #221a10);
+  border: 1px solid rgba(205, 165, 87, 0.2);
+  border-radius: 12px;
+  padding: 26px 22px;
+}
+.pyj-step_num {
+  font-family: "Cinzel", serif;
+  font-size: 20px;
+  color: #0d0a07;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  margin-bottom: 14px;
+}
+.pyj-step h5 {
+  color: var(--dk-head, #f1e7d2);
+  margin-bottom: 8px;
+}
+.pyj-step p {
+  color: var(--dk-text, #d6cbb2);
+  font-size: 14px;
+  margin: 0;
+}
+.pyj-ctaband {
+  text-align: center;
+  padding: 46px 20px;
+  margin-top: 10px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(205, 165, 87, 0.12), transparent 60%),
+    var(--dk-raised, #1d160d);
+  border-top: 1px solid rgba(205, 165, 87, 0.18);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.18);
+}
+.pyj-ctaband h3 {
+  font-family: "Cinzel", serif;
+  color: var(--dk-head, #f1e7d2);
+  font-size: 24px;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.pyj-ctaband p {
+  color: var(--dk-text, #d6cbb2);
+  margin-bottom: 22px;
+}
+
+/* ---------------------------------------------------------------------------
+   /mayoreo — editorial redesign (herramientas-focused). Asymmetric hero with a
+   real product photo + an editorial points list, so the page reads bespoke
+   rather than a generic centred card grid.
+--------------------------------------------------------------------------- */
+.pyj-may {
+  padding-top: 8px;
+}
+.pyj-may_hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 48px;
+  align-items: center;
+  padding: 46px 0 42px;
+}
+.pyj-kicker {
+  display: inline-block;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #cda557);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(205, 165, 87, 0.4);
+}
+.pyj-may_hero-text h1 {
+  font-family: "Cinzel", serif;
+  font-size: 40px;
+  line-height: 1.14;
+  letter-spacing: 1px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 0 0 18px;
+}
+.pyj-may_lede {
+  color: var(--dk-text, #d6cbb2);
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 540px;
+  margin: 0 0 28px;
+}
+.pyj-may_lede strong,
+.pyj-may_grid strong {
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-may_cta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.pyj-may_phone {
+  color: var(--pyj-gold, #cda557);
+  font-size: 14px;
+  text-decoration: none;
+}
+.pyj-may_phone:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-may_hero-media {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(205, 165, 87, 0.3);
+  background: var(--dk-surface, #221a10);
+  aspect-ratio: 4 / 3;
+}
+.pyj-may_hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pyj-may_hero-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.pyj-may_hero-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--pyj-gold, #cda557);
+  font-size: 60px;
+}
+.pyj-may_tag {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1;
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  padding: 5px 13px;
+  border-radius: 999px;
+}
+.pyj-may_intro {
+  padding: 26px 0 8px;
+}
+.pyj-may_grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 44px;
+  align-items: start;
+}
+.pyj-may_grid h2 {
+  font-family: "Cinzel", serif;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 0 0 16px;
+}
+.pyj-may_grid p {
+  color: var(--dk-text, #d6cbb2);
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+.pyj-may_points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pyj-may_points li {
+  position: relative;
+  padding: 15px 0 15px 30px;
+  border-top: 1px solid rgba(205, 165, 87, 0.16);
+  color: var(--dk-text, #d6cbb2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.pyj-may_points li:first-child {
+  border-top: none;
+}
+.pyj-may_points li::before {
+  content: "✦";
+  position: absolute;
+  left: 2px;
+  top: 15px;
+  color: var(--pyj-gold, #cda557);
+  font-size: 13px;
+}
+.pyj-may_points strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--dk-head, #f1e7d2);
+  font-size: 15px;
+}
+.pyj-may_steps-sec {
+  padding-top: 8px;
+}
+@media (max-width: 900px) {
+  .pyj-may_hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 30px 0;
+  }
+  .pyj-may_hero-text h1 {
+    font-size: 32px;
+  }
+  .pyj-may_hero-media {
+    aspect-ratio: 16 / 11;
+  }
+  .pyj-may_grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+/* ===========================================================================
+   GLOBAL TYPOGRAPHY — collapse everything to the 3 families (Cinzel / Cormorant
+   / Lato). Loading Lato makes the template's own `body → Lato` finally render;
+   here we mop up the few elements the template pinned to Rubik/Teko and unify
+   the remaining buttons so nothing else leaks a stray font.
+=========================================================================== */
+body,
+body.template-color-1 {
+  font-family: var(--font-body);
+}
+/* Template's only non-Lato text faces (Rubik on the subscribe input, Rubik+Teko
+   on the countdown widget) → body font. */
+.subscribe-area .subscribe-form > form input,
+.subscribe-area .subscribe-form > form input::placeholder,
+.DateCountdown .time_circles > div > h4,
+.DateCountdown .time_circles > div > span {
+  font-family: var(--font-body) !important;
+}
+/* Buttons not covered by the gold-button rule above → same display face, so every
+   button on the site shares one typographic treatment. */
+.about-us_btn,
+.subscribe,
+.hiraola-btn_dark,
+input[type="submit"],
+button[type="submit"],
+.pyj-btn-gold {
+  font-family: var(--font-display) !important;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* ===========================================================================
+   HERO — the designed banners already carry their own baked-in copy, so the hero
+   shows each banner WHOLE with no HTML overlay. On mobile the banner renders at its
+   natural (short) size — which already looked right. On desktop it was full-bleed
+   ~720px tall (too big); we cap the height and let the banner cover the frame so it
+   stays compact and centred. The left legibility scrim is disabled (no overlay copy).
+=========================================================================== */
+.hiraola-slider_area-2 .single-slide {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  line-height: 0;
+}
+.hero-slide_img {
+  display: block;
+  width: 100%;
+  height: auto; /* mobile / tablet: whole banner, natural height */
+  object-fit: cover;
+  object-position: center;
+}
+/* No overlay copy → remove the darkening scrim so the banner reads clean. */
+.hiraola-slider_area-2 .single-slide::before {
+  display: none !important;
+}
+@media (min-width: 992px) {
+  .hiraola-slider_area-2 .single-slide {
+    height: 460px; /* compact on desktop (was ~720px) */
+  }
+  .hero-slide_img {
+    height: 100%;
+  }
+}
+
+/* ===========================================================================
+   Categorías de Productos — circular category carousel (home), fed by Shopify
+   collections. Gold-ringed circular thumbnails with a label; lifts on hover.
+=========================================================================== */
+.pyj-catcircles {
+  padding: 48px 0 34px;
+}
+.pyj-catcircles_head {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.pyj-catcircles_head h2 {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 1.5px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 4px 0 0;
+}
+.pyj-catcircle {
+  padding: 12px 10px;
+  text-align: center;
+  outline: none;
+}
+.pyj-catcircle_link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+.pyj-catcircle_img {
+  flex: 0 0 auto;
+  display: block;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--dk-surface, #221a10);
+  border: 1px solid rgba(205, 165, 87, 0.35);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+@media (max-width: 575px) {
+  .pyj-catcircle_img {
+    width: 130px;
+    height: 130px;
+  }
+}
+.pyj-catcircle_img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pyj-catcircle_link:hover .pyj-catcircle_img {
+  transform: translateY(-5px);
+  border-color: var(--pyj-gold, #cda557);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55);
+}
+.pyj-catcircle_label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  color: var(--dk-head, #f1e7d2);
+  transition: color 0.25s ease;
+}
+.pyj-catcircle_link:hover .pyj-catcircle_label {
+  color: var(--pyj-gold, #cda557);
+}
+.pyj-catcircles_slider .slick-dots {
+  position: static !important;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 26px 0 0;
+  width: 100%;
+}
+.pyj-catcircles_slider .slick-dots li {
+  display: inline-flex !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+.pyj-catcircles_slider .slick-dots li button {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  border: none;
+  border-radius: 50% !important;
+  background: rgba(205, 165, 87, 0.4);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.pyj-catcircles_slider .slick-dots li button::before {
+  display: none !important;
+}
+.pyj-catcircles_slider .slick-dots li.slick-active button {
+  background: var(--pyj-gold, #cda557);
+  transform: scale(1.25);
 }

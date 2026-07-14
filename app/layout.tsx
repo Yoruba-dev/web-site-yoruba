@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Stylesheets from "@/components/layout/Stylesheets";
+import AnnouncementBar from "@/components/layout/AnnouncementBar";
 import ElekeBar from "@/components/layout/ElekeBar";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -98,6 +99,7 @@ export default function RootLayout({
         <CartProvider>
           <WishlistProvider>
           <CompareProvider>
+            <AnnouncementBar />
             <ElekeBar />
             <div className="main-wrapper">
               <NewsletterPopup />

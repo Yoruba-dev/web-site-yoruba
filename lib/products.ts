@@ -3,10 +3,19 @@ import type { Product } from "./types";
 import { MOCK_PRODUCTS } from "./mock-data";
 import {
   isShopifyConfigured,
+  shopifyGetCollectionProducts,
+  shopifyGetCollections,
   shopifyGetNewArrivals,
   shopifyGetProductByHandle,
   shopifyGetProducts,
 } from "./shopify";
+
+/** A Shopify collection surfaced as a browsable category (home circles + pages). */
+export interface CategoryCollection {
+  handle: string;
+  title: string;
+  image: string | null;
+}
 
 // Single data-access layer for the whole app. Components import from here and
 // never need to know whether the data is mock or live Shopify.
@@ -60,6 +69,36 @@ export async function getCategoryImage(
   );
   return match?.images[0]?.url;
 }
+
+/** Live Shopify collections shown as home "category circles". Only ones with an
+ *  image, excluding obvious duplicates (e.g. "… (copia)"). Empty if Shopify is off. */
+export const getCollections = cache(async (): Promise<CategoryCollection[]> => {
+  if (!isShopifyConfigured()) return [];
+  try {
+    const cols = await shopifyGetCollections(30);
+    return cols.filter(
+      (c) => c.image && !/copia|copy/i.test(c.handle) && !/copia|copy/i.test(c.title),
+    );
+  } catch (err) {
+    console.error("[shopify] getCollections failed:", err);
+    return [];
+  }
+});
+
+/** A single collection's title/description + its products, for /collections/[handle]. */
+export const getCollectionProducts = cache(
+  async (
+    handle: string,
+  ): Promise<{ title: string; description: string; products: Product[] } | null> => {
+    if (!isShopifyConfigured()) return null;
+    try {
+      return await shopifyGetCollectionProducts(handle);
+    } catch (err) {
+      console.error("[shopify] getCollectionProducts failed:", err);
+      return null;
+    }
+  },
+);
 
 /** Convenience slices for the homepage sections. */
 export async function getHomeSections() {

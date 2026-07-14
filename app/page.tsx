@@ -7,6 +7,9 @@ import ProductSlider from "@/components/product/ProductSlider";
 import BannerGrid from "@/components/home/BannerGrid";
 import StaticBanner from "@/components/home/StaticBanner";
 import CategorySection from "@/components/home/CategorySection";
+import CategoryCircles from "@/components/home/CategoryCircles";
+import WholesaleBanner from "@/components/home/WholesaleBanner";
+import { getCollections } from "@/lib/products";
 
 const SHIPPING = [
   { icon: "1.png", title: "Envío a todo USA", text: "En pedidos sobre $75" },
@@ -35,6 +38,7 @@ function topCategories(products: Product[], limit: number): string[] {
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   const all = await getProducts(150);
+  const collections = await getCollections();
   // "Novedades" blends the most recently added pieces with the best-valued
   // (best-selling) ones: newest first, then popular pieces not already shown.
   // `all` comes back in Shopify BEST_SELLING order, so its head = top pieces.
@@ -95,6 +99,9 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* Categorías de Productos — circular carousel served from Shopify collections */}
+      <CategoryCircles collections={collections} />
+
       {/* Herramientas de Santo — featured, religion-focused (specialty of the house) */}
       <CategorySection
         title="Herramientas de Santo"
@@ -105,6 +112,9 @@ export default async function HomePage() {
 
       {/* Featured Product promo banner */}
       <StaticBanner />
+
+      {/* Mayoristas y botánicas — B2B wholesale channel */}
+      <WholesaleBanner />
 
       {/* Category rows — organized by piece type, biggest first */}
       {cats.map((cat, i) => (

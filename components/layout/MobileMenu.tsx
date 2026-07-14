@@ -80,7 +80,9 @@ function renderItem(item: MenuItem, onNavigate: () => void) {
   return (
     <li key={item.label}>
       <Link href={item.href} onClick={onNavigate}>
-        <span className="mm-text">{item.label}</span>
+        <span className={`mm-text${item.highlight ? " pyj-nav-mayoreo" : ""}`}>
+          {item.label}
+        </span>
       </Link>
     </li>
   );

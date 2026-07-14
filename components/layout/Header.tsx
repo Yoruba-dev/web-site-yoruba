@@ -49,7 +49,9 @@ function DesktopMenuItem({ item }: { item: MenuItem }) {
   }
   return (
     <li>
-      <Link href={item.href}>{item.label}</Link>
+      <Link href={item.href} className={item.highlight ? "pyj-nav-mayoreo" : undefined}>
+        {item.label}
+      </Link>
     </li>
   );
 }

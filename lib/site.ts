@@ -45,6 +45,8 @@ export const SITE = {
   // slideshow (Shopify admin › Content › Files). These are designed banners with
   // their own baked-in text, shown full-bleed (no overlay). To change the hero,
   // update these URLs or add/remove slides here — nothing else to touch.
+  // Designed banners from the Shopify homepage slideshow (copy is baked into each
+  // image). The hero shows them whole — no HTML overlay. Swap the URLs to change.
   heroSlides: [
     {
       image:

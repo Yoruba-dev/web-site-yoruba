@@ -26,9 +26,10 @@ function NextArrow({ className, style, onClick }: ArrowProps) {
   );
 }
 
-// Home hero: full-bleed image carousel driven by the store's real Shopify
-// homepage banners (SITE.heroSlides). The banners are pre-designed (text baked
-// in), so each slide is just the image — no overlay copy or scrim.
+// Home hero: crossfading carousel of the store's designed Shopify banners
+// (SITE.heroSlides). The banners are pre-composed (copy baked into the image), so
+// each slide is just the image — no HTML overlay (that would double the text).
+// Height is capped on desktop so the banner stays compact; mobile shows it whole.
 const settings: Settings = {
   infinite: true,
   arrows: true,
@@ -37,7 +38,7 @@ const settings: Settings = {
   dots: true,
   autoplaySpeed: 5000,
   speed: 1000,
-  adaptiveHeight: true,
+  adaptiveHeight: false,
   pauseOnHover: false,
   pauseOnFocus: false,
   slidesToShow: 1,
@@ -65,10 +66,11 @@ export default function HeroSlider() {
     <div className="hiraola-slider_area-2 hero-banner_slider">
       <Slider {...settings} className="main-slider">
         {SITE.heroSlides.map((slide) => (
-          <div key={slide.image} className="hero-banner_slide">
-            <Link href={slide.href} aria-label={slide.alt}>
+          <div key={slide.image} className="hero-slide">
+            <Link href={slide.href} className="single-slide" aria-label={slide.alt}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                className="hero-slide_img"
                 src={slide.image}
                 alt={slide.alt}
                 width={slide.width}

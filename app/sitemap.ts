@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getProducts } from "@/lib/products";
+import { getCollections, getProducts } from "@/lib/products";
 import { publishedArticles } from "@/lib/blog-data";
 
 const siteUrl =
@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths: { path: string; priority: number }[] = [
     { path: "", priority: 1 },
     { path: "/shop-left-sidebar", priority: 0.9 },
+    { path: "/mayoreo", priority: 0.8 },
     { path: "/blog", priority: 0.7 },
     { path: "/about-us", priority: 0.7 },
     { path: "/contact", priority: 0.7 },
@@ -32,6 +33,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: p.priority,
   }));
 
+  // Collection (category) pages — good SEO landing pages.
+  let collectionEntries: MetadataRoute.Sitemap = [];
+  try {
+    const collections = await getCollections();
+    collectionEntries = collections.map((c) => ({
+      url: `${siteUrl}/collections/${c.handle}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    }));
+  } catch {
+    // Ship the rest of the sitemap even if collections can't be fetched.
+  }
+
   // Include every product page so the whole catalogue gets indexed.
   let productEntries: MetadataRoute.Sitemap = [];
   try {
@@ -46,5 +61,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If the catalogue can't be fetched at build time, ship the static sitemap.
   }
 
-  return [...staticEntries, ...blogEntries, ...productEntries];
+  return [
+    ...staticEntries,
+    ...collectionEntries,
+    ...blogEntries,
+    ...productEntries,
+  ];
 }
