@@ -3614,3 +3614,85 @@ button[type="submit"],
   font-size: 13px;
   margin: 6px 0 0;
 }
+
+/* ===========================================================================
+   Mobile bottom tab bar — app-style, frosted glass (iOS look). Fixed, always
+   visible, ONLY on phones/tablets (where the desktop nav is hidden).
+=========================================================================== */
+.pyj-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: none; /* desktop: hidden */
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 7px 6px calc(7px + env(safe-area-inset-bottom, 0px));
+  background: rgba(18, 13, 8, 0.62);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border-top: 1px solid rgba(205, 165, 87, 0.22);
+  box-shadow: 0 -8px 26px rgba(0, 0, 0, 0.4);
+}
+.pyj-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--dk-text, #cdc1a8) !important;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.12s ease;
+}
+.pyj-tab:active {
+  transform: scale(0.92);
+}
+.pyj-tab i {
+  font-size: 23px;
+  line-height: 1;
+}
+.pyj-tab.is-active {
+  color: var(--pyj-gold, #e3b23c) !important;
+}
+.pyj-tab-ico {
+  position: relative;
+  display: inline-flex;
+}
+.pyj-tab-badge {
+  position: absolute;
+  top: -6px;
+  right: -11px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px !important;
+  background: var(--pyj-gold, #e3b23c);
+  color: #0d0a07;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+/* Show on mobile/tablet + keep page content clear of the fixed bar. */
+@media (max-width: 991px) {
+  .pyj-tabbar {
+    display: flex;
+  }
+  .main-wrapper {
+    padding-bottom: 68px;
+  }
+  #scrollUp {
+    bottom: 82px !important;
+  }
+}

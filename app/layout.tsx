@@ -5,6 +5,7 @@ import AnnouncementBar from "@/components/layout/AnnouncementBar";
 import ElekeBar from "@/components/layout/ElekeBar";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import NewsletterPopup from "@/components/layout/NewsletterPopup";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import StructuredData from "@/components/layout/StructuredData";
@@ -107,6 +108,7 @@ export default function RootLayout({
               {children}
               <Footer />
             </div>
+            <MobileTabBar />
             <ScrollToTop />
           </CompareProvider>
           </WishlistProvider>
