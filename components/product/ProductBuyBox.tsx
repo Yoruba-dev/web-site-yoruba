@@ -4,7 +4,22 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { CONSULT_LABEL, isMadeToOrder, whatsappConsultUrl } from "@/lib/commerce";
 import { formatMoney, money } from "@/lib/utils";
+import { ORISHA_NAMES } from "@/lib/orishas";
 import { SITE } from "@/lib/site";
+
+// Pieces tagged this way are made to order in the colours of an Orisha the
+// customer picks — the choice rides along into the Shopify order.
+const COLOR_ORDER_TAG = "color-orisha";
+
+// Internal control tags that steer behaviour but must never show as a "category".
+const CONTROL_TAGS = new Set([
+  "color-orisha",
+  "encargo",
+  "por-encargo",
+  "por encargo",
+  "por-orden",
+  "por orden",
+]);
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -34,6 +49,13 @@ export default function ProductBuyBox({
   const hasVariants = variants.length > 1;
   const [qty, setQty] = useState(1);
 
+  // Made-to-order colour (Orisha) selection, for pieces tagged `color-orisha`.
+  const needsColor = product.tags.some(
+    (t) => t.toLowerCase().trim() === COLOR_ORDER_TAG,
+  );
+  const [color, setColor] = useState("");
+  const [colorError, setColorError] = useState(false);
+
   // Price shown follows the selected variant (falls back to the product's
   // "from" price for single-variant pieces).
   const price = variant?.price ?? product.price;
@@ -45,18 +67,32 @@ export default function ProductBuyBox({
   const buyable = !madeToOrder && inStock;
 
   function add() {
-    if (variant) {
-      // Build the cart line around the SELECTED variant so checkout uses its
-      // real Shopify GID (merchandiseId) and its own price.
+    // Colour is required for made-to-order colour pieces.
+    if (needsColor && !color) {
+      setColorError(true);
+      return;
+    }
+    const chosen = variant ?? product.variants[0];
+    const base =
+      hasVariants && variant ? `${product.title} — ${variant.title}` : product.title;
+    const title = needsColor && color ? `${base} · ${color}` : base;
+    const properties =
+      needsColor && color ? [{ key: "Color / Orisha", value: color }] : undefined;
+
+    if (chosen) {
+      // Build the cart line around the SELECTED variant so checkout uses its real
+      // Shopify GID (merchandiseId) and its own price. A colour choice gets a
+      // synthetic id so different colours stay as separate lines.
       addLine(
         {
-          id: variant.id,
-          merchandiseId: variant.id,
+          id: needsColor && color ? `${chosen.id}-${color}` : chosen.id,
+          merchandiseId: chosen.id,
           productHandle: product.handle,
-          title: hasVariants ? `${product.title} — ${variant.title}` : product.title,
+          title,
           image: product.images[0]?.url ?? "",
           price: Number(price.amount),
           currencyCode: price.currencyCode,
+          properties,
         },
         qty,
       );
@@ -79,11 +115,16 @@ export default function ProductBuyBox({
           <li>
             Marca: <a href="#">{SITE.name}</a>
           </li>
-          {product.tags.length > 0 && (
-            <li>
-              Categoría: <a href="#">{product.tags[0]}</a>
-            </li>
-          )}
+          {(() => {
+            const cat = product.tags.find(
+              (t) => !CONTROL_TAGS.has(t.toLowerCase().trim()),
+            );
+            return cat ? (
+              <li>
+                Categoría: <a href="#">{cat}</a>
+              </li>
+            ) : null;
+          })()}
           <li>
             Código: <a href="#">{product.handle}</a>
           </li>
@@ -132,6 +173,42 @@ export default function ProductBuyBox({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {needsColor && buyable && (
+        <div className="pyj-color-select_wrap">
+          <label className="pyj-variant-label" htmlFor="pyj-color-select">
+            Color / Orisha
+            {color && <span className="pyj-variant-chosen">{color}</span>}
+          </label>
+          <select
+            id="pyj-color-select"
+            className="pyj-color-select"
+            value={color}
+            onChange={(e) => {
+              setColor(e.target.value);
+              setColorError(false);
+            }}
+            aria-invalid={colorError}
+          >
+            <option value="">Elige el orisha…</option>
+            {ORISHA_NAMES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+            <option value="Otro (lo indico)">Otro (lo indico)</option>
+          </select>
+          <p className="pyj-color-hint">
+            Se hace por encargo en los colores del orisha que elijas — la
+            selección viaja con tu pedido.
+          </p>
+          {colorError && (
+            <p className="pyj-color-error">
+              Elige el color / orisha antes de añadir al carrito.
+            </p>
+          )}
         </div>
       )}
 

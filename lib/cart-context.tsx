@@ -30,6 +30,9 @@ export interface CartLine {
     /** base64 PNG preview of the 3D piece */
     preview?: string;
   };
+  /** Custom line-item properties (e.g. the made-to-order Orisha colour). Sent to
+   *  the workshop as Shopify line-item attributes so they show in the order. */
+  properties?: { key: string; value: string }[];
 }
 
 interface CartContextValue {

@@ -3575,3 +3575,40 @@ button[type="submit"],
   background: var(--pyj-gold, #cda557);
   transform: scale(1.25);
 }
+
+/* ---------------------------------------------------------------------------
+   Made-to-order "Color / Orisha" selector on the product page (pieces tagged
+   `color-orisha`). The choice rides into the Shopify order as a line property.
+--------------------------------------------------------------------------- */
+.pyj-color-select_wrap {
+  margin: 4px 0 20px;
+  max-width: 360px;
+}
+.pyj-color-select {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--dk-surface, #221a10);
+  color: var(--dk-head, #f1e7d2);
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.35));
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+.pyj-color-select:focus {
+  outline: 2px solid var(--pyj-gold, #cda557);
+  outline-offset: 1px;
+}
+.pyj-color-select[aria-invalid="true"] {
+  border-color: #c0492e;
+}
+.pyj-color-hint {
+  color: #a99d83;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+.pyj-color-error {
+  color: #e0713f;
+  font-size: 13px;
+  margin: 6px 0 0;
+}

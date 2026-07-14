@@ -41,6 +41,21 @@ function lineAttributes(l: CartLine): { key: string; value: string }[] {
   return attrs;
 }
 
+/** All Shopify line-item attributes for a line: engraving + any custom
+ *  properties (e.g. the made-to-order "Color / Orisha" choice). */
+function allLineAttributes(l: CartLine): { key: string; value: string }[] {
+  return [...lineAttributes(l), ...(l.properties ?? [])];
+}
+
+/** An order-level note summarising the custom choices across all lines, so the
+ *  workshop sees them at a glance in the Shopify order. */
+function orderNote(lines: CartLine[]): string {
+  const bits = lines.flatMap((l) =>
+    (l.properties ?? []).map((p) => `${l.title} → ${p.key}: ${p.value}`),
+  );
+  return bits.join(" | ");
+}
+
 /** Creates a Shopify cart from the local lines and returns the hosted checkout
  *  URL — Shopify collects shipping + payment there. Throws on failure. */
 export async function createShopifyCheckout(lines: CartLine[]): Promise<string> {
@@ -51,12 +66,13 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
     // real variant in `merchandiseId` and a synthetic `id` for local uniqueness.
     merchandiseId: l.merchandiseId ?? l.id,
     quantity: l.quantity,
-    attributes: lineAttributes(l),
+    attributes: allLineAttributes(l),
   }));
+  const note = orderNote(lines);
 
   const query = /* GraphQL */ `
-    mutation CartCreate($lines: [CartLineInput!]!) {
-      cartCreate(input: { lines: $lines }) {
+    mutation CartCreate($lines: [CartLineInput!]!, $note: String) {
+      cartCreate(input: { lines: $lines, note: $note }) {
         cart { id checkoutUrl }
         userErrors { field message }
       }
@@ -69,7 +85,10 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
       "Content-Type": "application/json",
       "X-Shopify-Storefront-Access-Token": TOKEN,
     },
-    body: JSON.stringify({ query, variables: { lines: cartLines } }),
+    body: JSON.stringify({
+      query,
+      variables: { lines: cartLines, note: note || null },
+    }),
   });
 
   if (!res.ok) throw new Error(`Shopify checkout failed: ${res.status}`);
