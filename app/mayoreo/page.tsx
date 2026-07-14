@@ -10,9 +10,9 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 export const metadata: Metadata = {
-  title: "Mayoreo de herramientas de santo para botánicas",
+  title: "Venta al por mayor de herramientas de santo para botánicas",
   description:
-    "Herramientas de santo al por mayor para botánicas y tiendas: remos de Oshún, muletas de San Lázaro y los atributos de cada Oricha, en acero inoxidable con garantía de por vida y en oro por encargo. Hechas a mano en Miami — pide tu catálogo de mayoreo por WhatsApp.",
+    "Herramientas de santo al por mayor para botánicas y tiendas: remos de Oshún, muletas de San Lázaro y los atributos de cada Oricha, en acero inoxidable con garantía de por vida y en oro por encargo. Hechas a mano en Miami — pide tu catálogo al por mayor por WhatsApp.",
   keywords: [
     "herramientas de santo al por mayor",
     "herramientas de orisha mayoreo",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/mayoreo" },
   openGraph: {
     type: "website",
-    title: "Mayoreo de herramientas de santo — Pedro Yoruba Jewelry",
+    title: "Venta al por mayor de herramientas de santo — Pedro Yoruba Jewelry",
     description:
       "Herramientas de los Orishas al por mayor para botánicas y tiendas. Acero inoxidable con garantía de por vida y oro por encargo, hechas a mano en Miami.",
     url: "/mayoreo",
@@ -65,7 +65,7 @@ const STEPS = [
   },
   {
     num: 2,
-    title: "Catálogo y precios de mayoreo",
+    title: "Catálogo y precios al por mayor",
     text: "Te pasamos el catálogo con los precios de mayorista y las cantidades mínimas.",
   },
   {
@@ -86,7 +86,7 @@ export default async function MayoreoPage() {
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    name: "Mayoreo de herramientas de santo para botánicas",
+    name: "Venta al por mayor de herramientas de santo para botánicas",
     serviceType: "Venta al por mayor de joyería y herramientas religiosas",
     description:
       "Herramientas de los Orishas al por mayor para botánicas y tiendas: acero inoxidable con garantía de por vida y oro por encargo, hechas a mano en Miami.",
@@ -112,7 +112,7 @@ export default async function MayoreoPage() {
 
   return (
     <>
-      <Breadcrumb title="Mayoreo" crumbs={[{ label: "Mayoreo" }]} />
+      <Breadcrumb title="Al por mayor" crumbs={[{ label: "Al por mayor" }]} />
       <JsonLd data={serviceSchema} />
 
       {/* Editorial hero — asymmetric, anchored by a real herramienta photo. */}
@@ -146,7 +146,7 @@ export default async function MayoreoPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={heroImg.url}
-                  alt={heroImg.altText || "Herramientas de santo hechas a mano — mayoreo"}
+                  alt={heroImg.altText || "Herramientas de santo hechas a mano — venta al por mayor"}
                 />
               ) : (
                 <div className="pyj-may_hero-fallback" aria-hidden="true">
@@ -252,7 +252,7 @@ export default async function MayoreoPage() {
           <h3>Surte tu botánica con herramientas de verdad</h3>
           <p>
             Escríbenos por WhatsApp o llámanos — te pasamos el catálogo de
-            mayoreo y coordinamos tu primer pedido.
+al por mayor y coordinamos tu primer pedido.
           </p>
           <div className="pyj-may_cta" style={{ justifyContent: "center" }}>
             <a className="pyj-btn-gold" href={wa} target="_blank" rel="noreferrer">

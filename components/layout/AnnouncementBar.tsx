@@ -42,10 +42,10 @@ export default function AnnouncementBar() {
           target="_blank"
           rel="noreferrer"
         >
-          <span className="pyj-annbar_tag">Mayoreo</span>
+          <span className="pyj-annbar_tag">Al por mayor</span>
           <span>
-            Vendemos <strong>al por mayor a botánicas y tiendas</strong> —
-            escríbenos por WhatsApp para catálogo y precios
+            Surtimos a <strong>botánicas y tiendas</strong> — escríbenos por
+            WhatsApp para catálogo y precios de mayorista
           </span>
         </a>
         <Link className="pyj-annbar_more" href="/mayoreo">
