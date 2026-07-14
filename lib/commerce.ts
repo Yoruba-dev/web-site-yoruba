@@ -78,7 +78,7 @@ export const CONSULT_LABEL = "Consultar por WhatsApp";
 export function whatsappConsultUrl(
   product?: { title?: string; handle?: string; price?: Money },
   variant?: { title?: string; price?: Money },
-  opts?: { karat?: boolean },
+  opts?: { karat?: boolean; color?: string },
 ): string {
   const price = variant?.price ?? product?.price;
   const lines: string[] = [
@@ -87,6 +87,7 @@ export function whatsappConsultUrl(
   ];
   if (product?.title) lines.push(`📿 Pieza: ${product.title}`);
   if (variant?.title) lines.push(`📏 Tamaño / medida: ${variant.title}`);
+  if (opts?.color?.trim()) lines.push(`🎨 Color / Orisha: ${opts.color.trim()}`);
   if (price) lines.push(`💰 Precio: ${formatMoney(price)}`);
   if (product?.handle) lines.push(`🔗 ${SITE_URL}/products/${product.handle}`);
   if (opts?.karat) {

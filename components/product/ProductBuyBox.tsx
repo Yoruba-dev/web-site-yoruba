@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { CONSULT_LABEL, isMadeToOrder, whatsappConsultUrl } from "@/lib/commerce";
 import { formatMoney, money } from "@/lib/utils";
-import { ORISHA_NAMES } from "@/lib/orishas";
 import { SITE } from "@/lib/site";
 
 // Pieces tagged this way are made to order in the colours of an Orisha the
@@ -67,17 +66,20 @@ export default function ProductBuyBox({
   const buyable = !madeToOrder && inStock;
 
   function add() {
-    // Colour is required for made-to-order colour pieces.
-    if (needsColor && !color) {
+    // The customer must WRITE the colour for made-to-order colour pieces.
+    const colorText = color.trim();
+    if (needsColor && !colorText) {
       setColorError(true);
       return;
     }
     const chosen = variant ?? product.variants[0];
     const base =
       hasVariants && variant ? `${product.title} — ${variant.title}` : product.title;
-    const title = needsColor && color ? `${base} · ${color}` : base;
+    const title = needsColor && colorText ? `${base} · ${colorText}` : base;
     const properties =
-      needsColor && color ? [{ key: "Color / Orisha", value: color }] : undefined;
+      needsColor && colorText
+        ? [{ key: "Color / Orisha", value: colorText }]
+        : undefined;
 
     if (chosen) {
       // Build the cart line around the SELECTED variant so checkout uses its real
@@ -85,7 +87,7 @@ export default function ProductBuyBox({
       // synthetic id so different colours stay as separate lines.
       addLine(
         {
-          id: needsColor && color ? `${chosen.id}-${color}` : chosen.id,
+          id: needsColor && colorText ? `${chosen.id}-${colorText}` : chosen.id,
           merchandiseId: chosen.id,
           productHandle: product.handle,
           title,
@@ -178,35 +180,29 @@ export default function ProductBuyBox({
 
       {needsColor && buyable && (
         <div className="pyj-color-select_wrap">
-          <label className="pyj-variant-label" htmlFor="pyj-color-select">
+          <label className="pyj-variant-label" htmlFor="pyj-color-input">
             Color / Orisha
-            {color && <span className="pyj-variant-chosen">{color}</span>}
           </label>
-          <select
-            id="pyj-color-select"
+          <input
+            id="pyj-color-input"
+            type="text"
             className="pyj-color-select"
             value={color}
             onChange={(e) => {
               setColor(e.target.value);
               setColorError(false);
             }}
+            placeholder="Escríbelo — ej: Oshún (amarillo y dorado)"
             aria-invalid={colorError}
-          >
-            <option value="">Elige el orisha…</option>
-            {ORISHA_NAMES.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-            <option value="Otro (lo indico)">Otro (lo indico)</option>
-          </select>
+            maxLength={120}
+          />
           <p className="pyj-color-hint">
-            Se hace por encargo en los colores del orisha que elijas — la
-            selección viaja con tu pedido.
+            Se hace por encargo en el color que escribas — tu texto viaja con el
+            pedido (y en el mensaje de WhatsApp).
           </p>
           {colorError && (
             <p className="pyj-color-error">
-              Elige el color / orisha antes de añadir al carrito.
+              Escribe el color / orisha antes de añadir al carrito.
             </p>
           )}
         </div>
@@ -253,7 +249,9 @@ export default function ProductBuyBox({
             ) : (
               <a
                 className="qty-cart_btn"
-                href={whatsappConsultUrl(product, variant)}
+                href={whatsappConsultUrl(product, variant, {
+                  color: color.trim() || undefined,
+                })}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -274,7 +272,10 @@ export default function ProductBuyBox({
           order — the 14k upgrade is handled by WhatsApp consultation. */}
       <a
         className="pyj-custom-note"
-        href={whatsappConsultUrl(product, variant, { karat: true })}
+        href={whatsappConsultUrl(product, variant, {
+          karat: true,
+          color: color.trim() || undefined,
+        })}
         target="_blank"
         rel="noreferrer"
       >
