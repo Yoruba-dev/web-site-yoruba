@@ -43,6 +43,15 @@ export const MADE_TO_ORDER_TAGS = [
   "por orden",
 ];
 
+/** Internal control tags that steer behaviour but must NEVER be shown to shoppers
+ *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
+const CONTROL_TAGS = new Set([...MADE_TO_ORDER_TAGS, "color-orisha"]);
+
+/** A product's tags with internal control tags stripped — safe to display. */
+export function publicTags(tags?: readonly string[]): string[] {
+  return (tags ?? []).filter((t) => !CONTROL_TAGS.has(t.toLowerCase().trim()));
+}
+
 /** True when a piece must be ordered by consultation rather than bought online.
  *  Takes the product's Shopify tags: in "direct" mode a matching tag forces a
  *  single product to be made-to-order; in "made-to-order" mode everything is. */

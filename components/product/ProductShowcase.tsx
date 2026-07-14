@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import type { Rating } from "@/lib/judgeme";
+import { publicTags } from "@/lib/commerce";
 import ProductGallery from "./ProductGallery";
 import ProductBuyBox from "./ProductBuyBox";
 import ReviewStars from "./ReviewStars";
@@ -78,13 +79,13 @@ export default function ProductShowcase({
             </strong>{" "}
             en todas nuestras piezas · Hecho a mano en Miami con devoción.
           </div>
-          {product.tags.length > 0 && (
+          {publicTags(product.tags).length > 0 && (
             <div className="hiraola-tag-line">
               <h6>Etiquetas:</h6>{" "}
-              {product.tags.map((tag, i) => (
+              {publicTags(product.tags).map((tag, i, arr) => (
                 <span key={tag}>
                   <a href="#">{tag}</a>
-                  {i < product.tags.length - 1 ? ", " : ""}
+                  {i < arr.length - 1 ? ", " : ""}
                 </span>
               ))}
             </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { SITE } from "@/lib/site";
+import { publicTags } from "@/lib/commerce";
 import Product3DViewer from "@/components/product/Product3DViewer";
 
 type TabKey = "description" | "view3d" | "details" | "reviews";
@@ -17,7 +18,7 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
   const tabPane = (key: TabKey) =>
     active === key ? "tab-pane active show" : "tab-pane";
 
-  const category = product.tags[0];
+  const category = publicTags(product.tags)[0];
   const has3d = Boolean(product.model3d?.glb);
 
   return (

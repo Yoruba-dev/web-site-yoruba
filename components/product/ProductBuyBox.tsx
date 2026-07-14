@@ -2,23 +2,18 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
-import { CONSULT_LABEL, isMadeToOrder, whatsappConsultUrl } from "@/lib/commerce";
+import {
+  CONSULT_LABEL,
+  isMadeToOrder,
+  publicTags,
+  whatsappConsultUrl,
+} from "@/lib/commerce";
 import { formatMoney, money } from "@/lib/utils";
 import { SITE } from "@/lib/site";
 
 // Pieces tagged this way are made to order in the colours of an Orisha the
 // customer picks — the choice rides along into the Shopify order.
 const COLOR_ORDER_TAG = "color-orisha";
-
-// Internal control tags that steer behaviour but must never show as a "category".
-const CONTROL_TAGS = new Set([
-  "color-orisha",
-  "encargo",
-  "por-encargo",
-  "por encargo",
-  "por-orden",
-  "por orden",
-]);
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -117,16 +112,11 @@ export default function ProductBuyBox({
           <li>
             Marca: <a href="#">{SITE.name}</a>
           </li>
-          {(() => {
-            const cat = product.tags.find(
-              (t) => !CONTROL_TAGS.has(t.toLowerCase().trim()),
-            );
-            return cat ? (
-              <li>
-                Categoría: <a href="#">{cat}</a>
-              </li>
-            ) : null;
-          })()}
+          {publicTags(product.tags)[0] && (
+            <li>
+              Categoría: <a href="#">{publicTags(product.tags)[0]}</a>
+            </li>
+          )}
           <li>
             Código: <a href="#">{product.handle}</a>
           </li>
