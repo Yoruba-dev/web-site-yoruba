@@ -63,13 +63,14 @@ Copia el texto de cada correo en el editor de Shopify Email.
   >
   > La tuya sigue disponible, pero no la reservamos para siempre. Complétala hoy y la
   > preparamos para ti con todo el cuidado (y el ashé) que merece.
-- **Línea de incentivo (OPCIONAL — tú decides):**
-  > _Como agradecimiento, usa el código **`GRACIAS5`** y llévate un 5% en este pedido._
-  >
-  > *(Alternativas al descuento, mejores para el margen del oro: “te la **reservamos 48 h**”,
-  > o “un **pequeño obsequio** con tu compra”. Dinos cuál prefieres y ajusto el texto.)*
+- **Cierre suave (sin descuento — escasez real):**
+  > Si algo te detiene, escríbenos por WhatsApp y te ayudamos a decidir — sin compromiso.
 - **Botón:** `Llevarme mi pieza ahora`
 - **Cierre:** Con cariño y respeto, — Pedro Yoruba Jewelry
+
+> **Incentivo elegido:** ninguno (descuento). Se apuesta por la **urgencia honesta**
+> (piezas hechas a mano, muchas de existencia única) + la **atención personal por WhatsApp**.
+> No cuesta margen y encaja con una marca de lujo en oro.
 
 ---
 
