@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart-context";
+import { subscribeToMarketing } from "@/lib/subscribe";
 
 const STORAGE_KEY = "hiraola_newsletter_dismissed";
 
@@ -32,7 +33,8 @@ export default function NewsletterPopup() {
     const value = new FormData(e.currentTarget).get("email");
     const address = typeof value === "string" ? value.trim() : "";
     if (!address) return;
-    setEmail(address); // → used for abandoned-cart recovery + mailing list
+    setEmail(address); // → attaches to the cart for abandoned-cart recovery
+    subscribeToMarketing(address); // → adds them to Shopify's marketing list
     setSent(true);
     try {
       localStorage.setItem(STORAGE_KEY, "1");

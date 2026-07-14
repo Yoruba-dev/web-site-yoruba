@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
+import { subscribeToMarketing } from "@/lib/subscribe";
 
 // The footer newsletter form. Captures the email into the cart context so the
 // site can hand the cart to Shopify (with the email) for abandoned-cart recovery.
@@ -15,6 +16,7 @@ export default function NewsletterInline() {
     const address = typeof value === "string" ? value.trim() : "";
     if (!address) return;
     setEmail(address);
+    subscribeToMarketing(address);
     setSent(true);
   }
 
