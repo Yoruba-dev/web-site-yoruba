@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SITE } from "@/lib/site";
 import ElekeBar from "./ElekeBar";
 import SocialLinks from "./SocialLinks";
+import NewsletterInline from "./NewsletterInline";
 
 export default function Footer() {
   return (
@@ -84,27 +85,15 @@ export default function Footer() {
                   <div className="col-lg-4">
                     <div className="instagram-container footer-widgets_area">
                       <div className="footer-widgets_title">
-                        <h6>Sign Up For Newsletter</h6>
+                        <h6>Suscríbete</h6>
                       </div>
                       <div className="widget-short_desc">
                         <p>
-                          Subscribe to our newsletters now and stay up-to-date
-                          with new collections.
+                          Recibe novedades y ofertas — y el aviso si dejas tu
+                          pieza en el carrito.
                         </p>
                       </div>
-                      <div className="newsletter-form_wrap">
-                        <form className="subscribe-form" action="#">
-                          <input
-                            className="newsletter-input"
-                            type="email"
-                            autoComplete="off"
-                            placeholder="Enter Your Email"
-                          />
-                          <button className="newsletter-btn" type="submit">
-                            <i className="ion-android-mail" />
-                          </button>
-                        </form>
-                      </div>
+                      <NewsletterInline />
                     </div>
                   </div>
                 </div>

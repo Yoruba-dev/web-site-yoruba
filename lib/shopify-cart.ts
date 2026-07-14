@@ -101,3 +101,82 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
   }
   return result.cart.checkoutUrl;
 }
+
+// ---------------------------------------------------------------------------
+// Abandoned-cart recovery for a headless storefront. Our cart lives locally
+// (localStorage) so Shopify can't see it — UNTIL we hand it a cart WITH the
+// shopper's email (buyerIdentity). Once a cart carries an email and isn't
+// completed, Shopify records it as an abandoned checkout and its recovery
+// automation/email fires — even if the shopper never reached the checkout page.
+//
+// We call this after the shopper gives their email (newsletter) AND has items.
+// It's signature-gated so the same (email + lines) is only registered once,
+// which keeps us from creating duplicate abandoned checkouts.
+// ---------------------------------------------------------------------------
+const ABANDONED_SIG_KEY = "pyj_abandoned_sig";
+
+function cartSignature(lines: CartLine[], email: string): string {
+  const items = lines
+    .map((l) => `${l.merchandiseId ?? l.id}x${l.quantity}`)
+    .sort()
+    .join(",");
+  return `${email.toLowerCase()}|${items}`;
+}
+
+export async function registerAbandonedCart(
+  lines: CartLine[],
+  email: string,
+): Promise<void> {
+  if (!DOMAIN || !TOKEN || !email || lines.length === 0) return;
+
+  const sig = cartSignature(lines, email);
+  try {
+    if (localStorage.getItem(ABANDONED_SIG_KEY) === sig) return; // already sent
+  } catch {
+    /* ignore */
+  }
+
+  const cartLines = lines.map((l) => ({
+    merchandiseId: l.merchandiseId ?? l.id,
+    quantity: l.quantity,
+    attributes: allLineAttributes(l),
+  }));
+  const note = orderNote(lines);
+  const query = /* GraphQL */ `
+    mutation AbandonedCart($lines: [CartLineInput!]!, $email: String!, $note: String) {
+      cartCreate(
+        input: { lines: $lines, buyerIdentity: { email: $email }, note: $note }
+      ) {
+        cart { id }
+        userErrors { message }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch(
+      `https://${DOMAIN}/api/${API_VERSION}/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Storefront-Access-Token": TOKEN,
+        },
+        body: JSON.stringify({
+          query,
+          variables: { lines: cartLines, email, note: note || null },
+        }),
+        keepalive: true, // let it finish even if the tab is closing
+      },
+    );
+    if (res.ok) {
+      try {
+        localStorage.setItem(ABANDONED_SIG_KEY, sig);
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    /* best-effort — never block the UI on this */
+  }
+}

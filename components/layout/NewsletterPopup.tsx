@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-context";
 
 const STORAGE_KEY = "hiraola_newsletter_dismissed";
 
-// Ported from the template: appears 5s after load, can be dismissed.
-// Improvement: the "Don't show again" checkbox now persists via localStorage.
+// Appears 5s after load, dismissible. Captures the email into the cart context —
+// which lets the site hand the cart to Shopify (with the email) for abandoned-cart
+// recovery, and keeps the shopper on our mailing list.
 export default function NewsletterPopup() {
+  const { setEmail } = useCart();
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
   const [dontShow, setDontShow] = useState(false);
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
@@ -18,9 +22,27 @@ export default function NewsletterPopup() {
   }, []);
 
   function close() {
-    if (dontShow) localStorage.setItem(STORAGE_KEY, "1");
+    if (dontShow || sent) localStorage.setItem(STORAGE_KEY, "1");
     setClosing(true);
     setTimeout(() => setVisible(false), 500);
+  }
+
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const value = new FormData(e.currentTarget).get("email");
+    const address = typeof value === "string" ? value.trim() : "";
+    if (!address) return;
+    setEmail(address); // → used for abandoned-cart recovery + mailing list
+    setSent(true);
+    try {
+      localStorage.setItem(STORAGE_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setTimeout(() => {
+      setClosing(true);
+      setTimeout(() => setVisible(false), 500);
+    }, 2600);
   }
 
   if (!visible) return null;
@@ -39,33 +61,44 @@ export default function NewsletterPopup() {
           <i className="ion-android-close" />
         </span>
         <div className="subscribe_area">
-          <h2>Sign Up Newsletter</h2>
-          <p>
-            Subscribe to our store mailing list to receive updates on new
-            arrivals, special offers and other discount information.
-          </p>
-          <div className="subscribe-form-group">
-            <form className="subscribe-form" action="#">
-              <input
-                autoComplete="off"
-                type="email"
-                name="email"
-                placeholder="Enter your email address"
-              />
-              <button type="submit">subscribe</button>
-            </form>
-          </div>
-          <div className="subscribe-bottom">
-            <input
-              type="checkbox"
-              id="newsletter-permission"
-              checked={dontShow}
-              onChange={(e) => setDontShow(e.target.checked)}
-            />
-            <label htmlFor="newsletter-permission">
-              Don&apos;t show this popup again
-            </label>
-          </div>
+          {sent ? (
+            <>
+              <h2>¡Gracias! ✦</h2>
+              <p>
+                Te avisaremos de novedades y ofertas. Y si dejas una pieza en el
+                carrito, te la recordaremos para que no se te escape.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>Únete a la familia</h2>
+              <p>
+                Suscríbete y recibe novedades, ofertas y el aviso si dejas tu
+                pieza en el carrito.
+              </p>
+              <div className="subscribe-form-group">
+                <form className="subscribe-form" onSubmit={submit}>
+                  <input
+                    autoComplete="email"
+                    type="email"
+                    name="email"
+                    placeholder="Escribe tu correo"
+                    required
+                  />
+                  <button type="submit">Suscribirme</button>
+                </form>
+              </div>
+              <div className="subscribe-bottom">
+                <input
+                  type="checkbox"
+                  id="newsletter-permission"
+                  checked={dontShow}
+                  onChange={(e) => setDontShow(e.target.checked)}
+                />
+                <label htmlFor="newsletter-permission">No volver a mostrar</label>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

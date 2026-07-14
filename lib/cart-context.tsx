@@ -9,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import type { Product } from "./types";
+import { registerAbandonedCart } from "./shopify-cart";
 
 export interface CartLine {
   /** local unique id for this cart line (may be synthetic for custom pieces) */
@@ -48,26 +49,55 @@ interface CartContextValue {
   clear: () => void;
   cartOpen: boolean;
   setCartOpen: (open: boolean) => void;
+  /** Shopper email captured from the newsletter form — used to hand the cart to
+   *  Shopify for abandoned-cart recovery. */
+  email: string;
+  setEmail: (email: string) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "hiraola_cart";
+const EMAIL_KEY = "pyj_email";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [email, setEmailState] = useState("");
 
-  // Load persisted cart after mount (avoids SSR hydration mismatch).
+  // Load persisted cart + email after mount (avoids SSR hydration mismatch).
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setLines(JSON.parse(raw));
+      const savedEmail = localStorage.getItem(EMAIL_KEY);
+      if (savedEmail) setEmailState(savedEmail);
     } catch {
       /* ignore */
     }
     setHydrated(true);
   }, []);
+
+  const setEmail = useCallback((value: string) => {
+    const v = value.trim();
+    setEmailState(v);
+    try {
+      localStorage.setItem(EMAIL_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Abandoned-cart recovery: once we have the shopper's email AND items, hand the
+  // cart to Shopify (with the email) so its recovery emails can fire even if the
+  // shopper never reaches checkout. Debounced so we register the SETTLED cart once.
+  useEffect(() => {
+    if (!hydrated || !email || lines.length === 0) return;
+    const t = setTimeout(() => {
+      void registerAbandonedCart(lines, email);
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [lines, email, hydrated]);
 
   useEffect(() => {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
@@ -144,8 +174,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clear,
       cartOpen,
       setCartOpen,
+      email,
+      setEmail,
     };
-  }, [lines, cartOpen, addItem, addLine, removeItem, updateQty, clear]);
+  }, [lines, cartOpen, addItem, addLine, removeItem, updateQty, clear, email, setEmail]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
