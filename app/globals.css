@@ -3421,6 +3421,22 @@ body.template-color-1 {
   font-size: 13px;
   color: var(--dk-muted, #a99d83);
 }
+.pyj-review-msg {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+.pyj-review-msg.is-ok {
+  color: #7bd38a;
+  border-color: rgba(123, 211, 138, 0.4);
+  background: rgba(123, 211, 138, 0.08);
+}
+.pyj-review-msg.is-err {
+  color: #e88a72;
+  border-color: rgba(224, 83, 63, 0.45);
+  background: rgba(224, 83, 63, 0.08);
+}
 .pyj-stars--compact .pyj-stars-icons {
   font-size: 12px;
   letter-spacing: 1.5px;

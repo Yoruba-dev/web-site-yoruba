@@ -15,6 +15,49 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
   const [active, setActive] = useState<TabKey>("description");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [body, setBody] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">(
+    "idle",
+  );
+
+  async function submitReview(e: React.FormEvent) {
+    e.preventDefault();
+    if (status === "sending") return;
+    const validEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
+    if (!validEmail || !name.trim() || rating < 1) {
+      setStatus("error");
+      return;
+    }
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
+          handle: product.handle,
+          email: email.trim(),
+          name: name.trim(),
+          rating,
+          body: body.trim(),
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean };
+      if (res.ok && json.ok) {
+        setStatus("ok");
+        setEmail("");
+        setName("");
+        setBody("");
+        setRating(0);
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }
 
   const tabLink = (key: TabKey) => (active === key ? "active" : undefined);
   const tabPane = (key: TabKey) =>
@@ -160,20 +203,44 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                   <form
                     className="form-horizontal"
                     id="form-review"
-                    onSubmit={(e) => e.preventDefault()}
+                    onSubmit={submitReview}
                   >
+                    <div className="form-group required">
+                      <div className="col-sm-12 p-0">
+                        <label>
+                          Tu nombre <span className="required">*</span>
+                        </label>
+                        <input
+                          className="review-input"
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
                     <div className="form-group required">
                       <div className="col-sm-12 p-0">
                         <label>
                           Tu correo <span className="required">*</span>
                         </label>
-                        <input className="review-input" type="email" required />
+                        <input
+                          className="review-input"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
                     <div className="form-group required second-child">
                       <div className="col-sm-12 p-0">
                         <label className="control-label">Comparte tu opinión</label>
-                        <textarea className="review-textarea" />
+                        <textarea
+                          className="review-textarea"
+                          value={body}
+                          onChange={(e) => setBody(e.target.value)}
+                        />
                       </div>
                     </div>
                     <div className="form-group last-child required">
@@ -208,11 +275,26 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                         </div>
                       </div>
                       <div className="hiraola-btn-ps_right">
-                        <button type="submit" className="hiraola-btn hiraola-btn_dark">
-                          Enviar reseña
+                        <button
+                          type="submit"
+                          className="hiraola-btn hiraola-btn_dark"
+                          disabled={status === "sending"}
+                        >
+                          {status === "sending" ? "Enviando…" : "Enviar reseña"}
                         </button>
                       </div>
                     </div>
+                    {status === "ok" && (
+                      <p className="pyj-review-msg is-ok" role="status">
+                        ¡Gracias por tu reseña! La revisamos y la publicamos pronto.
+                      </p>
+                    )}
+                    {status === "error" && (
+                      <p className="pyj-review-msg is-err" role="alert">
+                        Revisa tu nombre, correo y valoración (★) e inténtalo de
+                        nuevo.
+                      </p>
+                    )}
                   </form>
                 </div>
               </div>
