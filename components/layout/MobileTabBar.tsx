@@ -21,9 +21,6 @@ export default function MobileTabBar() {
     !cartOpen &&
     (pathname.startsWith("/shop") || pathname.startsWith("/collections"));
   const isWish = !cartOpen && pathname.startsWith("/wishlist");
-  const isAccount =
-    !cartOpen &&
-    (pathname.startsWith("/my-account") || pathname.startsWith("/login"));
 
   // Tapping any route tab must dismiss the cart — even when the tab points at the
   // current route (Next.js does no navigation then, so the pathname effect that
@@ -73,15 +70,6 @@ export default function MobileTabBar() {
         </span>
         <span>Carrito</span>
       </button>
-
-      <Link
-        href="/my-account"
-        onClick={closeCart}
-        className={`pyj-tab${isAccount ? " is-active" : ""}`}
-      >
-        <i className="ion-ios-person" aria-hidden="true" />
-        <span>Cuenta</span>
-      </Link>
     </nav>
   );
 }

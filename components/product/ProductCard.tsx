@@ -7,6 +7,7 @@ import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import ReviewStars from "./ReviewStars";
+import CardActions from "./CardActions";
 
 // Faithful port of the template's `.single_product` markup, driven by data.
 export default function ProductCard({ product }: { product: Product }) {
@@ -29,23 +30,21 @@ export default function ProductCard({ product }: { product: Product }) {
           />
         </Link>
         {product.badge && <span className="sticker">{product.badge}</span>}
-        <div className="add-actions">
-          <ul>
-            <li>
-              <PurchaseButton className="hiraola-add_cart" product={product} iconOnly>
-                <i className="ion-bag" />
-              </PurchaseButton>
-            </li>
-            <li>
-              <CompareButton className="hiraola-add_compare" product={product} />
-            </li>
-            <li className="quick-view-btn">
-              <Link href={href} title="Quick View">
-                <i className="ion-eye" />
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <CardActions>
+          <li>
+            <PurchaseButton className="hiraola-add_cart" product={product} iconOnly>
+              <i className="ion-bag" />
+            </PurchaseButton>
+          </li>
+          <li>
+            <CompareButton className="hiraola-add_compare" product={product} />
+          </li>
+          <li className="quick-view-btn">
+            <Link href={href} title="Quick View">
+              <i className="ion-eye" />
+            </Link>
+          </li>
+        </CardActions>
       </div>
       <div className="hiraola-product_content">
         <div className="product-desc_info">

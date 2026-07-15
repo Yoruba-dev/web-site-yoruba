@@ -2112,60 +2112,101 @@ body.template-color-1 {
   .single_product .product-img:hover .secondary-img {
     opacity: 0 !important;
   }
-  /* Touch devices: show the image actions ALWAYS, pinned to the bottom edge of
-     the photo as a clean translucent row (no hover, no double-tap). The bar is
-     click-through so a tap on the photo still opens the product; only the
-     buttons themselves are tappable — so they never "entorpecen" the image. */
+  /* Touch devices: the actions live collapsed behind a small ⋯ button pinned to
+     the photo's bottom-right corner. Tapping it slides the three options out
+     SIDEWAYS; tapping anywhere else collapses them (CardActions.tsx). Nothing
+     covers the piece by default, and sizes scale with the viewport (clamp). */
   .single_product .product-img {
     position: relative;
   }
   .single_product .product-img .add-actions {
-    display: block !important;
+    display: flex !important;
     position: absolute;
-    /* The base template centers the bar with left:50% — override hard so it
-       spans the full photo width and the buttons sit dead-centre. */
-    left: 0 !important;
-    right: auto !important;
-    width: 100% !important;
-    max-width: none !important;
+    left: auto !important;
+    right: 8px !important;
     top: auto !important;
-    bottom: 0 !important;
+    bottom: 8px !important;
+    width: auto !important;
+    max-width: calc(100% - 16px) !important;
     margin: 0 !important;
-    /* Compact row pinned right at the photo's bottom edge so it covers as little
-       of the piece as possible. */
-    padding: 5px 6px;
+    padding: 0;
+    align-items: center;
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
-    /* NO background on the wrapping bar — on white product photos a gradient
-       here reads as a dirty shadow band. The buttons carry their own dark
-       translucent circles, so they stay legible without it. */
     background: none !important;
-    pointer-events: none;
   }
   .single_product .product-img .add-actions > ul {
-    pointer-events: auto;
     display: flex !important;
     flex-wrap: nowrap;
-    justify-content: center;
-    gap: 8px;
+    align-items: center;
+    gap: 7px;
     margin: 0;
     padding: 0;
+    /* Collapsed by default — slides out to the left of the ⋯ toggle. */
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-width 0.38s cubic-bezier(0.22, 0.7, 0.2, 1),
+      margin 0.38s cubic-bezier(0.22, 0.7, 0.2, 1),
+      opacity 0.25s ease;
   }
-  .single_product .add-actions ul li > a,
-  .single_product .add-actions ul li > button {
-    /* Smaller on phones — the previous 38px covered the product design. */
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    font-size: 14px;
+  .single_product .product-img .pyj-actions.is-open > ul {
+    max-width: 180px;
+    margin-right: 7px;
+    opacity: 1;
+  }
+  .single_product .product-img .add-actions > ul li {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+  /* Uniform responsive circles: the 3 actions AND the ⋯ toggle. */
+  .single_product .product-img .add-actions ul li > a,
+  .single_product .product-img .add-actions ul li > button,
+  .single_product .product-img .pyj-actions-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: clamp(28px, 8vw, 36px) !important;
+    height: clamp(28px, 8vw, 36px) !important;
+    min-width: clamp(28px, 8vw, 36px) !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    font-size: clamp(12px, 3.6vw, 15px);
+    line-height: 1;
     background: rgba(13, 10, 7, 0.68) !important;
+    border: 1px solid rgba(227, 178, 60, 0.5) !important;
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
     /* The template collapses the <a> actions with scaleX(0) until hover — reset
-       it so all three show on touch (there is no hover to expand them). */
+       it so the options render once expanded (there is no hover on touch). */
     transform: none !important;
+    box-shadow: none !important;
   }
+  .single_product .product-img .pyj-actions.is-open .pyj-actions-toggle {
+    background: rgba(227, 178, 60, 0.28) !important;
+    border-color: rgba(227, 178, 60, 0.9) !important;
+  }
+}
+
+/* ⋯ options toggle (CardActions.tsx). Hidden on desktop — there the actions keep
+   the template's hover reveal; the toggle only exists on touch (block above).
+   The dots are CSS spans, never an icon font (fonts have silently failed here). */
+.pyj-actions-toggle {
+  display: none;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+.pyj-actions-toggle .pyj-dot {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #e9ddc4;
+  margin: 0 1.5px;
+  flex: 0 0 auto;
 }
 
 /* ---------------------------------------------------------------------------
