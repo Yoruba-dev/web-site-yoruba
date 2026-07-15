@@ -617,6 +617,53 @@ textarea:focus-visible,
   background-color: var(--pyj-gold-light) !important;
   color: #1a1208 !important;
 }
+
+/* Buy-box button layout: keep the primary CTA on its OWN full-width row and the
+   wishlist / compare / share icons in a tidy, evenly-aligned row below. The
+   template's inline-block <li>s wrapped awkwardly (icons split across two rows,
+   "unos arriba y otros abajo") once the CTA text got long — e.g. "CONSULTAR POR
+   WHATSAPP". Flexbox makes it responsive and consistent at every width. */
+.sp-area .qty-btn_area > ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.sp-area .sp-nav .sp-content .qty-btn_area > ul li {
+  display: block;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+/* Primary CTA → full width, centred, comfortable height. */
+.sp-area .qty-btn_area > ul li:first-child {
+  flex: 1 0 100%;
+}
+.sp-area .qty-btn_area > ul li:first-child > a.qty-cart_btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  text-align: center;
+}
+/* Icon actions → equal squares, all on one aligned row. */
+.sp-area .qty-btn_area > ul li:not(:first-child) {
+  flex: 0 0 auto;
+}
+.qty-btn_area > ul li > a.qty-wishlist_btn,
+.qty-btn_area > ul li > a.qty-compare_btn,
+.qty-btn_area > ul li > a.qty-share_btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0 !important;
+  font-size: 17px;
+  line-height: 1;
+}
 /* gallery thumbnail frames → gold border on dark */
 .sp-img_area .sp-img_slider > a {
   border-color: var(--dk-border) !important;
