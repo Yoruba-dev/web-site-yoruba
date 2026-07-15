@@ -19,6 +19,7 @@ const COLOR_ORDER_TAG = "color-orisha";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import ShareButton from "./ShareButton";
+import SafeImage from "@/components/ui/SafeImage";
 import type { Product, ProductVariant } from "@/lib/types";
 
 // The reactive lower half of the product page: price, availability, variant
@@ -162,8 +163,12 @@ export default function ProductBuyBox({
                   aria-checked={selected}
                 >
                   {v.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="pyj-variant-thumb" src={v.image} alt={v.title} />
+                    <SafeImage
+                      className="pyj-variant-thumb"
+                      src={v.image}
+                      width={160}
+                      alt={v.title}
+                    />
                   )}
                   <span className="pyj-variant-info">
                     <span className="pyj-variant-name">{v.title}</span>

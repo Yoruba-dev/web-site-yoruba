@@ -33,7 +33,7 @@ export default function CartView() {
             {lines.map((l) => (
               <div className="pyj-cart-line" key={l.id}>
                 <Link href={`/products/${l.productHandle}`} className="pyj-cart-thumb">
-                  <SafeImage src={l.image} alt={l.title} />
+                  <SafeImage src={l.image} width={300} alt={l.title} />
                 </Link>
 
                 <div className="pyj-cart-info">

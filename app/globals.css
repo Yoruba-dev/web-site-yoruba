@@ -2120,24 +2120,26 @@ body.template-color-1 {
     opacity: 0 !important;
   }
   /* Touch devices: the actions live collapsed behind a small ⋯ button pinned to
-     the photo's bottom-right corner. Tapping it slides the three options out
-     SIDEWAYS; tapping anywhere else collapses them (CardActions.tsx). Nothing
-     covers the piece by default, and sizes scale with the viewport (clamp). */
+     the photo's bottom-right corner. Tapping it reveals the options stacked
+     VERTICALLY above the ⋯ (upward); tapping anywhere else collapses them
+     (CardActions.tsx). A vertical stack is one button wide, so it fits ANY card
+     width — the old sideways row overflowed narrow 2-column cards. */
   .single_product .product-img {
     position: relative;
   }
   .single_product .product-img .add-actions {
     display: flex !important;
+    flex-direction: column;
+    align-items: center;
     position: absolute;
     left: auto !important;
     right: 8px !important;
     top: auto !important;
     bottom: 8px !important;
     width: auto !important;
-    max-width: calc(100% - 16px) !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0;
-    align-items: center;
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
@@ -2145,23 +2147,23 @@ body.template-color-1 {
   }
   .single_product .product-img .add-actions > ul {
     display: flex !important;
-    flex-wrap: nowrap;
+    flex-direction: column;
     align-items: center;
     gap: 7px;
     margin: 0;
     padding: 0;
-    /* Collapsed by default — slides out to the left of the ⋯ toggle. */
-    max-width: 0;
+    /* Collapsed by default — the stack rises above the ⋯ toggle when open. */
+    max-height: 0;
     opacity: 0;
     overflow: hidden;
     transition:
-      max-width 0.38s cubic-bezier(0.22, 0.7, 0.2, 1),
-      margin 0.38s cubic-bezier(0.22, 0.7, 0.2, 1),
+      max-height 0.38s cubic-bezier(0.22, 0.7, 0.2, 1),
+      margin 0.34s cubic-bezier(0.22, 0.7, 0.2, 1),
       opacity 0.25s ease;
   }
   .single_product .product-img .pyj-actions.is-open > ul {
-    max-width: 180px;
-    margin-right: 7px;
+    max-height: 220px;
+    margin-bottom: 7px;
     opacity: 1;
   }
   .single_product .product-img .add-actions > ul li {

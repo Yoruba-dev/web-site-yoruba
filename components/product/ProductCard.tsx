@@ -22,15 +22,20 @@ export default function ProductCard({ product }: { product: Product }) {
           <SafeImage
             className="primary-img"
             src={primary?.url}
+            width={500}
             alt={primary?.altText ?? product.title}
           />
           <SafeImage
             className="secondary-img"
             src={secondary?.url ?? primary?.url}
+            width={500}
             alt={secondary?.altText ?? product.title}
           />
         </Link>
         {product.badge && <span className="sticker">{product.badge}</span>}
+        {/* Card actions (behind the ⋯ menu on touch). No quick-view here — it
+            just links to the product, which tapping the card already does; the
+            fewer controls keep the ⋯ stack fitting inside small cards. */}
         <CardActions>
           <li>
             <PurchaseButton className="hiraola-add_cart" product={product} iconOnly>
@@ -39,11 +44,6 @@ export default function ProductCard({ product }: { product: Product }) {
           </li>
           <li>
             <CompareButton className="hiraola-add_compare" product={product} />
-          </li>
-          <li className="quick-view-btn">
-            <Link href={href} title="Quick View">
-              <i className="ion-eye" />
-            </Link>
           </li>
           <li>
             <ShareButton

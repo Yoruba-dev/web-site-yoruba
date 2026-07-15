@@ -127,7 +127,7 @@ export default function SearchBar({
                     onClick={pick}
                   >
                     <span className="pyj-search-thumb">
-                      <SafeImage src={h.image || undefined} alt={h.title} />
+                      <SafeImage src={h.image || undefined} width={120} alt={h.title} />
                     </span>
                     <span className="pyj-search-info">
                       <span className="pyj-search-title">{h.title}</span>

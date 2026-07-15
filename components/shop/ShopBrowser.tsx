@@ -41,10 +41,16 @@ function ListProductItem({ product }: { product: Product }) {
         <div className="single_product">
           <div className="product-img">
             <Link href={href}>
-              <SafeImage className="primary-img" src={primary?.url} alt={product.title} />
+              <SafeImage
+                className="primary-img"
+                src={primary?.url}
+                width={600}
+                alt={product.title}
+              />
               <SafeImage
                 className="secondary-img"
                 src={secondary?.url ?? primary?.url}
+                width={600}
                 alt={product.title}
               />
             </Link>

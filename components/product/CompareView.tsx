@@ -47,7 +47,7 @@ export default function CompareView() {
               </button>
 
               <Link href={`/products/${it.handle}`} className="pyj-compare-thumb">
-                <SafeImage src={it.image} alt={it.title} />
+                <SafeImage src={it.image} width={400} alt={it.title} />
               </Link>
 
               <h5 className="pyj-compare-name">

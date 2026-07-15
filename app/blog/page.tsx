@@ -58,7 +58,7 @@ export default function BlogPage() {
             {articles.map((a) => (
               <article className="pyj-blog-card" key={a.slug}>
                 <Link href={`/blog/${a.slug}`} className="pyj-blog-cover">
-                  <SafeImage src={a.cover} alt={a.title} />
+                  <SafeImage src={a.cover} width={800} alt={a.title} />
                   <span className="pyj-blog-tag">{a.category}</span>
                 </Link>
                 <div className="pyj-blog-body">

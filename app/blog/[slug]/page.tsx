@@ -141,7 +141,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 {others.map((o) => (
                   <article className="pyj-blog-card" key={o.slug}>
                     <Link href={`/blog/${o.slug}`} className="pyj-blog-cover">
-                      <SafeImage src={o.cover} alt={o.title} />
+                      <SafeImage src={o.cover} width={600} alt={o.title} />
                       <span className="pyj-blog-tag">{o.category}</span>
                     </Link>
                     <div className="pyj-blog-body">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SafeImage from "@/components/ui/SafeImage";
 import { useWishlist, type WishlistItem } from "@/lib/wishlist-context";
 import { useCart } from "@/lib/cart-context";
 import {
@@ -80,8 +81,7 @@ export default function WishlistView() {
                       </td>
                       <td className="hiraola-product-thumbnail">
                         <Link href={`/products/${it.handle}`}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={it.image} alt={it.title} />
+                          <SafeImage src={it.image} width={300} alt={it.title} />
                         </Link>
                       </td>
                       <td className="hiraola-product-name">

@@ -88,6 +88,8 @@ export default function ProductGallery({
         <SafeImage
           className="zoompro"
           src={currentUrl}
+          width={1400}
+          loading="eager"
           alt={currentAlt}
           style={{
             transform: zoom ? "scale(2)" : "scale(1)",
@@ -120,7 +122,7 @@ export default function ProductGallery({
               }}
               style={{ cursor: "pointer" }}
             >
-              <SafeImage src={img.url} alt={title} />
+              <SafeImage src={img.url} width={200} alt={title} />
             </a>
           ))}
         </div>

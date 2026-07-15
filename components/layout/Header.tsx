@@ -217,7 +217,7 @@ export default function Header() {
                       <i className="ion-android-close" />
                     </button>
                     <div className="product-item_img">
-                      <SafeImage src={l.image || undefined} alt={l.title} />
+                      <SafeImage src={l.image || undefined} width={160} alt={l.title} />
                     </div>
                     <div className="product-item_content">
                       <Link
