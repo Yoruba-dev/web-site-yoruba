@@ -5,6 +5,7 @@ import SafeImage from "@/components/ui/SafeImage";
 import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
+import ReviewStars from "./ReviewStars";
 
 // Faithful port of the template's `.single_product` markup, driven by data.
 export default function ProductCard({ product }: { product: Product }) {
@@ -52,6 +53,7 @@ export default function ProductCard({ product }: { product: Product }) {
               {product.title}
             </Link>
           </h6>
+          <ReviewStars rating={product.reviewRating ?? null} compact />
           <div className="price-box">
             <span className="new-price">{formatMoney(product.price)}</span>
             {product.compareAtPrice && (

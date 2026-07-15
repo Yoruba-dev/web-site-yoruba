@@ -1,6 +1,8 @@
 // Shared domain types. Shaped to mirror Shopify's Storefront API so that
 // swapping the mock data layer for live Shopify data requires no component changes.
 
+import type { Rating } from "./judgeme";
+
 export interface Money {
   amount: string;
   currencyCode: string;
@@ -41,6 +43,10 @@ export interface Product {
   images: ProductImage[];
   /** 0–5, used by the star rating box. */
   rating: number;
+  /** Real Judge.me review rating (avg + count), attached server-side by
+   *  `attachRatings`. null/undefined when the piece has no reviews yet → the
+   *  card shows no stars (never fake ones). */
+  reviewRating?: Rating | null;
   /** Corner sticker text e.g. "New", "-10%". null = no sticker. */
   badge: string | null;
   availableForSale: boolean;

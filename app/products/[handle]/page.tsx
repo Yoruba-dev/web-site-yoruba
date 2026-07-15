@@ -5,6 +5,7 @@ import ProductDetail from "@/components/product/ProductDetail";
 import JsonLd from "@/components/seo/JsonLd";
 import { getCategoryImage, getProductByHandle, getProducts } from "@/lib/products";
 import { getProductRating } from "@/lib/judgeme";
+import { attachRatings } from "@/lib/product-ratings";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import { SITE } from "@/lib/site";
 
@@ -73,10 +74,9 @@ export default async function ProductPage({ params }: { params: Params }) {
   const matched = others
     .filter((p) => shared(p) > 0)
     .sort((a, b) => shared(b) - shared(a));
-  const related = [
-    ...matched,
-    ...others.filter((p) => !matched.includes(p)),
-  ].slice(0, 8);
+  const related = await attachRatings(
+    [...matched, ...others.filter((p) => !matched.includes(p))].slice(0, 8),
+  );
 
   // Real review rating from Judge.me (null when the piece has no reviews yet).
   const rating = await getProductRating(product.handle);

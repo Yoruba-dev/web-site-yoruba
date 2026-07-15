@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { getNewArrivals, getProducts } from "@/lib/products";
+import { attachRatings } from "@/lib/product-ratings";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import type { Product } from "@/lib/types";
 import HeroSlider from "@/components/home/HeroSlider";
@@ -37,12 +38,15 @@ function topCategories(products: Product[], limit: number): string[] {
 // Home Two layout: hero → shipping → Orishas → Novedades → banner → category
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
-  const all = await getProducts(150);
+  // Attach real Judge.me review stars to every card on the home page. `all`
+  // feeds the herramientas + category rows; `recent` feeds Novedades. The rating
+  // lookups share a global hourly data cache with the shop page, so this is cheap.
+  const all = await attachRatings(await getProducts(150));
   const collections = await getCollections();
   // "Novedades" blends the most recently added pieces with the best-valued
   // (best-selling) ones: newest first, then popular pieces not already shown.
   // `all` comes back in Shopify BEST_SELLING order, so its head = top pieces.
-  const recent = await getNewArrivals(12);
+  const recent = await attachRatings(await getNewArrivals(12));
   const recentIds = new Set(recent.map((p) => p.id));
   const bestValued = all.filter((p) => !recentIds.has(p.id)).slice(0, 12);
   const newArrivals = [...recent, ...bestValued].slice(0, 20);

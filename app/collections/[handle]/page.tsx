@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductCard from "@/components/product/ProductCard";
 import { getCollectionProducts } from "@/lib/products";
+import { attachRatings } from "@/lib/product-ratings";
 
 // Live from Shopify; refresh hourly (a product webhook can also revalidate).
 export const revalidate = 3600;
@@ -38,6 +39,7 @@ export default async function CollectionPage({ params }: { params: Params }) {
   const { handle } = await params;
   const col = await getCollectionProducts(handle);
   if (!col) notFound();
+  const products = await attachRatings(col.products);
 
   return (
     <>
@@ -58,13 +60,13 @@ export default async function CollectionPage({ params }: { params: Params }) {
             </p>
           )}
 
-          {col.products.length === 0 ? (
+          {products.length === 0 ? (
             <p style={{ color: "var(--dk-text)" }}>
               Pronto habrá piezas en esta categoría.
             </p>
           ) : (
             <div className="shop-product-wrap grid row">
-              {col.products.map((product) => (
+              {products.map((product) => (
                 <div className="col-6 col-lg-4" key={product.id}>
                   <div className="slide-item">
                     <ProductCard product={product} />

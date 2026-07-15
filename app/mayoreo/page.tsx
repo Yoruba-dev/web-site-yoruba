@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductSlider from "@/components/product/ProductSlider";
 import JsonLd from "@/components/seo/JsonLd";
 import { getProducts } from "@/lib/products";
+import { attachRatings } from "@/lib/product-ratings";
 import { whatsappWholesaleUrl } from "@/lib/commerce";
 import { SITE } from "@/lib/site";
 
@@ -78,6 +79,8 @@ const STEPS = [
 export default async function MayoreoPage() {
   const all = await getProducts(150);
   const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
+  // Featured slice with real review stars attached.
+  const herramientasFeatured = await attachRatings(herramientas.slice(0, 12));
   const heroImg =
     herramientas.find((p) => p.images?.[0]?.url)?.images[0] ?? null;
   const wa = whatsappWholesaleUrl();
@@ -219,7 +222,7 @@ export default async function MayoreoPage() {
                 </div>
               </div>
               <div className="col-lg-12">
-                <ProductSlider products={herramientas.slice(0, 12)} />
+                <ProductSlider products={herramientasFeatured} />
               </div>
             </div>
           </div>

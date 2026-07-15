@@ -700,6 +700,10 @@ textarea:focus-visible,
 }
 .minicart-list .minicart-product {
   border-bottom: 1px solid var(--dk-border);
+  /* Vertically centre the row so the × lines up with the photo (was top-aligned
+     → looked "desfasado"). */
+  display: flex;
+  align-items: center;
 }
 .minicart-product .product-item_title,
 .minicart-heading h4,
@@ -2971,16 +2975,51 @@ body.template-color-1 {
   margin: 0 0 28px;
 }
 
-/* Real review stars (Judge.me) on the product page. */
+/* Real review stars (Judge.me). Two overlaid Unicode ★ rows: a muted base and a
+   gold fill clipped to the rating % — font-independent, always renders. */
 .pyj-stars {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   margin: 2px 0 14px;
 }
-.pyj-stars-icons { color: var(--pyj-gold, #cda557); font-size: 14px; letter-spacing: 2px; }
-.pyj-stars-icons .fa-star-o { color: rgba(205, 165, 87, 0.4); }
-.pyj-stars-count { font-size: 13px; color: #a99d83; }
+.pyj-stars-icons {
+  position: relative;
+  display: inline-block;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.pyj-stars-base {
+  color: rgba(205, 165, 87, 0.28);
+}
+.pyj-stars-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  width: 0;
+  white-space: nowrap;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-stars-count {
+  font-size: 13px;
+  color: #a99d83;
+  font-family: var(--font-body, "Lato", sans-serif);
+}
+/* Compact variant for product cards. */
+.pyj-stars--compact {
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.pyj-stars--compact .pyj-stars-icons {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+.pyj-stars--compact .pyj-stars-count {
+  font-size: 11px;
+}
 
 /* ===========================================================================
    Error + 404 pages — branded, calm, with a clear way back into the store.
@@ -3912,26 +3951,31 @@ button[type="submit"],
   line-height: 1;
 }
 
-/* Minicart remove (×) → a clearly visible little red circle. */
+/* Minicart remove (×) → a clean red glyph, NO circle: even, understated, clearly
+   a delete control. */
 .product-item_remove {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50% !important;
-  background: rgba(197, 73, 46, 0.18);
-  border: 1px solid rgba(197, 73, 46, 0.6);
-  color: #ef7d4c;
-  font-size: 13px;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #e0533f;
+  font-size: 19px;
   line-height: 1;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  opacity: 0.9;
+  transition: color 0.18s ease, opacity 0.18s ease, transform 0.15s ease;
 }
-.product-item_remove:hover {
-  background: #c5492e;
-  border-color: #c5492e;
-  color: #fff;
-  transform: scale(1.1);
+.product-item_remove:hover,
+.product-item_remove:focus-visible {
+  color: #ff5c46;
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 /* Even vertical spacing between product-grid cards (top & bottom of each). */
