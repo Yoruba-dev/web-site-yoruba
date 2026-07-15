@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Preguntas frecuentes",
   description:
     "Ubicación, horario, citas, piezas por encargo, quilates de oro, formas de pago, reparaciones y envíos de Pedro Yoruba Jewelry en Miami.",
+  // Without this the page inherits the layout's canonical ("/") and search
+  // engines consolidate the FAQ into the home — losing the FAQPage rich result.
+  alternates: { canonical: "/faq" },
 };
 
 export default function FaqPage() {

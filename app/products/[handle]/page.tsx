@@ -108,6 +108,18 @@ export default async function ProductPage({ params }: { params: Params }) {
     brand: { "@type": "Brand", name: SITE.name },
     ...(category && { category }),
     keywords: product.tags.join(", "),
+    // Real Judge.me reviews → stars in rich results + trust signal for AI
+    // answer engines. Only emitted when the piece actually has reviews.
+    ...(rating &&
+      rating.count > 0 && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: rating.rating,
+          reviewCount: rating.count,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }),
     offers: {
       "@type": "Offer",
       url: productUrl,
