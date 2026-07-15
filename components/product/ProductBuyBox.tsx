@@ -18,6 +18,7 @@ import { SITE } from "@/lib/site";
 const COLOR_ORDER_TAG = "color-orisha";
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
+import ShareButton from "./ShareButton";
 import type { Product, ProductVariant } from "@/lib/types";
 
 // The reactive lower half of the product page: price, availability, variant
@@ -269,6 +270,13 @@ export default function ProductBuyBox({
           </li>
           <li>
             <CompareButton className="qty-compare_btn" product={product} />
+          </li>
+          <li>
+            <ShareButton
+              className="qty-share_btn"
+              handle={product.handle}
+              title={product.title}
+            />
           </li>
         </ul>
       </div>

@@ -116,12 +116,16 @@ export default function ShopBrowser({
   const [priceMax, setPriceMax] = useState(maxPrice);
   const [sort, setSort] = useState("relevance");
   const [showFilters, setShowFilters] = useState(false);
+  const [query, setQuery] = useState("");
 
-  // Deep-linking: /shop-left-sidebar?cat=Oshún (from "Comprar por Orisha" or a
-  // category link) pre-selects that filter on load.
+  // Deep-linking: ?cat=Oshún pre-selects a category filter, ?q=idde pre-fills a
+  // text search (from the global SearchBar's "Ver todos los resultados").
   useEffect(() => {
-    const cat = new URLSearchParams(window.location.search).get("cat");
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get("cat");
     if (cat) setSelectedCats([cat]);
+    const q = params.get("q");
+    if (q) setQuery(q);
   }, []);
 
   // Categories are derived from the products' own tags. Split into piece-types and
@@ -147,6 +151,19 @@ export default function ShopBrowser({
     if (selectedCats.length) {
       list = list.filter((p) => p.tags.some((t) => selectedCats.includes(t)));
     }
+    if (query.trim().length > 1) {
+      // Accent-insensitive text search over title + tags (matches /api/search).
+      const norm = (s: string) =>
+        s
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      const nq = norm(query.trim());
+      list = list.filter(
+        (p) =>
+          norm(p.title).includes(nq) || p.tags.some((t) => norm(t).includes(nq)),
+      );
+    }
     const sorted = [...list];
     switch (sort) {
       case "relevance":
@@ -168,7 +185,7 @@ export default function ShopBrowser({
         break;
     }
     return sorted;
-  }, [products, selectedCats, priceMax, sort]);
+  }, [products, selectedCats, priceMax, sort, query]);
 
   function toggleCat(name: string) {
     setSelectedCats((s) =>
@@ -345,6 +362,21 @@ export default function ShopBrowser({
               </div>
             </div>
 
+            {query.trim().length > 1 && (
+              <p className="pyj-search-active">
+                Buscando: <strong>“{query.trim()}”</strong> · {filtered.length}{" "}
+                {filtered.length === 1 ? "resultado" : "resultados"}
+                <button
+                  type="button"
+                  className="pyj-search-clear"
+                  onClick={() => setQuery("")}
+                  aria-label="Quitar búsqueda"
+                >
+                  ✕
+                </button>
+              </p>
+            )}
+
             {filtered.length === 0 ? (
               <p style={{ padding: "30px 0", color: "#a99d83" }}>
                 Ningún producto coincide con los filtros.{" "}
@@ -352,6 +384,7 @@ export default function ShopBrowser({
                   onClick={() => {
                     setSelectedCats([]);
                     setPriceMax(maxPrice);
+                    setQuery("");
                   }}
                   style={{ cursor: "pointer", color: "var(--pyj-gold)" }}
                 >

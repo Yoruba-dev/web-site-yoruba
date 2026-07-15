@@ -8,6 +8,7 @@ import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import ReviewStars from "./ReviewStars";
 import CardActions from "./CardActions";
+import ShareButton from "./ShareButton";
 
 // Faithful port of the template's `.single_product` markup, driven by data.
 export default function ProductCard({ product }: { product: Product }) {
@@ -43,6 +44,13 @@ export default function ProductCard({ product }: { product: Product }) {
             <Link href={href} title="Quick View">
               <i className="ion-eye" />
             </Link>
+          </li>
+          <li>
+            <ShareButton
+              className="hiraola-add_compare"
+              handle={product.handle}
+              title={product.title}
+            />
           </li>
         </CardActions>
       </div>

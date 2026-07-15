@@ -9,6 +9,7 @@ import { useWishlist } from "@/lib/wishlist-context";
 import { useCompare } from "@/lib/compare-context";
 import { formatMoney } from "@/lib/utils";
 import SafeImage from "@/components/ui/SafeImage";
+import SearchBar from "@/components/search/SearchBar";
 import MobileMenu from "./MobileMenu";
 
 function DesktopMenuItem({ item }: { item: MenuItem }) {
@@ -182,12 +183,7 @@ export default function Header() {
               <i className="ion-android-close" />
             </button>
             <div className="offcanvas-search">
-              <form action="/shop" className="hm-searchbox">
-                <input type="text" placeholder="Search for item..." />
-                <button className="search_btn" type="submit">
-                  <i className="ion-ios-search-strong" />
-                </button>
-              </form>
+              <SearchBar onNavigate={close} />
             </div>
           </div>
         </div>
@@ -268,12 +264,7 @@ export default function Header() {
               <i className="ion-android-close" />
             </button>
             <div className="offcanvas-inner_search">
-              <form action="/shop" className="hm-searchbox">
-                <input type="text" placeholder="Search for item..." />
-                <button className="search_btn" type="submit">
-                  <i className="ion-ios-search-strong" />
-                </button>
-              </form>
+              <SearchBar onNavigate={close} />
             </div>
             <MobileMenu onNavigate={close} />
           </div>

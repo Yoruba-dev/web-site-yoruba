@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ShopContent from "@/components/shop/ShopContent";
+import { SITE } from "@/lib/site";
 
 // STATIC route (revalidates hourly). We deliberately DON'T read `searchParams`
 // here — reading it forced every request to render dynamically (152 cards +
@@ -20,7 +21,14 @@ export const metadata: Metadata = {
 export default function ShopLeftSidebarPage() {
   return (
     <>
-      <Breadcrumb title="Shop" crumbs={[{ label: "Shop Left Sidebar" }]} />
+      {/* Static banner: the no-copy collage from the Shopify slideshow — a real
+          jewellery photo behind the SHOP title (the page is static, so no per-
+          category image here; the category shows as a filter chip instead). */}
+      <Breadcrumb
+        title="Shop"
+        crumbs={[{ label: "Colección" }]}
+        bgImage={SITE.heroSlides[1].image}
+      />
       <ShopContent sidebar="left" view="grid" columns={3} />
     </>
   );

@@ -591,12 +591,19 @@ textarea:focus-visible,
   border: 1px solid var(--dk-border) !important;
   color: var(--dk-head) !important;
 }
-/* wishlist / compare icon buttons in the buy box (were white) */
+/* wishlist / compare / share icon buttons in the buy box (were white) */
 .qty-btn_area > ul li > a.qty-wishlist_btn,
-.qty-btn_area > ul li > a.qty-compare_btn {
+.qty-btn_area > ul li > a.qty-compare_btn,
+.qty-btn_area > ul li > a.qty-share_btn {
   background: var(--dk-surface) !important;
   border: 1px solid var(--dk-border) !important;
   color: var(--dk-text) !important;
+}
+/* copied-state feedback on the share button */
+.qty-btn_area > ul li > a.qty-share_btn.is-copied,
+.pyj-actions a.is-copied {
+  color: var(--pyj-gold, #e3b23c) !important;
+  border-color: var(--pyj-gold, #e3b23c) !important;
 }
 /* Primary CTA → gold so it stands out on the dark surface */
 .sp-area .qty-btn_area > ul li > a.qty-cart_btn,
@@ -2190,6 +2197,164 @@ body.template-color-1 {
     background: rgba(227, 178, 60, 0.28) !important;
     border-color: rgba(227, 178, 60, 0.9) !important;
   }
+}
+
+/* The template's .hiraola-btn is display:block with a fixed width, so inside a
+   .text-center parent it hugs the LEFT edge — centre it with auto margins
+   (empty wishlist "Ir a la tienda", and any future centred CTA). */
+.text-center .hiraola-btn {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Product page: breathing room. The spec lines (Marca/Categoría/Código/…) and
+   the Etiquetas tag row rendered cramped ("palabras muy pegadas"). */
+.sp-essential_stuff ul li {
+  margin-bottom: 7px;
+  line-height: 1.6;
+}
+.hiraola-tag-line {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  line-height: 1.7;
+}
+.hiraola-tag-line h6 {
+  padding-right: 4px;
+}
+
+/* Related-products slider: separation below the cards so they never sit flush
+   against the footer. */
+.hiraola-product_area-2 {
+  padding-bottom: 64px;
+}
+@media (max-width: 991px) {
+  .hiraola-product_area-2 {
+    padding-bottom: 44px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Global SearchBar (components/search/SearchBar.tsx) — live results with image
+   previews under the input. Reused in the desktop search panel and the mobile
+   menu; the input inherits the template's .hm-searchbox styling.
+--------------------------------------------------------------------------- */
+.pyj-search {
+  position: relative;
+  width: 100%;
+}
+.pyj-search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #171310;
+  border: 1px solid rgba(227, 178, 60, 0.35);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  max-height: min(430px, 60vh);
+  overflow-y: auto;
+}
+.pyj-search-results ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pyj-search-hit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.12);
+  color: #e6ddcf !important;
+}
+.pyj-search-hit:hover {
+  background: rgba(227, 178, 60, 0.1);
+}
+.pyj-search-thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  background: #0f0b07;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pyj-search-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pyj-search-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pyj-search-title {
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pyj-search-price {
+  font-size: 13px;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-search-empty {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 14px;
+  color: #a99d83;
+}
+.pyj-search-all {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  background: rgba(227, 178, 60, 0.12);
+  border: 0;
+  color: var(--pyj-gold, #e3b23c);
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-align: center;
+  cursor: pointer;
+}
+.pyj-search-all:hover {
+  background: rgba(227, 178, 60, 0.22);
+}
+/* Active text-search banner on the shop grid (?q= deep link). */
+.pyj-search-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
+  color: #a99d83;
+  font-size: 14px;
+}
+.pyj-search-active strong {
+  color: var(--pyj-gold, #e3b23c);
+  font-weight: 600;
+}
+.pyj-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(227, 178, 60, 0.5);
+  border-radius: 50% !important;
+  background: transparent;
+  color: #e0533f;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pyj-search-clear:hover {
+  background: rgba(224, 83, 63, 0.15);
 }
 
 /* ⋯ options toggle (CardActions.tsx). Hidden on desktop — there the actions keep
