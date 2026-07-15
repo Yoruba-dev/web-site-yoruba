@@ -13,6 +13,8 @@ type TabKey = "description" | "view3d" | "details" | "reviews";
 // fields. (No template placeholder text, no fake reviews.)
 export default function ProductTabsDetail({ product }: { product: Product }) {
   const [active, setActive] = useState<TabKey>("description");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
 
   const tabLink = (key: TabKey) => (active === key ? "active" : undefined);
   const tabPane = (key: TabKey) =>
@@ -178,15 +180,31 @@ export default function ProductTabsDetail({ product }: { product: Product }) {
                       <div className="col-sm-12 p-0">
                         <div className="your-opinion">
                           <label>Tu valoración</label>
-                          <span>
-                            <select className="star-rating">
-                              <option value="5">5</option>
-                              <option value="4">4</option>
-                              <option value="3">3</option>
-                              <option value="2">2</option>
-                              <option value="1">1</option>
-                            </select>
-                          </span>
+                          <div
+                            className="pyj-rating-input"
+                            role="radiogroup"
+                            aria-label="Tu valoración"
+                          >
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                className={`pyj-rating-star${
+                                  (hoverRating || rating) >= n ? " is-on" : ""
+                                }`}
+                                onClick={() => setRating(n)}
+                                onMouseEnter={() => setHoverRating(n)}
+                                onMouseLeave={() => setHoverRating(0)}
+                                aria-label={`${n} ${n === 1 ? "estrella" : "estrellas"}`}
+                                aria-pressed={rating === n}
+                              >
+                                ★
+                              </button>
+                            ))}
+                            {rating > 0 && (
+                              <span className="pyj-rating-value">{rating}/5</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="hiraola-btn-ps_right">

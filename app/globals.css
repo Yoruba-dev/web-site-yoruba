@@ -2790,11 +2790,33 @@ body.template-color-1 {
 }
 .shop-product-wrap .single_product .hiraola-product_content,
 .pyj-newarrivals .single_product .hiraola-product_content {
-  padding: 16px 16px 18px;
+  padding: 14px 16px 14px;
 }
-/* Keep the price row + wishlist on one tidy baseline across every card. */
-.single_product .product-desc_info .price-box {
-  margin-top: auto;
+/* Even spacing across every card: `product-desc_info` fills the content block as
+   a flex column so the price + wishlist row (wrapped in .pyj-price-row) can pin
+   to the BOTTOM — aligned across the whole grid — instead of leaving a big
+   ragged gap under the price whenever a card stretches to a taller neighbour
+   (e.g. one carrying review stars). */
+.single_product .product-desc_info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.single_product .product-desc_info .pyj-price-row {
+  margin-top: auto; /* pins the price row to the card bottom */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+/* The template floats the heart; inside the flex row we just let it sit at the
+   right end. */
+.single_product .product-desc_info .pyj-price-row .additional-add_action {
+  float: none !important;
+  margin: 0 !important;
+}
+.single_product .product-desc_info .pyj-price-row .price-box {
+  margin: 0 !important;
 }
 
 /* ===========================================================================
@@ -3363,6 +3385,41 @@ body.template-color-1 {
   display: flex;
   gap: 6px;
   margin: 0 0 10px;
+}
+
+/* Interactive star picker in the review form (replaces the plain number <select>).
+   Unicode ★ so it always renders; gold on hover/select, muted otherwise. */
+.pyj-rating-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.pyj-rating-star {
+  background: none;
+  border: 0;
+  padding: 2px;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+  color: rgba(227, 178, 60, 0.28);
+  transition: color 0.15s ease, transform 0.12s ease;
+}
+.pyj-rating-star.is-on {
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-rating-star:hover {
+  transform: scale(1.15);
+}
+.pyj-rating-star:focus-visible {
+  outline: 2px solid var(--pyj-gold, #e3b23c);
+  outline-offset: 2px;
+}
+.pyj-rating-value {
+  margin-left: 10px;
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-size: 13px;
+  color: var(--dk-muted, #a99d83);
 }
 .pyj-stars--compact .pyj-stars-icons {
   font-size: 12px;

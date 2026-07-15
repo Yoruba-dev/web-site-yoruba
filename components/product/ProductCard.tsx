@@ -62,29 +62,33 @@ export default function ProductCard({ product }: { product: Product }) {
             </Link>
           </h6>
           <ReviewStars rating={product.reviewRating ?? null} compact />
-          <div className="price-box">
-            {isPlaceholderPriced(product.price) ? (
-              // $0/$1 placeholder → never show a fake price; invite a consult.
-              <span className="new-price pyj-price-consult">
-                {CONSULT_PRICE_LABEL}
-              </span>
-            ) : (
-              <>
-                <span className="new-price">{formatMoney(product.price)}</span>
-                {product.compareAtPrice && (
-                  <span className="old-price">
-                    {formatMoney(product.compareAtPrice)}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-          <div className="additional-add_action">
-            <ul>
-              <li>
-                <WishlistButton className="hiraola-add_compare" product={product} />
-              </li>
-            </ul>
+          {/* Price + wishlist share one row that pins to the card bottom, so the
+              row lines up across the whole grid (see .pyj-price-row in CSS). */}
+          <div className="pyj-price-row">
+            <div className="price-box">
+              {isPlaceholderPriced(product.price) ? (
+                // $0/$1 placeholder → never show a fake price; invite a consult.
+                <span className="new-price pyj-price-consult">
+                  {CONSULT_PRICE_LABEL}
+                </span>
+              ) : (
+                <>
+                  <span className="new-price">{formatMoney(product.price)}</span>
+                  {product.compareAtPrice && (
+                    <span className="old-price">
+                      {formatMoney(product.compareAtPrice)}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="additional-add_action">
+              <ul>
+                <li>
+                  <WishlistButton className="hiraola-add_compare" product={product} />
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
