@@ -2137,7 +2137,10 @@ body.template-color-1 {
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
-    background: linear-gradient(180deg, transparent, rgba(13, 10, 7, 0.5));
+    /* NO background on the wrapping bar — on white product photos a gradient
+       here reads as a dirty shadow band. The buttons carry their own dark
+       translucent circles, so they stay legible without it. */
+    background: none !important;
     pointer-events: none;
   }
   .single_product .product-img .add-actions > ul {
@@ -3973,6 +3976,10 @@ button[type="submit"],
   border-radius: 50% !important;
   font-size: 18px;
   line-height: 1;
+  /* The premium-pass gold-button style gives .hiraola-add_cart a drop shadow —
+     inside the card actions it reads as a dirty halo on white photos and makes
+     the bag button uneven vs compare/quick-view. Kill it here for all three. */
+  box-shadow: none !important;
 }
 
 /* Minicart remove (×) → a clean red glyph, NO circle: even, understated, clearly
