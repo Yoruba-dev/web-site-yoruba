@@ -3241,10 +3241,13 @@ body.template-color-1 {
   white-space: nowrap;
 }
 
-/* Compact variant for product cards. */
+/* Compact variant for product cards: block-level flex so the stars own their
+   OWN line — the base inline-flex let the price render glued right after the
+   review count ("5.0 (1)$750.00"). */
 .pyj-stars--compact {
+  display: flex;
   gap: 6px;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 .pyj-stars--compact .pyj-stars-icons {
   font-size: 12px;
@@ -3941,8 +3944,11 @@ button[type="submit"],
   display: none; /* desktop: hidden */
   align-items: stretch;
   justify-content: space-around;
-  gap: 2px;
+  /* NO gap — the sliding pill's slot math assumes equal (100%/n) slots. */
   padding: 8px 6px;
+  /* Vertical page scroll still works from the bar; horizontal slides are ours
+     (they drag the active pill between tabs). */
+  touch-action: pan-y;
   /* Liquid Glass: floating, rounded, translucent, with a specular top edge. */
   border-radius: 28px !important;
   background: linear-gradient(
@@ -3958,13 +3964,39 @@ button[type="submit"],
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
-/* Selected tab sits on a soft gold-glass pill. */
-.pyj-tab {
-  border-radius: 18px !important;
+/* ONE shared gold-glass pill that GLIDES between tabs (translateX transition).
+   Its slot spans exactly 1/n of the padded row; --i (set from React) picks the
+   tab. While a finger slides across the bar the transition shortens so the
+   pill tracks the finger closely, still smoothly. */
+.pyj-tabbar-pill {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: calc((100% - 12px) / var(--tabs, 4));
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition:
+    transform 0.42s cubic-bezier(0.3, 1.08, 0.32, 1),
+    opacity 0.25s ease;
+  pointer-events: none;
 }
-.pyj-tab.is-active {
+.pyj-tabbar-pill.is-dragging {
+  transition-duration: 0.16s, 0.25s;
+}
+.pyj-tabbar-pill.is-hidden {
+  opacity: 0;
+}
+.pyj-tabbar-pill_inner {
+  position: absolute;
+  inset: 0 3px;
+  border-radius: 18px !important;
   background: rgba(227, 178, 60, 0.15);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.pyj-tab {
+  position: relative; /* content above the sliding pill */
+  z-index: 1;
+  border-radius: 18px !important;
 }
 .pyj-tab {
   flex: 1 1 0;
