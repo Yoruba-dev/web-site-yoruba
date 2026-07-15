@@ -45,7 +45,17 @@ export const getNewArrivals = cache(async (limit = 10): Promise<Product[]> => {
 });
 
 export const getProductByHandle = cache(
-  async (handle: string): Promise<Product | null> => {
+  async (rawHandle: string): Promise<Product | null> => {
+    // Route params can arrive percent-encoded (e.g. the emoji handle
+    // "corona-%F0%9F%91%9110k") — Shopify only matches the DECODED handle, so
+    // those product pages 404'd. Decoding here fixes every caller at once;
+    // it's a no-op for already-decoded handles.
+    let handle = rawHandle;
+    try {
+      handle = decodeURIComponent(rawHandle);
+    } catch {
+      /* malformed escape — use as-is */
+    }
     if (isShopifyConfigured()) {
       try {
         return await shopifyGetProductByHandle(handle);

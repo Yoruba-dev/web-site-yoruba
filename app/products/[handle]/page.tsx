@@ -6,6 +6,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { getCategoryImage, getProductByHandle, getProducts } from "@/lib/products";
 import { getProductRating } from "@/lib/judgeme";
 import { attachRatings } from "@/lib/product-ratings";
+import { RETURN_POLICY_SCHEMA } from "@/lib/merchant-policy";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import { SITE } from "@/lib/site";
 
@@ -89,6 +90,12 @@ export default async function ProductPage({ params }: { params: Params }) {
   // schema.org Product + Offer — price, stock and photos for Google rich
   // results (price/availability under the listing) and AI answer engines.
   const productUrl = `${siteUrl}/products/${product.handle}`;
+  // Google rejects skus with emoji/exotic characters (some handles have them,
+  // e.g. "corona-👑10k") — use the numeric Shopify product id: short, stable,
+  // ASCII. Falls back to a sanitized handle for non-Shopify (mock) data.
+  const sku =
+    product.id.match(/(\d+)$/)?.[1] ??
+    product.handle.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -97,7 +104,7 @@ export default async function ProductPage({ params }: { params: Params }) {
     description: product.description || SITE.tagline,
     url: productUrl,
     image: product.images.map((i) => i.url),
-    sku: product.handle,
+    sku,
     brand: { "@type": "Brand", name: SITE.name },
     ...(category && { category }),
     keywords: product.tags.join(", "),
@@ -111,6 +118,7 @@ export default async function ProductPage({ params }: { params: Params }) {
         : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: { "@id": `${siteUrl}/#store` },
+      hasMerchantReturnPolicy: RETURN_POLICY_SCHEMA,
     },
   };
 

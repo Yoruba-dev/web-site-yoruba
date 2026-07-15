@@ -21,6 +21,13 @@ if (dsn) {
       // iOS WKWebView bridge assumed by injected scripts (the reported one).
       /window\.webkit\.messageHandlers/i,
       /webkit\.messageHandlers/i,
+      // Android WebView bridges (in-app browsers): the injected logger calls a
+      // Java bridge that's already destroyed when the page unloads — e.g.
+      // "Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone"
+      // from app://navigation_performance_logger_android. Not our code.
+      /Java object is gone/i,
+      /enableDidUserTypeOnKeyboardLogging/i,
+      /navigation_performance_logger/i,
       // In-app browser search / autofill bridges.
       /instantSearchSDKJSBridge/i,
       /_AutofillCallbackHandler/i,
@@ -36,6 +43,8 @@ if (dsn) {
       /^moz-extension:\/\//i,
       /^safari-(web-)?extension:\/\//i,
       /webkit-masked-url/i,
+      // Android/iOS in-app browser instrumentation scripts (app:// scheme).
+      /^app:\/\//i,
     ],
   });
 }
