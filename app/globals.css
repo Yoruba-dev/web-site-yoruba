@@ -2668,6 +2668,72 @@ body.template-color-1 {
   text-decoration: underline;
 }
 
+/* ---------------------------------------------------------------------------
+   Pagination (components/ui/Pagination.tsx) — the shop grid and any future
+   paginated list. Responsive circular controls (clamp scales them down on
+   narrow phones, same pattern as the card ⋯ actions) so the row never
+   overflows; the current page reads as a small gold-underlined "1" like the
+   reference mock, everything else stays quiet until hovered/tapped.
+--------------------------------------------------------------------------- */
+.pyj-pagination {
+  display: flex;
+  justify-content: center;
+  margin: 44px 0 12px;
+}
+.pyj-pagination_list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pyj-pagination_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(30px, 8vw, 38px);
+  height: clamp(30px, 8vw, 38px);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dk-text, #cdc1a8);
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-size: clamp(13px, 3.6vw, 15px);
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.pyj-pagination_btn:hover:not(:disabled):not(.is-current) {
+  background: var(--dk-surface, rgba(227, 178, 60, 0.1));
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-pagination_btn.is-current {
+  color: var(--pyj-gold, #e3b23c);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 2px;
+}
+.pyj-pagination_btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.pyj-pagination_arrow {
+  font-size: clamp(12px, 3.2vw, 14px);
+}
+.pyj-pagination_dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(20px, 5vw, 24px);
+  color: var(--dk-muted, #a99d83);
+  user-select: none;
+}
+
 /* Even, consistent product cards — uniform border, background and inner spacing
    so the whole grid reads as one tidy set regardless of the (varied) photos. */
 .shop-product-wrap .single_product,

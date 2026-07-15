@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
 import SafeImage from "@/components/ui/SafeImage";
 import PurchaseButton from "@/components/product/PurchaseButton";
 import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
+import Pagination from "@/components/ui/Pagination";
 import { formatMoney } from "@/lib/utils";
 import { isPlaceholderPriced, CONSULT_PRICE_LABEL } from "@/lib/commerce";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import type { Product } from "@/lib/types";
 
 type ShopView = "grid" | "list";
+
+// Products per page. A multiple of both 3 and 4 (this shop's grid column
+// counts) so every page ends on a full row in either layout.
+const PAGE_SIZE = 24;
 
 const SORTS = [
   { value: "relevance", label: "Organizado por tipo" },
@@ -123,6 +128,10 @@ export default function ShopBrowser({
   const [sort, setSort] = useState("relevance");
   const [showFilters, setShowFilters] = useState(false);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const resultsTopRef = useRef<HTMLDivElement>(null);
+
+  const [seenFilterKey, setSeenFilterKey] = useState<string | null>(null);
 
   // Deep-linking: ?cat=Oshún pre-selects a category filter, ?q=idde pre-fills a
   // text search (from the global SearchBar's "Ver todos los resultados").
@@ -192,6 +201,40 @@ export default function ShopBrowser({
     }
     return sorted;
   }, [products, selectedCats, priceMax, sort, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  // Keep `page` valid DURING RENDER — not in a post-paint effect, which would
+  // flash the wrong slice (or a blank grid) for one frame before correcting.
+  // React discards this render and re-renders with the fixed page before it
+  // ever paints. The two adjustments are mutually exclusive (`else if`) so a
+  // filter change that also shrinks the range still lands on page 1, not on the
+  // clamped last page.
+  const filterKey = JSON.stringify([selectedCats, priceMax, sort, query]);
+  if (seenFilterKey === null) {
+    setSeenFilterKey(filterKey); // record the baseline on first render
+  } else if (filterKey !== seenFilterKey) {
+    setSeenFilterKey(filterKey);
+    setPage(1); // any real filter/sort/search change → back to page 1
+  } else if (page > pageCount) {
+    setPage(pageCount); // catalogue shrank under us → clamp into range
+  }
+
+  const pageItems = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
+  function goToPage(next: number) {
+    setPage(next);
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    resultsTopRef.current?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }
 
   function toggleCat(name: string) {
     setSelectedCats((s) =>
@@ -333,7 +376,7 @@ export default function ShopBrowser({
           {sidebar === "left" && sidebarColumn}
           <div className={productAreaClass}>
             {mobileFilters}
-            <div className="shop-toolbar">
+            <div className="shop-toolbar" ref={resultsTopRef}>
               <div className="product-view-mode">
                 <Link
                   className={view === "grid" ? "active grid-3" : "grid-3"}
@@ -398,19 +441,22 @@ export default function ShopBrowser({
                 </a>
               </p>
             ) : (
-              <div className={wrapClass}>
-                {view === "list"
-                  ? filtered.map((product) => (
-                      <ListProductItem key={product.id} product={product} />
-                    ))
-                  : filtered.map((product) => (
-                      <div className={colClass} key={product.id}>
-                        <div className="slide-item">
-                          <ProductCard product={product} />
+              <>
+                <div className={wrapClass}>
+                  {view === "list"
+                    ? pageItems.map((product) => (
+                        <ListProductItem key={product.id} product={product} />
+                      ))
+                    : pageItems.map((product) => (
+                        <div className={colClass} key={product.id}>
+                          <div className="slide-item">
+                            <ProductCard product={product} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-              </div>
+                      ))}
+                </div>
+                <Pagination page={page} pageCount={pageCount} onChange={goToPage} />
+              </>
             )}
           </div>
           {sidebar === "right" && sidebarColumn}
