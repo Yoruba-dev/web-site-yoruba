@@ -2116,11 +2116,13 @@ body.template-color-1 {
     top: auto !important;
     bottom: 0 !important;
     margin: 0 !important;
-    padding: 8px 6px;
+    /* Compact row pinned right at the photo's bottom edge so it covers as little
+       of the piece as possible. */
+    padding: 5px 6px;
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
-    background: linear-gradient(180deg, transparent, rgba(13, 10, 7, 0.55));
+    background: linear-gradient(180deg, transparent, rgba(13, 10, 7, 0.5));
     pointer-events: none;
   }
   .single_product .product-img .add-actions > ul {
@@ -2128,16 +2130,18 @@ body.template-color-1 {
     display: flex !important;
     flex-wrap: nowrap;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     margin: 0;
     padding: 0;
   }
   .single_product .add-actions ul li > a,
   .single_product .add-actions ul li > button {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 16px;
-    background: rgba(13, 10, 7, 0.7) !important;
+    /* Smaller on phones — the previous 38px covered the product design. */
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    font-size: 14px;
+    background: rgba(13, 10, 7, 0.68) !important;
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
   }
@@ -3763,22 +3767,51 @@ button[type="submit"],
    floating tab bar and makes the transitions smooth/professional.
 =========================================================================== */
 @media (max-width: 991px) {
-  /* Top header on phones = one row: logo LEFT, ☰ RIGHT, vertically centred
-     (the col-*-4/8 grid only kicks in ≥576px, so phones were stacking them). */
+  /* Top header on phones: brand mark absolutely CENTRED (both axes) with the ☰
+     pinned right — immune to the Bootstrap column padding/height that otherwise
+     nudged the logo down-and-left. (The col-*-4/8 grid only kicks in ≥576px.) */
   .header-bottom_area-2 .row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: space-between;
+    display: block;
+    position: relative;
+    min-height: 68px;
   }
   .header-bottom_area-2 .row > [class*="col-"] {
     width: auto;
     max-width: none;
-    flex: 0 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  /* Centre the IMG itself (not its wrapper). The template's .header-logo wrapper
+     carries extra height, so centring the wrapper left the img bottom-aligned and
+     15px low — anchoring the img directly makes it dead-centre. */
+  .header-bottom_area-2 .header-logo {
+    position: static;
+    margin: 0;
+    padding: 0 !important;
+    min-height: 0;
+    line-height: 0;
+  }
+  .header-bottom_area-2 .header-logo a {
+    display: block;
+    line-height: 0;
   }
   .header-bottom_area-2 .header-logo img {
-    max-height: 52px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 60px;
     width: auto;
+    display: block;
+  }
+  /* ☰ pinned right, vertically centred, out of the flow so the logo owns the
+     full header width for centring. */
+  .header-bottom_area-2 .header-right_area {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
   }
   .header-bottom_area-2 .header-right_area > ul {
     justify-content: flex-end;
@@ -3907,17 +3940,10 @@ button[type="submit"],
 }
 
 @media (max-width: 991px) {
-  /* Tighter header so the logo sits higher and lines up with the ☰ menu. */
+  /* Tighter header band; the centred-logo layout lives in the block above. */
   .header-bottom_area-2 {
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
-  }
-  .header-bottom_area-2 .header-logo {
-    margin: 0;
-    line-height: 0;
-  }
-  .header-bottom_area-2 .header-logo img {
-    max-height: 46px;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
   }
   .shop-product-wrap.row {
     row-gap: 20px;
