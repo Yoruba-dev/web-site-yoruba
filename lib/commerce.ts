@@ -61,14 +61,39 @@ export function isMadeToOrder(tags?: readonly string[]): boolean {
   return MADE_TO_ORDER_TAGS.some((t) => normalized.includes(t));
 }
 
-/** True only when a piece can be added to cart and checked out online right now
- *  (i.e. not made-to-order AND actually in stock). Accepts any object carrying
- *  `tags` + `availableForSale` (a Product, a wishlist item, …). */
+/**
+ * Prices at or below this ($) are PLACEHOLDERS, not real prices — a piece whose
+ * price hasn't been set in Shopify yet comes through as 0 or 1. Such pieces must
+ * NEVER be checked out online (someone could buy a $4,800 piece for $1) → they
+ * always route to a WhatsApp consultation and show "a consultar" instead of a
+ * price. Change the threshold here to adjust the rule everywhere at once.
+ */
+export const PLACEHOLDER_PRICE_MAX = 1;
+
+/** Label shown in place of a real price for placeholder-priced pieces. */
+export const CONSULT_PRICE_LABEL = "Precio a consultar";
+
+/** True when a price is a placeholder (≤ PLACEHOLDER_PRICE_MAX), i.e. not real. */
+export function isPlaceholderPriced(price?: Money | null): boolean {
+  if (!price) return false;
+  const n = Number(price.amount);
+  return Number.isFinite(n) && n <= PLACEHOLDER_PRICE_MAX;
+}
+
+/** True only when a piece can be added to cart and checked out online right now:
+ *  not made-to-order, has a REAL price (not a $0/$1 placeholder), AND in stock.
+ *  Accepts any object carrying `tags` + `availableForSale` + `price` (a Product,
+ *  a wishlist item, a selected variant, …). */
 export function canBuyDirectly(product: {
   tags?: readonly string[];
   availableForSale?: boolean;
+  price?: Money | null;
 }): boolean {
-  return !isMadeToOrder(product.tags) && product.availableForSale === true;
+  return (
+    !isMadeToOrder(product.tags) &&
+    !isPlaceholderPriced(product.price) &&
+    product.availableForSale === true
+  );
 }
 
 /** Label for the consultation / "pedir por encargo" call-to-action. */

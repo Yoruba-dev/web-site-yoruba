@@ -8,6 +8,7 @@ import PurchaseButton from "@/components/product/PurchaseButton";
 import CompareButton from "@/components/product/CompareButton";
 import WishlistButton from "@/components/product/WishlistButton";
 import { formatMoney } from "@/lib/utils";
+import { isPlaceholderPriced, CONSULT_PRICE_LABEL } from "@/lib/commerce";
 import { ORISHA_NAMES } from "@/lib/orishas";
 import type { Product } from "@/lib/types";
 
@@ -57,9 +58,19 @@ function ListProductItem({ product }: { product: Product }) {
                 </Link>
               </h6>
               <div className="price-box">
-                <span className="new-price">{formatMoney(product.price)}</span>
-                {product.compareAtPrice && (
-                  <span className="old-price">{formatMoney(product.compareAtPrice)}</span>
+                {isPlaceholderPriced(product.price) ? (
+                  <span className="new-price pyj-price-consult">
+                    {CONSULT_PRICE_LABEL}
+                  </span>
+                ) : (
+                  <>
+                    <span className="new-price">{formatMoney(product.price)}</span>
+                    {product.compareAtPrice && (
+                      <span className="old-price">
+                        {formatMoney(product.compareAtPrice)}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               <div className="product-short_desc">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
+import { isPlaceholderPriced, CONSULT_PRICE_LABEL } from "@/lib/commerce";
 import SafeImage from "@/components/ui/SafeImage";
 import PurchaseButton from "./PurchaseButton";
 import CompareButton from "./CompareButton";
@@ -55,11 +56,20 @@ export default function ProductCard({ product }: { product: Product }) {
           </h6>
           <ReviewStars rating={product.reviewRating ?? null} compact />
           <div className="price-box">
-            <span className="new-price">{formatMoney(product.price)}</span>
-            {product.compareAtPrice && (
-              <span className="old-price">
-                {formatMoney(product.compareAtPrice)}
+            {isPlaceholderPriced(product.price) ? (
+              // $0/$1 placeholder → never show a fake price; invite a consult.
+              <span className="new-price pyj-price-consult">
+                {CONSULT_PRICE_LABEL}
               </span>
+            ) : (
+              <>
+                <span className="new-price">{formatMoney(product.price)}</span>
+                {product.compareAtPrice && (
+                  <span className="old-price">
+                    {formatMoney(product.compareAtPrice)}
+                  </span>
+                )}
+              </>
             )}
           </div>
           <div className="additional-add_action">

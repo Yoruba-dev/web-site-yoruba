@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import {
   CONSULT_LABEL,
+  CONSULT_PRICE_LABEL,
   isMadeToOrder,
+  isPlaceholderPriced,
   publicTags,
   whatsappConsultUrl,
 } from "@/lib/commerce";
@@ -58,7 +60,10 @@ export default function ProductBuyBox({
 
   const madeToOrder = isMadeToOrder(product.tags);
   const inStock = variant ? variant.availableForSale : product.availableForSale;
-  const buyable = !madeToOrder && inStock;
+  // A $0/$1 price is a placeholder (price not set in Shopify) → force a consult,
+  // never a $0 checkout. Follows the SELECTED variant's price.
+  const placeholderPrice = isPlaceholderPriced(price);
+  const buyable = !madeToOrder && !placeholderPrice && inStock;
 
   function add() {
     // The customer must WRITE the colour for made-to-order colour pieces.
@@ -101,9 +106,15 @@ export default function ProductBuyBox({
   return (
     <>
       <div className="price-box">
-        <span className="new-price">{formatMoney(price)}</span>
-        {(showSale || product.compareAtPrice) && (
-          <span className="old-price">{formatMoney(oldPrice)}</span>
+        {placeholderPrice ? (
+          <span className="new-price pyj-price-consult">{CONSULT_PRICE_LABEL}</span>
+        ) : (
+          <>
+            <span className="new-price">{formatMoney(price)}</span>
+            {(showSale || product.compareAtPrice) && (
+              <span className="old-price">{formatMoney(oldPrice)}</span>
+            )}
+          </>
         )}
       </div>
 
@@ -156,7 +167,9 @@ export default function ProductBuyBox({
                   <span className="pyj-variant-info">
                     <span className="pyj-variant-name">{v.title}</span>
                     <span className="pyj-variant-price">
-                      {formatMoney(v.price)}
+                      {isPlaceholderPriced(v.price)
+                        ? "A consultar"
+                        : formatMoney(v.price)}
                       {soldOut && " · Agotado"}
                     </span>
                   </span>
@@ -223,9 +236,11 @@ export default function ProductBuyBox({
             maxWidth: 560,
           }}
         >
-          {madeToOrder
-            ? "Esta pieza se hace por encargo. Escríbenos por WhatsApp para confirmar medidas, quilate y detalles antes de tu pedido."
-            : "Pieza agotada por ahora. Escríbenos por WhatsApp y te avisamos o la hacemos por encargo."}
+          {placeholderPrice
+            ? "El precio de esta pieza se cotiza a pedido. Escríbenos por WhatsApp y te confirmamos el precio y los detalles antes de tu pedido."
+            : madeToOrder
+              ? "Esta pieza se hace por encargo. Escríbenos por WhatsApp para confirmar medidas, quilate y detalles antes de tu pedido."
+              : "Pieza agotada por ahora. Escríbenos por WhatsApp y te avisamos o la hacemos por encargo."}
         </p>
       )}
 

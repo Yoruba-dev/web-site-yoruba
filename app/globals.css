@@ -2090,7 +2090,12 @@ body.template-color-1 {
    :hover state stays "stuck" after a tap; disable the motion for a clean list.
    Desktop (mouse) keeps the hover.
    ============================================================================ */
-@media (hover: none) {
+/* Touch devices — match `pointer: coarse` too, not just `hover: none`, so hybrid
+   phones/tablets that (wrongly) report `hover: hover` still get the touch layout.
+   Everything here neutralises the template's hover reveals so a tap NEVER changes
+   the card visually — that hover-triggered change is exactly what made iOS/Android
+   require a SECOND tap to open the product ("doble touch"). */
+@media (hover: none), (pointer: coarse) {
   .single_product:hover,
   .orisha-card:hover {
     transform: none !important;
@@ -2100,6 +2105,12 @@ body.template-color-1 {
   .single_product:hover .product-img img,
   .orisha-card:hover .eleke {
     transform: none !important;
+  }
+  /* Never swap to the secondary photo on tap — keep the primary image steady so
+     the first tap opens the product instead of just revealing the hover state. */
+  .single_product .product-img .secondary-img,
+  .single_product .product-img:hover .secondary-img {
+    opacity: 0 !important;
   }
   /* Touch devices: show the image actions ALWAYS, pinned to the bottom edge of
      the photo as a clean translucent row (no hover, no double-tap). The bar is
@@ -2148,6 +2159,9 @@ body.template-color-1 {
     background: rgba(13, 10, 7, 0.68) !important;
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
+    /* The template collapses the <a> actions with scaleX(0) until hover — reset
+       it so all three show on touch (there is no hover to expand them). */
+    transform: none !important;
   }
 }
 
@@ -3008,6 +3022,16 @@ body.template-color-1 {
   color: #a99d83;
   font-family: var(--font-body, "Lato", sans-serif);
 }
+/* Placeholder-price pieces ($0/$1 in Shopify) show this instead of a fake price
+   — styled as a quiet gold cue, not a number. */
+.pyj-price-consult {
+  color: var(--pyj-gold, #e3b23c) !important;
+  font-weight: 600;
+  font-size: 0.92em !important;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 /* Compact variant for product cards. */
 .pyj-stars--compact {
   gap: 6px;

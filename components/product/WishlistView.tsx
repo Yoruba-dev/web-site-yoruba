@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useWishlist, type WishlistItem } from "@/lib/wishlist-context";
 import { useCart } from "@/lib/cart-context";
-import { CONSULT_LABEL, isMadeToOrder, whatsappConsultUrl } from "@/lib/commerce";
+import {
+  CONSULT_LABEL,
+  CONSULT_PRICE_LABEL,
+  isMadeToOrder,
+  isPlaceholderPriced,
+  whatsappConsultUrl,
+} from "@/lib/commerce";
 import { formatMoney } from "@/lib/utils";
 
 export default function WishlistView() {
@@ -11,6 +17,9 @@ export default function WishlistView() {
   const { addLine } = useCart();
   const fmt = (n: number, c: string) =>
     formatMoney({ amount: String(n), currencyCode: c });
+  // $0/$1 placeholder → route to a WhatsApp consult, never a $0 checkout.
+  const isPlaceholder = (it: WishlistItem) =>
+    isPlaceholderPriced({ amount: String(it.price), currencyCode: it.currencyCode });
 
   function moveToCart(it: WishlistItem) {
     addLine({
@@ -79,7 +88,11 @@ export default function WishlistView() {
                         <Link href={`/products/${it.handle}`}>{it.title}</Link>
                       </td>
                       <td className="hiraola-product-price">
-                        <span className="amount">{fmt(it.price, it.currencyCode)}</span>
+                        <span className="amount">
+                          {isPlaceholder(it)
+                            ? CONSULT_PRICE_LABEL
+                            : fmt(it.price, it.currencyCode)}
+                        </span>
                       </td>
                       <td className="hiraola-product-stock-status">
                         {it.available ? (
@@ -89,10 +102,13 @@ export default function WishlistView() {
                         )}
                       </td>
                       <td className="hiraola-product_add-cart">
-                        {isMadeToOrder(it.tags) ? (
+                        {isMadeToOrder(it.tags) || isPlaceholder(it) ? (
                           <a
                             className="hiraola-cart_btn"
-                            href={whatsappConsultUrl({ title: it.title })}
+                            href={whatsappConsultUrl({
+                              title: it.title,
+                              handle: it.handle,
+                            })}
                             target="_blank"
                             rel="noreferrer"
                           >

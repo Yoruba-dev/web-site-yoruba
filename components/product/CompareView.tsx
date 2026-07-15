@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCompare } from "@/lib/compare-context";
 import { formatMoney } from "@/lib/utils";
+import { isPlaceholderPriced, CONSULT_PRICE_LABEL } from "@/lib/commerce";
 import SafeImage from "@/components/ui/SafeImage";
 
 export default function CompareView() {
@@ -53,7 +54,14 @@ export default function CompareView() {
                 <Link href={`/products/${it.handle}`}>{it.title}</Link>
               </h5>
 
-              <div className="pyj-compare-price">{fmt(it.price, it.currencyCode)}</div>
+              <div className="pyj-compare-price">
+                {isPlaceholderPriced({
+                  amount: String(it.price),
+                  currencyCode: it.currencyCode,
+                })
+                  ? CONSULT_PRICE_LABEL
+                  : fmt(it.price, it.currencyCode)}
+              </div>
 
               <dl className="pyj-compare-specs">
                 <div>
