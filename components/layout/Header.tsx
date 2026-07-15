@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useCompare } from "@/lib/compare-context";
 import { formatMoney } from "@/lib/utils";
+import SafeImage from "@/components/ui/SafeImage";
 import MobileMenu from "./MobileMenu";
 
 function DesktopMenuItem({ item }: { item: MenuItem }) {
@@ -74,6 +75,13 @@ export default function Header() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [setCartOpen]);
+
+  // The cart can be opened from outside this component (the mobile tab bar), which
+  // can't touch our local `panel` state. Closing the menu/search panel whenever
+  // the cart opens keeps two offcanvas drawers from stacking at the same z-index.
+  useEffect(() => {
+    if (cartOpen) setPanel(null);
+  }, [cartOpen]);
 
   const close = () => {
     setPanel(null);
@@ -193,12 +201,12 @@ export default function Header() {
           </button>
           <div className="minicart-content">
             <div className="minicart-heading">
-              <h4>Shopping Cart</h4>
+              <h4>Carrito</h4>
             </div>
             {lines.length === 0 ? (
               <ul className="minicart-list">
                 <li className="minicart-product">
-                  <span className="text-muted">Your cart is empty.</span>
+                  <span className="text-muted">Tu carrito está vacío.</span>
                 </li>
               </ul>
             ) : (
@@ -213,8 +221,7 @@ export default function Header() {
                       <i className="ion-android-close" />
                     </button>
                     <div className="product-item_img">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={l.image} alt={l.title} />
+                      <SafeImage src={l.image || undefined} alt={l.title} />
                     </div>
                     <div className="product-item_content">
                       <Link
@@ -242,12 +249,12 @@ export default function Header() {
           </div>
           <div className="minicart-btn_area">
             <Link href="/cart" onClick={close} className="hiraola-btn hiraola-btn_dark hiraola-btn_fullwidth">
-              View Cart
+              Ver carrito
             </Link>
           </div>
           <div className="minicart-btn_area">
             <Link href="/checkout" onClick={close} className="hiraola-btn hiraola-btn_dark hiraola-btn_fullwidth">
-              Checkout
+              Pagar
             </Link>
           </div>
         </div>

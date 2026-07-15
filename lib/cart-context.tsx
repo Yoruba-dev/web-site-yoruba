@@ -8,6 +8,7 @@ import {
   useState,
   useCallback,
 } from "react";
+import { usePathname } from "next/navigation";
 import type { Product } from "./types";
 import { registerAbandonedCart } from "./shopify-cart";
 
@@ -64,6 +65,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [email, setEmailState] = useState("");
+  const pathname = usePathname();
+
+  // Navigating away (e.g. tapping a tab) must close the minicart — otherwise it
+  // stays open over the new page.
+  useEffect(() => {
+    setCartOpen(false);
+  }, [pathname]);
 
   // Load persisted cart + email after mount (avoids SSR hydration mismatch).
   useEffect(() => {
