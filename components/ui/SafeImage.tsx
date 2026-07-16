@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sizedImageUrl } from "@/lib/utils";
 
 // Drop-in <img> replacement that never shows a broken-image icon. If the source
 // is missing or fails to load, it swaps to a branded placeholder (dark card with
@@ -24,14 +25,6 @@ const FALLBACK =
       `</svg>`,
   );
 
-/** Ask the Shopify CDN for a `width`-sized (and web-transcoded) variant. No-op
- *  for non-Shopify URLs, data URIs, or when a width is already present. */
-function sized(src: string, width?: number): string {
-  if (!width || !src.includes("cdn.shopify.com/")) return src;
-  if (/[?&]width=/.test(src)) return src;
-  return `${src}${src.includes("?") ? "&" : "?"}width=${width}`;
-}
-
 type SafeImageProps = Omit<
   React.ImgHTMLAttributes<HTMLImageElement>,
   "src" | "onError"
@@ -54,7 +47,8 @@ export default function SafeImage({
   ...rest
 }: SafeImageProps) {
   const [failed, setFailed] = useState(false);
-  const resolved = failed || !src ? fallback : sized(src, width);
+  const resolved =
+    failed || !src ? fallback : width ? sizedImageUrl(src, width) : src;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

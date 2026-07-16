@@ -134,6 +134,27 @@ export default async function HomePage() {
           )}
         </Fragment>
       ))}
+
+      {/* Entity block — the ONE citable paragraph on the home that says who we
+          are and where (search + AI engines had nothing to quote here before). */}
+      <section className="pyj-entity">
+        <div className="container">
+          <h2>Joyería Yoruba hecha a mano en Miami</h2>
+          <p>
+            <strong>Pedro Yoruba Jewelry</strong> es un taller-joyería en el
+            oeste de Miami, Florida (11865 SW 26th St. c-41, zona de Tamiami
+            junto a Westchester). Fabricamos a mano piezas de la tradición
+            Yoruba / Lucumí — Idde de Orula, elekes, herramientas de santo,
+            coronas, anillos y esclavas — en oro de 10k, 14k y 18k, plata y
+            acero inoxidable, con garantía de por vida. Atendemos en tienda de
+            lunes a sábado, hacemos piezas por encargo a la medida de tu santo,
+            enviamos a todo Estados Unidos y surtimos al por mayor a botánicas.
+          </p>
+          <p>
+            <a href="/joyeria-en-miami">Lee nuestra guía: joyería en Miami →</a>
+          </p>
+        </div>
+      </section>
     </>
   );
 }

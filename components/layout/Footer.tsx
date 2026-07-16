@@ -42,6 +42,9 @@ export default function Footer() {
                             Mayorista · Botánicas
                           </Link>
                         </li>
+                        <li>
+                          <Link href="/joyeria-en-miami">Joyería en Miami</Link>
+                        </li>
                         <li><Link href="/shop">New products</Link></li>
                         <li><Link href="/shop">Best sales</Link></li>
                         <li><Link href="/contact">Contact us</Link></li>

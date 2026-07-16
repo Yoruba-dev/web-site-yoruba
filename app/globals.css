@@ -3437,6 +3437,91 @@ body.template-color-1 {
   border-color: rgba(224, 83, 63, 0.45);
   background: rgba(224, 83, 63, 0.08);
 }
+
+/* ---------------------------------------------------------------------------
+   Local-SEO guide page (/joyeria-en-miami) — price table + FAQ blocks. Reuses
+   the /mayoreo editorial layout (.pyj-may*); these are only the extras.
+--------------------------------------------------------------------------- */
+.pyj-guide_note {
+  color: var(--dk-muted, #a99d83);
+  font-size: 13.5px;
+  margin: 6px 0 18px;
+}
+.pyj-guide_tablewrap {
+  overflow-x: auto;
+  margin: 0 0 22px;
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.25));
+}
+.pyj-guide_table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.pyj-guide_table th {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #e3b23c);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dk-border, rgba(205, 165, 87, 0.25));
+  background: rgba(227, 178, 60, 0.06);
+}
+.pyj-guide_table td {
+  padding: 11px 16px;
+  color: var(--dk-text, #cdc1a8);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.12);
+}
+.pyj-guide_table td:last-child {
+  color: var(--pyj-gold, #e3b23c);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pyj-guide_table tr:last-child td {
+  border-bottom: 0;
+}
+.pyj-guide_qa {
+  border: 1px solid var(--dk-border, rgba(205, 165, 87, 0.2));
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  background: var(--dk-surface, #18130d);
+}
+.pyj-guide_qa h3 {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 0 0 8px;
+}
+.pyj-guide_qa p {
+  margin: 0;
+  color: var(--dk-text, #cdc1a8);
+  line-height: 1.65;
+}
+.pyj-guide_meta {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--dk-muted, #a99d83);
+}
+
+/* Home: citable entity block above the footer ("quiénes somos, dónde"). */
+.pyj-entity {
+  padding: 54px 0 60px;
+  border-top: 1px solid var(--dk-border, rgba(205, 165, 87, 0.2));
+}
+.pyj-entity h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 1px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 0 0 14px;
+}
+.pyj-entity p {
+  max-width: 860px;
+  color: var(--dk-text, #cdc1a8);
+  line-height: 1.75;
+  margin: 0 0 10px;
+}
 .pyj-stars--compact .pyj-stars-icons {
   font-size: 12px;
   letter-spacing: 1.5px;

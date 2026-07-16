@@ -21,6 +21,7 @@ Estados Unidos, con envío a todo el país.
 ## Páginas principales
 
 - [Inicio](https://pedrojewelryyoruba.com/): portada con las colecciones por Oricha y por tipo de pieza
+- [Joyería en Miami](https://pedrojewelryyoruba.com/joyeria-en-miami): guía local — dónde comprar oro real 10k/14k/18k en Miami, precios reales del taller, quilates y encargos
 - [Colección completa](https://pedrojewelryyoruba.com/shop-left-sidebar): catálogo completo con filtros por Oricha y tipo de pieza
 - [Preguntas frecuentes](https://pedrojewelryyoruba.com/faq): ubicación, citas, encargos, quilates, pagos, reparaciones y envíos
 - [Sobre nosotros](https://pedrojewelryyoruba.com/about-us): historia y filosofía del taller

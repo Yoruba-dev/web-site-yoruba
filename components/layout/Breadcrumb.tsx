@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sizedImageUrl } from "@/lib/utils";
 
 export interface Crumb {
   label: string;
@@ -23,7 +24,9 @@ export default function Breadcrumb({
       style={
         bgImage
           ? {
-              backgroundImage: `linear-gradient(rgba(15,11,7,0.52), rgba(15,11,7,0.74)), url(${bgImage})`,
+              // The banner never renders wider than the viewport, so a 1200px
+              // CDN variant (vs. the multi-MB original) is plenty at any size.
+              backgroundImage: `linear-gradient(rgba(15,11,7,0.52), rgba(15,11,7,0.74)), url(${sizedImageUrl(bgImage, 1200)})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }
