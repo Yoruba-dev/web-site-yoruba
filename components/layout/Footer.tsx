@@ -121,6 +121,7 @@ export default function Footer() {
                     <li><Link href="/shop">Special Products</Link></li>
                     <li><Link href="/contact">Our Stores</Link></li>
                     <li><Link href="/faq">Shipping</Link></li>
+                    <li><Link href="/garantia-y-devoluciones">Garantía y devoluciones</Link></li>
                     <li><Link href="/checkout">Payments</Link></li>
                   </ul>
                 </div>

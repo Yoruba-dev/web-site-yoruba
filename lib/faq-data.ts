@@ -42,7 +42,19 @@ export const FAQS = [
     id: "Seven",
     question: "¿Ofrecen reparación de joyas?",
     answer:
-      "Sí, ofrecemos servicios de reparación. Tráenos tu pieza o escríbenos por WhatsApp para revisarla y darte un estimado.",
+      "Sí, tenemos taller propio: cambio de medida, soldadura de cadenas, reengaste de piedras, pulido, baño de rodio y limpieza. Tráenos tu pieza o escríbenos por WhatsApp; te damos un presupuesto por escrito antes de trabajar. Ver más en Garantía y devoluciones.",
+  },
+  {
+    id: "Return",
+    question: "¿Aceptan devoluciones o cambios?",
+    answer:
+      "No. Todas las ventas son finales: no aceptamos devoluciones, reembolsos ni cambios, porque la joyería va en contacto con la piel y muchas piezas son religiosas o hechas por encargo. Sí respaldamos cada pieza con garantía de por vida contra defectos de fabricación. Detalles en la página de Garantía y devoluciones.",
+  },
+  {
+    id: "Warranty",
+    question: "¿Qué garantía tienen las piezas?",
+    answer:
+      "Garantía de por vida contra defectos de fabricación (fallas de mano de obra o material), mientras el comprador original conserve la pieza y su comprobante. No cubre el desgaste normal, golpes, daño por químicos ni trabajos de terceros. Si una pieza es irreparable, la reemplazamos por otra de valor similar.",
   },
   {
     id: "Eight",
