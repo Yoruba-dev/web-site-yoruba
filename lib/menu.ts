@@ -6,6 +6,9 @@
 export interface MenuLink {
   label: string;
   href: string;
+  /** Optional thumbnail (used by the mobile menu's "Colecciones" list to show
+   *  each collection's image next to its name). */
+  image?: string;
 }
 
 export interface MenuColumn {
@@ -29,6 +32,8 @@ export interface MenuItem {
 export interface MenuCollection {
   handle: string;
   title: string;
+  /** Collection image — shown as a thumbnail in the mobile menu. */
+  image?: string;
 }
 
 // Curated informational/landing pages shown in the "Páginas" mega menu.
@@ -64,6 +69,7 @@ export function buildMainMenu(collections: MenuCollection[] = []): MenuItem[] {
       links: collections.map((c) => ({
         label: c.title,
         href: `/collections/${c.handle}`,
+        image: c.image,
       })),
     });
   }

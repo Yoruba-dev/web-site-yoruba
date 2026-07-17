@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { type MenuItem, type MenuLink } from "@/lib/menu";
+import { sizedImageUrl } from "@/lib/utils";
 
 // Recursive accordion item mirroring the template's offcanvas mobile menu.
 function Item({
@@ -56,7 +57,26 @@ function Item({
 function leafLinks(links: MenuLink[], onNavigate: () => void) {
   return links.map((l) => (
     <li key={l.label + l.href}>
-      <Link href={l.href} onClick={onNavigate}>
+      <Link
+        href={l.href}
+        onClick={onNavigate}
+        className={l.image ? "mm-thumb-link" : undefined}
+      >
+        {/* Collections carry their Shopify image → show it as a thumbnail so
+            the list is scannable by picture, not just by name. */}
+        {l.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="mm-thumb"
+            src={sizedImageUrl(l.image, 96)}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={48}
+            height={48}
+          />
+        )}
         <span className="mm-text">{l.label}</span>
       </Link>
     </li>

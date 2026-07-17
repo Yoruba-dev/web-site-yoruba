@@ -92,6 +92,7 @@ export default async function RootLayout({
   const collections = (await getCollections()).map((c) => ({
     handle: c.handle,
     title: c.title,
+    image: c.image ?? undefined,
   }));
 
   return (

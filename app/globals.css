@@ -4759,8 +4759,12 @@ button[type="submit"],
        bar at the junction (the dimmed backdrop already separates the drawer). */
     box-shadow: var(--pyj-glass-highlight) !important;
     padding: 0 !important;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    /* Column layout so the search + close stay pinned while only the nav list
+       scrolls (see .offcanvas-navigation below). The drawer itself no longer
+       scrolls. */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     /* hidden: parked off the right edge + faded */
     transform: translateX(calc(100% + 20px));
     opacity: 0;
@@ -4811,16 +4815,22 @@ button[type="submit"],
       border-color 0.3s ease, border-radius 0.3s ease;
   }
 
-  /* Kill the Bootstrap container padding inside the narrow drawer. */
+  /* Kill the Bootstrap container padding inside the narrow drawer; make it the
+     flex column that holds the pinned search + the scrolling nav. */
   .mobile-menu_wrapper .offcanvas-menu-inner .container {
     max-width: none;
     width: 100%;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   /* Search flows at the top (was absolutely positioned), glassy; clears the
-     close button. */
+     close button. Pinned — it never scrolls. */
   .mobile-menu_wrapper .offcanvas-inner_search {
+    flex: 0 0 auto;
     position: relative !important;
     top: auto;
     left: auto;
@@ -4838,15 +4848,39 @@ button[type="submit"],
     color: var(--dk-text) !important;
   }
 
-  /* Nav list padded within the drawer; dividers softened for the glass. */
+  /* Nav list padded within the drawer; dividers softened for the glass. This
+     is the ONLY scrolling area — the search + close above it stay pinned. */
   .mobile-menu_wrapper .offcanvas-navigation {
-    padding: 2px 15px 14px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 2px 15px 16px;
   }
   .offcanvas-navigation .mobile-menu > li {
     border-bottom-color: rgba(255, 255, 255, 0.09) !important;
   }
   .offcanvas-navigation .mobile-menu > li:last-child {
     border-bottom: 0 !important;
+  }
+
+  /* Collection rows carry their Shopify image, so the list is scannable by
+     picture and not just by name. Thumbnail sits inline before the label. */
+  .offcanvas-navigation .mobile-menu .mm-thumb-link {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+  }
+  .offcanvas-navigation .mobile-menu .mm-thumb {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    /* !important beats the global `* { border-radius: 0 !important }` reset —
+       circular, to match the home page's category circles. */
+    border-radius: 50% !important;
+    object-fit: cover;
+    border: 1px solid rgba(227, 178, 60, 0.45);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   /* Close → a small glass circle in the drawer's top-right corner. */
