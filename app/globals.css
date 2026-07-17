@@ -1528,6 +1528,61 @@ body.template-color-1 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* "Nuevo" badge — worn by new arrivals (auto-expires after NEW_ARRIVAL_DAYS).
+   Metallic-gold tag, Cinzel caps, with a slow diagonal shine sweep. Sits
+   top-left of the card image; if a piece is also on sale, the Sale sticker
+   drops just below it (.sticker--below-new). */
+.pyj-new-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-family: var(--font-display), "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #2c1f0a;
+  background: var(--gold-sheen);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+  pointer-events: none;
+}
+.pyj-new-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 66%
+  );
+  transform: translateX(-130%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pyj-new-badge::after {
+    animation: pyjNewShine 3.4s ease-in-out infinite;
+  }
+}
+@keyframes pyjNewShine {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+/* Rare case: a piece that is BOTH new and on sale — stack Sale under Nuevo. */
+.sticker--below-new {
+  top: 48px !important;
+}
+
 /* The detail price should gleam — metallic-gold gradient text (solid fallback). */
 .sp-content .price-box .new-price {
   color: var(--pyj-gold);

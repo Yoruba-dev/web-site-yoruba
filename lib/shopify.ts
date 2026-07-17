@@ -77,6 +77,7 @@ const PRODUCT_FRAGMENT = /* GraphQL */ `
     description
     tags
     availableForSale
+    createdAt
     priceRange {
       minVariantPrice { amount currencyCode }
     }
@@ -126,6 +127,7 @@ interface ShopifyProduct {
   description: string;
   tags: string[];
   availableForSale: boolean;
+  createdAt?: string | null;
   priceRange: { minVariantPrice: ShopifyMoney };
   compareAtPriceRange: { minVariantPrice: ShopifyMoney };
   images: { edges: { node: { url: string; altText: string | null } }[] };
@@ -150,6 +152,23 @@ interface ShopifyProduct {
       };
     }[];
   };
+}
+
+// A product wears the "Nuevo" badge for this many days after it's CREATED (added
+// to the catalogue); after that it drops off on its own — no manual cleanup.
+// NOTE: we key off createdAt, NOT publishedAt. This store's headless "Jewel
+// Linker" channel re-publishes the whole catalogue on each sync, so publishedAt
+// is recent for EVERY product and would badge the entire store. createdAt is
+// stable per product, so it truly marks new arrivals.
+export const NEW_ARRIVAL_DAYS = 30;
+
+/** True when a product was created within the last NEW_ARRIVAL_DAYS. */
+export function isNewArrival(createdAt?: string | null): boolean {
+  if (!createdAt) return false;
+  const created = new Date(createdAt).getTime();
+  if (!Number.isFinite(created)) return false;
+  const ageDays = (Date.now() - created) / 86_400_000;
+  return ageDays >= 0 && ageDays <= NEW_ARRIVAL_DAYS;
 }
 
 function reshape(p: ShopifyProduct): Product {
@@ -185,6 +204,7 @@ function reshape(p: ShopifyProduct): Product {
     compareAtPrice: hasDiscount ? (compareAt as Money) : null,
     images,
     badge: hasDiscount ? "Sale" : null,
+    isNew: isNewArrival(p.createdAt),
     availableForSale: p.availableForSale,
     // Merge any real Shopify tags with type/Orisha tags derived from the title,
     // so the shop filters + "Comprar por Orisha" work even when products are untagged.

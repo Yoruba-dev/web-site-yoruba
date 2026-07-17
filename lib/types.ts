@@ -47,6 +47,9 @@ export interface Product {
   reviewRating?: Rating | null;
   /** Corner sticker text e.g. "New", "-10%". null = no sticker. */
   badge: string | null;
+  /** True for pieces published within the last NEW_ARRIVAL_DAYS → shows the
+   *  "Nuevo" badge on the card. Computed server-side in `reshape`. */
+  isNew?: boolean;
   availableForSale: boolean;
   tags: string[];
   variants: ProductVariant[];
