@@ -5,10 +5,8 @@ import JsonLd from "@/components/seo/JsonLd";
 import { getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
 import { whatsappWholesaleUrl } from "@/lib/commerce";
-import { SITE } from "@/lib/site";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
 
 export const metadata: Metadata = {
   title: "Venta mayorista de herramientas de santo para botánicas",
@@ -27,6 +25,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/mayoreo" },
   openGraph: {
     type: "website",
+    images: OG_IMAGE,
     title: "Venta mayorista de herramientas de santo — Pedro Yoruba Jewelry",
     description:
       "Herramientas de los Orishas al por mayor para botánicas y tiendas. Acero inoxidable con garantía de por vida y oro por encargo, hechas a mano en Miami.",
@@ -55,6 +54,32 @@ const POINTS = [
   {
     head: "Hechas a mano en Miami",
     body: "Del taller a tu mostrador, sin intermediarios y con precio de mayorista.",
+  },
+];
+
+// Wholesale FAQ — one array feeds both the FAQPage schema and the visible
+// Q&A below (same "define once" discipline as the other policy pages).
+// Kept deliberately generic on numbers (no fixed MOQ/lead time yet).
+const MAYOREO_FAQS = [
+  {
+    q: "¿Qué puede pedir mi botánica al por mayor?",
+    a: "Herramientas de santo, monedas, Idde, azabaches y otras piezas religiosas de nuestro catálogo, en acero inoxidable, plata u oro por encargo — dinos qué busca tu clientela y armamos tu pedido.",
+  },
+  {
+    q: "¿Cómo hago un pedido de mayoreo?",
+    a: "Escríbenos por WhatsApp contándonos que tienes una botánica o tienda y qué te interesa; te pasamos el catálogo con precios de mayorista y coordinamos el envío.",
+  },
+  {
+    q: "¿Cuál es el pedido mínimo y cuánto tarda un pedido de mayoreo?",
+    a: "Depende de la pieza y la cantidad — escríbenos por WhatsApp para una cotización y un tiempo de entrega estimado según tu pedido.",
+  },
+  {
+    q: "¿Son fabricantes o revendedores?",
+    a: "Somos fabricante, no revendedor: las piezas se hacen en nuestro propio taller de Miami, sin intermediarios — por eso el precio de mayorista.",
+  },
+  {
+    q: "¿Hacen envíos a botánicas fuera de Miami?",
+    a: "Sí, enviamos a botánicas y tiendas religiosas en todo Estados Unidos. Coordinamos el envío por WhatsApp junto con tu pedido.",
   },
 ];
 
@@ -112,11 +137,18 @@ export default async function MayoreoPage() {
       },
     },
   };
+  const faqSchema = faqPageSchema(MAYOREO_FAQS);
+  const breadcrumbLd = breadcrumbSchema([
+    { name: "Inicio", url: "/" },
+    { name: "Mayorista", url: "/mayoreo" },
+  ]);
 
   return (
     <>
-      <Breadcrumb title="Mayorista" crumbs={[{ label: "Mayorista" }]} />
+      <Breadcrumb title="Mayorista" crumbs={[{ label: "Mayorista" }]} titleAs="p" />
       <JsonLd data={serviceSchema} />
+      <JsonLd data={faqSchema} />
+      <JsonLd data={breadcrumbLd} />
 
       {/* Editorial hero — asymmetric, anchored by a real herramienta photo. */}
       <section className="pyj-may">
@@ -178,9 +210,10 @@ export default async function MayoreoPage() {
               <p>
                 Si tienes una, nosotros te ponemos las{" "}
                 <strong>herramientas</strong>: los remos, las muletas y los
-                atributos que tu clientela busca para su santo. Tú pones la
-                vitrina; nosotros ponemos la calidad, la variedad y el precio de
-                mayorista.
+                atributos que tu clientela busca para su santo. Somos{" "}
+                <strong>fabricante, no revendedor</strong> —las piezas se hacen en
+                nuestro propio taller de Miami— así que tú pones la vitrina y
+                nosotros la calidad, la variedad y el precio de mayorista.
               </p>
             </div>
             <ul className="pyj-may_points">
@@ -249,13 +282,26 @@ export default async function MayoreoPage() {
         </div>
       </section>
 
+      {/* FAQ — visible text mirrors the FAQPage schema exactly. */}
+      <section className="pyj-may_intro">
+        <div className="container">
+          <h2>Preguntas frecuentes sobre mayoreo para botánicas</h2>
+          {MAYOREO_FAQS.map((f) => (
+            <div className="pyj-guide_qa" key={f.q}>
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Closing CTA band. */}
       <div className="pyj-ctaband">
         <div className="container">
           <h3>Surte tu botánica con herramientas de verdad</h3>
           <p>
             Escríbenos por WhatsApp o llámanos — te pasamos el catálogo de
-de mayorista y coordinamos tu primer pedido.
+            mayorista y coordinamos tu primer pedido.
           </p>
           <div className="pyj-may_cta" style={{ justifyContent: "center" }}>
             <a className="pyj-btn-gold" href={wa} target="_blank" rel="noreferrer">

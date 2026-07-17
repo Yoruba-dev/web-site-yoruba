@@ -28,7 +28,7 @@ export default function CategoryMenu() {
         <ul>
           {visible.map((cat) => (
             <li key={cat}>
-              <Link href="/shop">{cat}</Link>
+              <Link href="/shop-left-sidebar">{cat}</Link>
             </li>
           ))}
           {hasMore && (

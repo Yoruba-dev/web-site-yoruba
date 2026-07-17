@@ -41,8 +41,6 @@ export interface Product {
   compareAtPrice: Money | null;
   /** [0] = primary image, [1] = hover/secondary image. */
   images: ProductImage[];
-  /** 0–5, used by the star rating box. */
-  rating: number;
   /** Real Judge.me review rating (avg + count), attached server-side by
    *  `attachRatings`. null/undefined when the piece has no reviews yet → the
    *  card shows no stars (never fake ones). */

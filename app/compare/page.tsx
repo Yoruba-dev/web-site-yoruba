@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import CompareView from "@/components/product/CompareView";
 
-export const metadata: Metadata = { title: "Comparar" };
+export const metadata: Metadata = {
+  title: "Comparar",
+  robots: { index: false, follow: true },
+};
 
 export default function ComparePage() {
   return (

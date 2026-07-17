@@ -377,22 +377,6 @@ export default function ShopBrowser({
           <div className={productAreaClass}>
             {mobileFilters}
             <div className="shop-toolbar" ref={resultsTopRef}>
-              <div className="product-view-mode">
-                <Link
-                  className={view === "grid" ? "active grid-3" : "grid-3"}
-                  href="/shop-3-column"
-                  title="Grid View"
-                >
-                  <i className="fa fa-th" />
-                </Link>
-                <Link
-                  className={view === "list" ? "active list" : "list"}
-                  href="/shop-list-fullwidth"
-                  title="List View"
-                >
-                  <i className="fa fa-th-list" />
-                </Link>
-              </div>
               <div className="product-item-selection_area">
                 <div className="product-short">
                   <label className="select-label">Ordenar por:</label>

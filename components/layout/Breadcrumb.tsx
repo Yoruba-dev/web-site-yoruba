@@ -13,10 +13,16 @@ export default function Breadcrumb({
   title,
   crumbs = [],
   bgImage,
+  titleAs: TitleTag = "h1",
 }: {
   title: string;
   crumbs?: Crumb[];
   bgImage?: string;
+  /** Heading level for the page title. Defaults to the page's <h1> (the
+   *  breadcrumb title is the main heading on most pages). Pass "p" on pages
+   *  that already have their own content <h1>, to avoid two h1s. Styling is
+   *  identical either way (see `.breadcrumb-title` in globals.css). */
+  titleAs?: "h1" | "p";
 }) {
   return (
     <div
@@ -35,7 +41,7 @@ export default function Breadcrumb({
     >
       <div className="container">
         <div className="breadcrumb-content">
-          <h2>{title}</h2>
+          <TitleTag className="breadcrumb-title">{title}</TitleTag>
           <ul>
             <li>
               <Link href="/">Home</Link>

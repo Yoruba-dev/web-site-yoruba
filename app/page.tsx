@@ -59,6 +59,26 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* The hero is a designed banner image (text baked in), so the page's
+          real <h1> is visually hidden — it still gives crawlers a clear main
+          heading. */}
+      <h1
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        Pedro Yoruba Jewelry — Joyería Yoruba en oro 10k, 14k y 18k, hecha a
+        mano en Miami
+      </h1>
+
       <HeroSlider />
 
       {/* Recién llegado — front-and-center right under the hero so a new piece

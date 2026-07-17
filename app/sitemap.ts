@@ -1,9 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getCollections, getProducts } from "@/lib/products";
 import { publishedArticles } from "@/lib/blog-data";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE_URL as siteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -40,7 +38,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const collections = await getCollections();
     collectionEntries = collections.map((c) => ({
-      url: `${siteUrl}/collections/${c.handle}`,
+      // Percent-encode the handle so emoji/non-ASCII handles match the page's
+      // own canonical URL (which Next encodes) — one representation, not two.
+      url: `${siteUrl}/collections/${encodeURIComponent(c.handle)}`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
@@ -54,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const products = await getProducts(250);
     productEntries = products.map((p) => ({
-      url: `${siteUrl}/products/${p.handle}`,
+      url: `${siteUrl}/products/${encodeURIComponent(p.handle)}`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,

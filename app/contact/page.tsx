@@ -3,7 +3,7 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 import ContactForm from "@/components/contact/ContactForm";
 import SocialLinks from "@/components/layout/SocialLinks";
 import StoreMap from "@/components/layout/StoreMap";
-import { SITE } from "@/lib/site";
+import { SITE, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contacto",
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
   openGraph: {
     type: "website",
+    images: OG_IMAGE,
     title: "Contacto — Pedro Yoruba Jewelry",
     description: `WhatsApp, teléfono y nuestra tienda en ${SITE.contact.address}. Joyería Yoruba hecha a mano en Miami.`,
     url: "/contact",

@@ -6,10 +6,7 @@ import ArticleBody from "@/components/blog/ArticleBody";
 import SafeImage from "@/components/ui/SafeImage";
 import JsonLd from "@/components/seo/JsonLd";
 import { getArticle, isPublished, publishedArticles } from "@/lib/blog-data";
-import { SITE } from "@/lib/site";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE, SITE_URL as siteUrl } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
 

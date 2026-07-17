@@ -3,6 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import SafeImage from "@/components/ui/SafeImage";
 import { publishedArticles } from "@/lib/blog-data";
+import { OG_IMAGE } from "@/lib/site";
 
 // Re-check every 6 hours so queued (future-dated) articles go live on their own
 // once their publish date arrives — no manual rebuild needed.
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/blog" },
   openGraph: {
     type: "website",
+    images: OG_IMAGE,
     title: "Diario — Pedro Yoruba Jewelry",
     description:
       "Tradición Yoruba y guía de joyería: Idde de Orula, colores de los Orishas, tipos de oro y herramientas de santo.",
@@ -42,7 +44,7 @@ export default function BlogPage() {
   const articles = publishedArticles();
   return (
     <>
-      <Breadcrumb title="Diario" crumbs={[{ label: "Diario" }]} />
+      <Breadcrumb title="Diario" crumbs={[{ label: "Diario" }]} titleAs="p" />
       <div className="pyj-blog">
         <div className="container">
           <div className="pyj-blog-intro">

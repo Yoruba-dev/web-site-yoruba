@@ -159,6 +159,32 @@
   --dk-text: #d6cbb2;
   --dk-head: #f1e7d2;
   --dk-muted: #a99d83;
+
+  /* ---- "Liquid glass" design tokens (reusable) ----------------------------
+     One source of truth for the frosted-glass panels (mobile menu, minicart,
+     and anything future). Apply the whole look with the `.pyj-glass` class,
+     or reference individual tokens. Change it here → every glass surface
+     updates. */
+  --pyj-glass-bg: linear-gradient(
+    180deg,
+    rgba(46, 34, 20, 0.72) 0%,
+    rgba(32, 24, 14, 0.8) 100%
+  );
+  --pyj-glass-blur: blur(28px) saturate(180%);
+  --pyj-glass-border-color: rgba(255, 255, 255, 0.14);
+  --pyj-glass-radius: 26px;
+  --pyj-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  --pyj-glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.45);
+}
+
+/* Reusable frosted-glass surface. Add this class to any panel/card to give it
+   the same material as the mobile menu and minicart. */
+.pyj-glass {
+  background: var(--pyj-glass-bg);
+  -webkit-backdrop-filter: var(--pyj-glass-blur);
+  backdrop-filter: var(--pyj-glass-blur);
+  border: 1px solid var(--pyj-glass-border-color);
+  box-shadow: var(--pyj-glass-shadow), var(--pyj-glass-highlight);
 }
 
 body.template-color-1 {
@@ -234,6 +260,131 @@ body.template-color-1 {
 }
 .main-menu_area > nav > ul > li > ul li a {
   color: var(--dk-text) !important;
+}
+
+/* ---- Mega menu ("Páginas"): smooth open + airy, balanced layout ----
+   The template snaps the panel open (transform: scaleY(0→1), no transition).
+   Replace that with a soft fade + slide-down, more breathing room, and flow
+   the long "Colecciones" list into two sub-columns so nothing looks cramped
+   or lopsided. */
+.main-menu_area > nav > ul > li.megamenu-holder .hm-megamenu {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) !important;
+  transform-origin: top center !important;
+  transition: opacity 0.3s ease, transform 0.3s ease,
+    visibility 0s linear 0.3s !important;
+  pointer-events: none;
+  padding: 34px 42px !important;
+  column-gap: 30px;
+  border-radius: 4px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
+}
+/* :focus-within opens it for keyboard users too (tab into "Páginas"). */
+.main-menu_area > nav > ul > li.megamenu-holder:hover .hm-megamenu,
+.main-menu_area > nav > ul > li.megamenu-holder:focus-within .hm-megamenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) !important;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s !important;
+  pointer-events: auto;
+}
+/* Fade each link/title in a hair after the panel, so it feels like it unfolds. */
+.main-menu_area > nav > ul > li.megamenu-holder .hm-megamenu > li {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease 0.06s, transform 0.3s ease 0.06s;
+}
+.main-menu_area > nav > ul > li.megamenu-holder:hover .hm-megamenu > li,
+.main-menu_area > nav > ul > li.megamenu-holder:focus-within .hm-megamenu > li {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* A touch more space between links. */
+.main-menu_area
+  > nav
+  > ul
+  > li.megamenu-holder
+  .hm-megamenu
+  > li
+  > ul
+  > li
+  > a {
+  line-height: 2.1 !important;
+}
+/* The 12-item "Colecciones" list flows into two balanced sub-columns. */
+.main-menu_area
+  > nav
+  > ul
+  > li.megamenu-holder
+  .hm-megamenu
+  > li.pyj-mega-collections
+  > ul {
+  column-count: 2;
+  column-gap: 30px;
+}
+.main-menu_area
+  > nav
+  > ul
+  > li.megamenu-holder
+  .hm-megamenu
+  > li.pyj-mega-collections
+  > ul
+  > li {
+  break-inside: avoid;
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-menu_area > nav > ul > li.megamenu-holder .hm-megamenu,
+  .main-menu_area > nav > ul > li.megamenu-holder .hm-megamenu > li {
+    transition: opacity 0.001s, visibility 0s !important;
+    transform: none !important;
+  }
+}
+
+/* ---- Mobile offcanvas menu: smooth, comfortable, no cramped inner scroll ----
+   The template capped every accordion sub-menu at max-height:100px with its
+   own scrollbar (so a 12-item list forced scrolling inside a tiny box) and
+   toggled it with display:block/none (abrupt). Instead: the whole panel
+   scrolls as one, and each section expands/collapses with a smooth height
+   animation. */
+.mobile-menu_wrapper .offcanvas-menu-inner {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
+  overscroll-behavior: contain;
+}
+/* Drop the 100px cap + inner scrollbar — the panel handles scrolling now. */
+.offcanvas-navigation .mobile-menu li .sub-menu {
+  max-height: none !important;
+}
+/* Collapsible wrapper: grid-rows animates to the natural height, no magic
+   numbers, works at every nesting level. */
+.offcanvas-navigation .mobile-menu .mm-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.offcanvas-navigation .mobile-menu .mm-collapse.is-open {
+  grid-template-rows: 1fr;
+}
+.offcanvas-navigation .mobile-menu .mm-collapse > .sub-menu {
+  min-height: 0; /* let the grid track shrink below content height */
+  overflow: hidden !important; /* clip during the collapse; no inner bar */
+}
+/* Keep the +/- toggle on the title row only, so it never overlaps the
+   revealed sub-links (the template stretched it to the whole item height). */
+.offcanvas-navigation .mobile-menu li > .menu-expand {
+  height: 44px !important;
+  top: 0 !important;
+  line-height: 44px !important;
+}
+/* A little more breathing room + a divider under nested groups. */
+.offcanvas-navigation .mobile-menu .mm-collapse .sub-menu li a {
+  padding: 8px 0 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .offcanvas-navigation .mobile-menu .mm-collapse {
+    transition: none;
+  }
 }
 
 /* Product cards */
@@ -316,6 +467,26 @@ body.template-color-1 {
 }
 .breadcrumb-content h2 {
   color: #fff !important;
+}
+/* The breadcrumb page title, styled by class so it renders identically whether
+   it's an <h1> (default — the page's main heading) or a <p> (pages with their
+   own content <h1>). Replicates the template's original `.breadcrumb-content
+   > h2` look so nothing shifts visually. */
+.breadcrumb-content .breadcrumb-title {
+  font-family: "Cinzel", serif !important;
+  font-weight: 700;
+  color: #fff !important;
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 36px;
+  letter-spacing: 0.045em;
+  margin-bottom: 0;
+  padding-bottom: 20px;
+}
+@media (max-width: 1199px) {
+  .breadcrumb-content .breadcrumb-title {
+    font-size: 20px;
+  }
 }
 .breadcrumb-content ul li,
 .breadcrumb-content ul li a {
@@ -556,6 +727,14 @@ textarea:focus-visible,
   background-color: var(--dk-bg) !important;
   position: relative !important;
   border-bottom: 1px solid var(--dk-border) !important;
+}
+/* Sticky nav — the header bar pins to the top of the viewport as you scroll
+   down (the announcement + eleke bars above it scroll away first). Below the
+   offcanvas drawers (z 10000+) and the mobile tab bar (10001), above content. */
+.template-color-1 .header-main_area-2 {
+  position: sticky !important;
+  top: 0;
+  z-index: 900;
 }
 .template-color-1 .header-right_area > ul > li > a,
 .template-color-1 .header-right_area .toolbar-btn,
@@ -4127,7 +4306,9 @@ button[type="submit"],
 }
 @media (min-width: 992px) {
   .hiraola-slider_area-2 .single-slide {
-    height: 460px; /* compact on desktop (was ~720px) */
+    /* Taller so the banner reads bigger (was 460px, looked small); scales with
+       the viewport but capped so it never gets oversized on wide screens. */
+    height: clamp(460px, 46vw, 620px);
   }
   .hero-slide_img {
     height: 100%;
@@ -4519,6 +4700,269 @@ button[type="submit"],
     background 0.28s ease,
     box-shadow 0.28s ease,
     transform 0.12s ease;
+}
+
+/* ===========================================================================
+   Mobile menu — glass drawer FUSED to the bottom tab bar (2026-07-16)
+   The ☰ drawer adopts the tab bar's frosted-glass material and drops down so
+   its bottom edge meets the bar — the two connect into one continuous piece
+   of "liquid glass" (no separate floating card, no gap). A dim scrim closes
+   it on an outside tap. Desktop is untouched (the ☰ is hidden ≥lg).
+=========================================================================== */
+@media (max-width: 991px) {
+  /* Dim scrim behind the drawer — tap it to close. */
+  .mobile-menu_wrapper .pyj-offcanvas-backdrop {
+    position: fixed;
+    inset: 0;
+    /* The wrapper is position:static so its z-index is ignored; the backdrop
+       needs its own explicit z-index to sit above the page (which comes later
+       in the DOM) yet below the drawer (10000) and the tab bar (10001). */
+    z-index: 9990;
+    background: rgba(6, 4, 2, 0.44);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.32s ease, visibility 0s linear 0.32s;
+  }
+  .mobile-menu_wrapper.open .pyj-offcanvas-backdrop {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.32s ease, visibility 0s;
+  }
+
+  /* Glass drawer: the original narrow right-side shape. It sits ABOVE the tab
+     bar (z-index) and its bottom overlaps the bar's top edge just enough to
+     cover the seam — so ONLY the part of the bar under the drawer fuses with
+     it, while the rest of the bar keeps its normal rounded shape. */
+  .mobile-menu_wrapper .offcanvas-menu-inner {
+    /* !important: the template stylesheet loads after this one. */
+    top: 12px !important;
+    right: 12px !important;
+    left: auto !important;
+    /* Bottom overlaps the bar's top by only a few px, so its glass covers the
+       seam with a SINGLE glass layer (drawer above bar) — no double-glass band
+       — while leaving the tabs fully visible below. */
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    height: auto !important;
+    width: min(78vw, 300px) !important;
+    z-index: 10002 !important; /* above the bar (10001): one glass layer at the seam */
+    /* Rounded top like the bar; square bottom so it meets the bar's squared
+       top-right edge cleanly. Reuses the shared glass tokens (see .pyj-glass). */
+    border-radius: var(--pyj-glass-radius) var(--pyj-glass-radius) 0 0 !important;
+    border: 1px solid var(--pyj-glass-border-color) !important;
+    border-bottom: 0 !important;
+    background: var(--pyj-glass-bg) !important;
+    -webkit-backdrop-filter: var(--pyj-glass-blur);
+    backdrop-filter: var(--pyj-glass-blur);
+    /* Inset top highlight only — NO outer drop shadow, so nothing darkens the
+       bar at the junction (the dimmed backdrop already separates the drawer). */
+    box-shadow: var(--pyj-glass-highlight) !important;
+    padding: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* hidden: parked off the right edge + faded */
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 0.44s cubic-bezier(0.22, 1, 0.32, 1),
+      opacity 0.3s ease,
+      visibility 0s linear 0.44s !important;
+  }
+  .mobile-menu_wrapper.open .offcanvas-menu-inner {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    transition:
+      transform 0.48s cubic-bezier(0.22, 1, 0.32, 1),
+      opacity 0.32s ease,
+      visibility 0s !important;
+  }
+
+  /* While the menu OR the cart drawer is open, the tab bar drops its TOP edge
+     (border + specular highlight) so the seam between it and whichever glass
+     drawer is open disappears — the border now wraps the combined drawer+bar
+     outline. Rounding + bottom stay, so the part of the bar sticking out left
+     of the drawer keeps its shape. Shared by both drawers (same right-edge
+     alignment, same fix) — one rule, not two copies. */
+  body.pyj-menu-open .pyj-tabbar,
+  body.pyj-cart-open .pyj-tabbar {
+    /* Keep the light top edge (the part that sticks out left of the drawer —
+       the "step" — needs a defined highlight, not a raw dark cut). The drawer,
+       sitting on top, hides this edge where the two overlap, so no seam shows
+       under the drawer. */
+    border-top-color: rgba(255, 255, 255, 0.14) !important;
+    /* Square the top-RIGHT corner so it lines up flush with the drawer's
+       straight right edge — no leftover rounded-corner arc ("white bit"). The
+       top-left stays rounded (that part of the bar sticks out past the drawer). */
+    border-top-right-radius: 0 !important;
+    /* Match the drawer's glass tint exactly at the seam (its top == the
+       drawer's bottom) so brightness never steps between the two. */
+    background: linear-gradient(
+      180deg,
+      rgba(32, 24, 14, 0.8) 0%,
+      rgba(18, 13, 8, 0.82) 100%
+    ) !important;
+    box-shadow:
+      0 10px 34px rgba(0, 0, 0, 0.5),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.28) !important;
+    transition: background 0.3s ease, box-shadow 0.3s ease,
+      border-color 0.3s ease, border-radius 0.3s ease;
+  }
+
+  /* Kill the Bootstrap container padding inside the narrow drawer. */
+  .mobile-menu_wrapper .offcanvas-menu-inner .container {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Search flows at the top (was absolutely positioned), glassy; clears the
+     close button. */
+  .mobile-menu_wrapper .offcanvas-inner_search {
+    position: relative !important;
+    top: auto;
+    left: auto;
+    width: 100% !important;
+    background: transparent !important;
+    padding: 52px 15px 6px !important;
+  }
+  .mobile-menu_wrapper .offcanvas-inner_search input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 12px !important;
+    color: var(--dk-head) !important;
+  }
+  .mobile-menu_wrapper .offcanvas-inner_search .search_btn {
+    color: var(--dk-text) !important;
+  }
+
+  /* Nav list padded within the drawer; dividers softened for the glass. */
+  .mobile-menu_wrapper .offcanvas-navigation {
+    padding: 2px 15px 14px;
+  }
+  .offcanvas-navigation .mobile-menu > li {
+    border-bottom-color: rgba(255, 255, 255, 0.09) !important;
+  }
+  .offcanvas-navigation .mobile-menu > li:last-child {
+    border-bottom: 0 !important;
+  }
+
+  /* Close → a small glass circle in the drawer's top-right corner. */
+  .mobile-menu_wrapper .btn-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    left: auto !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 16px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--dk-head) !important;
+    z-index: 3;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .mobile-menu_wrapper .btn-close:hover,
+  .mobile-menu_wrapper .btn-close:active {
+    background: rgba(255, 255, 255, 0.18) !important;
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-menu_wrapper .offcanvas-menu-inner,
+    .mobile-menu_wrapper.open .offcanvas-menu-inner {
+      transition: opacity 0.2s ease, visibility 0s !important;
+      transform: none !important;
+    }
+  }
+}
+
+/* ===========================================================================
+   Cart drawer — same "liquid glass" material as the mobile menu (2026-07-16)
+   Tapping the cart tab shows a frosted-glass floating card in the same style
+   as the ☰ menu, reusing the shared .pyj-glass tokens. Mobile/tablet only
+   (desktop keeps its side drawer). One source of truth = change the tokens
+   in :root and both surfaces update together.
+=========================================================================== */
+@media (max-width: 991px) {
+  .offcanvas-minicart_wrapper .offcanvas-menu-inner {
+    /* !important: the template stylesheet loads after this one. */
+    top: 12px !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; /* clear the tab bar */
+    height: auto !important;
+    width: min(86vw, 340px) !important;
+    z-index: 10002 !important;
+    /* Rounded top, square bottom — like the menu, so the bottom edge meets the
+       tab bar cleanly and the two fuse into one glass shape. */
+    border-radius: var(--pyj-glass-radius) var(--pyj-glass-radius) 0 0 !important;
+    border: 1px solid var(--pyj-glass-border-color) !important;
+    border-bottom: 0 !important;
+    background: var(--pyj-glass-bg) !important;
+    -webkit-backdrop-filter: var(--pyj-glass-blur);
+    backdrop-filter: var(--pyj-glass-blur);
+    /* Inset highlight only (no outer drop shadow) so nothing darkens the seam. */
+    box-shadow: var(--pyj-glass-highlight) !important;
+    padding: 54px 0 14px !important; /* top room for the close button */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* hidden: parked off the right edge + faded; slides in like the menu */
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 0.44s cubic-bezier(0.22, 1, 0.32, 1),
+      opacity 0.3s ease,
+      visibility 0s linear 0.44s !important;
+  }
+  .offcanvas-minicart_wrapper.open .offcanvas-menu-inner {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    transition:
+      transform 0.48s cubic-bezier(0.22, 1, 0.32, 1),
+      opacity 0.32s ease,
+      visibility 0s !important;
+  }
+  /* Close → a glass circle top-right (identical to the menu's). */
+  .offcanvas-minicart_wrapper .btn-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    left: auto !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 16px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid var(--pyj-glass-border-color);
+    color: var(--dk-head) !important;
+    z-index: 3;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .offcanvas-minicart_wrapper .btn-close:hover,
+  .offcanvas-minicart_wrapper .btn-close:active {
+    background: rgba(255, 255, 255, 0.18) !important;
+    transform: rotate(90deg);
+  }
+  /* Soften the inner separators to suit the glass. */
+  .offcanvas-minicart_wrapper .minicart-list .minicart-product,
+  .offcanvas-minicart_wrapper .minicart-item_total {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .offcanvas-minicart_wrapper .offcanvas-menu-inner,
+    .offcanvas-minicart_wrapper.open .offcanvas-menu-inner {
+      transition: opacity 0.2s ease, visibility 0s !important;
+      transform: none !important;
+    }
+  }
 }
 
 /* ===========================================================================

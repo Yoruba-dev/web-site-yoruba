@@ -1,8 +1,5 @@
-import { SITE } from "@/lib/site";
+import { SITE, SITE_URL as siteUrl } from "@/lib/site";
 import JsonLd from "@/components/seo/JsonLd";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 // Global schema.org graph — JewelryStore (LocalBusiness) + WebSite. Helps
 // Google show the business with address/hours/phone in search + maps, and

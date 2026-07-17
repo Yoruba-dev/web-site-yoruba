@@ -19,7 +19,6 @@ export interface CompareItem {
   image: string;
   price: number;
   currencyCode: string;
-  rating: number;
   category: string;
   available: boolean;
   description: string;
@@ -72,7 +71,6 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
         image: product.images[0]?.url ?? "",
         price: Number(product.price.amount),
         currencyCode: product.price.currencyCode,
-        rating: product.rating ?? 0,
         category: product.tags[0] ?? "—",
         available: product.availableForSale,
         description: product.description ?? "",

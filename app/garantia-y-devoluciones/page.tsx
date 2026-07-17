@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
-import { SITE } from "@/lib/site";
+import { SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
+import { breadcrumbSchema as buildBreadcrumbSchema, faqPageSchema } from "@/lib/schema";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 const UPDATED = "15 de julio de 2026";
 
 export const metadata: Metadata = {
@@ -23,6 +22,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "article",
+    images: OG_IMAGE,
     title: "Garantía, devoluciones y reparaciones — Pedro Yoruba Jewelry",
     description:
       "Ventas finales, garantía de por vida contra defectos de fabricación, reparaciones y compra de oro usado como material. Todo explicado con transparencia.",
@@ -65,15 +65,7 @@ export default function GarantiaDevolucionesPage() {
     "Hola 👋 Tengo una consulta sobre garantía / reparación de una pieza.",
   )}`;
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: POLICY_FAQS.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
-    })),
-  };
+  const faqSchema = faqPageSchema(POLICY_FAQS);
 
   const pageSchema = {
     "@context": "https://schema.org",
@@ -89,25 +81,17 @@ export default function GarantiaDevolucionesPage() {
     publisher: { "@id": `${siteUrl}/#store` },
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: siteUrl },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Garantía y devoluciones",
-        item: `${siteUrl}/garantia-y-devoluciones`,
-      },
-    ],
-  };
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Inicio", url: "/" },
+    { name: "Garantía y devoluciones", url: "/garantia-y-devoluciones" },
+  ]);
 
   return (
     <>
       <Breadcrumb
         title="Garantía y devoluciones"
         crumbs={[{ label: "Garantía y devoluciones" }]}
+        titleAs="p"
       />
       <JsonLd data={pageSchema} />
       <JsonLd data={faqSchema} />

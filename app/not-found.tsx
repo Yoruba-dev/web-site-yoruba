@@ -6,7 +6,7 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 export default function NotFound() {
   return (
     <>
-      <Breadcrumb title="Página no encontrada" crumbs={[{ label: "404" }]} />
+      <Breadcrumb title="Página no encontrada" crumbs={[{ label: "404" }]} titleAs="p" />
       <div className="pyj-error-page pyj-404">
         <div className="container">
           <div className="pyj-404-code">404</div>

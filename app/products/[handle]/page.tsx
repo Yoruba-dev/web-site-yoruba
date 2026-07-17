@@ -8,10 +8,7 @@ import { getProductRating } from "@/lib/judgeme";
 import { attachRatings } from "@/lib/product-ratings";
 import { RETURN_POLICY_SCHEMA } from "@/lib/merchant-policy";
 import { ORISHA_NAMES } from "@/lib/orishas";
-import { SITE } from "@/lib/site";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE, SITE_URL as siteUrl } from "@/lib/site";
 
 type Params = Promise<{ handle: string }>;
 

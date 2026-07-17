@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import StoreMap from "@/components/layout/StoreMap";
 import SocialLinks from "@/components/layout/SocialLinks";
-import { SITE } from "@/lib/site";
+import { SITE, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Nosotros",
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/about-us" },
   openGraph: {
     type: "website",
+    images: OG_IMAGE,
     title: "Nosotros — Pedro Yoruba Jewelry",
     description:
       "Joyería Yoruba hecha a mano en Miami, con devoción a los Orishas. Oro 10k, 14k y 18k por encargo.",

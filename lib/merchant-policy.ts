@@ -9,8 +9,7 @@
 // store coordinates each delivery per order — see FAQ). When real rates exist
 // in Shopify (Configuración → Envío), add an OfferShippingDetails object here
 // and spread it into the product Offer the same way as the return policy.
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE_URL } from "./site";
 
 export const RETURN_POLICY_SCHEMA = {
   "@type": "MerchantReturnPolicy",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SITE_URL } from "@/lib/site";
 
 // Submit a customer review to Judge.me. Runs server-side so it isn't blocked by
 // the site's CSP (which doesn't allow the browser to reach judge.me) and so the
@@ -8,8 +9,6 @@ import { NextResponse } from "next/server";
 //
 // POST /api/review  { productId, handle, email, name, rating, title?, body? }
 const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 

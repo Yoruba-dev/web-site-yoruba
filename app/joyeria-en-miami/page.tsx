@@ -5,10 +5,8 @@ import JsonLd from "@/components/seo/JsonLd";
 import ProductSlider from "@/components/product/ProductSlider";
 import { getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
-import { SITE } from "@/lib/site";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
+import { breadcrumbSchema as buildBreadcrumbSchema, faqPageSchema } from "@/lib/schema";
 
 // Pillar landing page for local + AI search: "joyería en Miami" and the whole
 // cluster around it (joyería de oro, artesanal, religiosa, yoruba, reparación).
@@ -23,6 +21,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/joyeria-en-miami" },
   openGraph: {
     type: "article",
+    images: OG_IMAGE,
     title: "Joyería en Miami: oro real 10k, 14k y 18k hecho a mano",
     description:
       "Guía honesta para comprar joyería de oro en Miami — y por qué un taller que fabrica sus propias piezas te conviene más que una vitrina.",
@@ -72,15 +71,7 @@ export default async function JoyeriaEnMiamiPage() {
     "Hola 👋 Vi su página de joyería en Miami y quiero hacerles una consulta.",
   )}`;
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: GUIDE_FAQS.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
-    })),
-  };
+  const faqSchema = faqPageSchema(GUIDE_FAQS);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -98,19 +89,10 @@ export default async function JoyeriaEnMiamiPage() {
     about: { "@id": `${siteUrl}/#store` },
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: siteUrl },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Joyería en Miami",
-        item: `${siteUrl}/joyeria-en-miami`,
-      },
-    ],
-  };
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Inicio", url: "/" },
+    { name: "Joyería en Miami", url: "/joyeria-en-miami" },
+  ]);
 
   return (
     <>
@@ -118,6 +100,7 @@ export default async function JoyeriaEnMiamiPage() {
         title="Joyería en Miami"
         crumbs={[{ label: "Joyería en Miami" }]}
         bgImage={heroImg?.url}
+        titleAs="p"
       />
       <JsonLd data={articleSchema} />
       <JsonLd data={faqSchema} />
@@ -214,9 +197,9 @@ export default async function JoyeriaEnMiamiPage() {
                 de Miami — la zona de <strong>Tamiami</strong>, junto a
                 Westchester y a minutos de Sweetwater, Kendall y la Calle 8.
                 Atendemos <strong>lunes a viernes de 10:00 a 5:00</strong> y{" "}
-                <strong>sábados de 10:00 a 4:00</strong> (domingos cerrado), sin
-                cita — y si prefieres, coordinamos una atención personalizada por
-                WhatsApp. Puedes comprar en la tienda física, recoger tu pedido
+                <strong>sábados de 10:00 a 4:00</strong> (domingos cerrado). Te
+                recomendamos <strong>agendar una cita</strong> por WhatsApp para
+                atenderte mejor. Puedes comprar en la tienda física, recoger tu pedido
                 (también curbside) o recibirlo con <strong>envío a todo
                 Estados Unidos</strong>. Aceptamos tarjetas, Zelle, Cash App y
                 efectivo.

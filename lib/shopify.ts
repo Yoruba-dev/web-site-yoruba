@@ -184,7 +184,6 @@ function reshape(p: ShopifyProduct): Product {
     price: p.priceRange.minVariantPrice as Money,
     compareAtPrice: hasDiscount ? (compareAt as Money) : null,
     images,
-    rating: 5,
     badge: hasDiscount ? "Sale" : null,
     availableForSale: p.availableForSale,
     // Merge any real Shopify tags with type/Orisha tags derived from the title,

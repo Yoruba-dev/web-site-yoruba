@@ -2,6 +2,18 @@
 // footer and contact page reads from here — never hardcode contact info in a
 // component. Values are the real Pedro Yoruba Jewelry business details.
 
+// Canonical site origin — every schema.org/JSON-LD absolute URL and the
+// sitemap/robots files read this instead of redefining the fallback string.
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+
+// Default social-share image. Next REPLACES (not merges) the openGraph object,
+// so any page that sets its own `openGraph` must spread this in or it ships no
+// image → blank thumbnail on WhatsApp/Facebook/etc. Spread as `images: OG_IMAGE`.
+export const OG_IMAGE = [
+  { url: "/og-image.png", width: 1200, height: 630, alt: "Pedro Yoruba Jewelry" },
+];
+
 export const SITE = {
   name: "Pedro Yoruba Jewelry",
   tagline:

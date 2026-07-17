@@ -161,6 +161,42 @@ export const ARTICLES: Article[] = [
       { p: "Si necesitas herramientas para tu Ocha o para completar un trono, podemos elaborarlas a mano y coordinar los detalles contigo." },
     ],
   },
+  {
+    slug: "monedas-de-plata-en-la-santeria",
+    title: "Monedas de plata en la Santería: significado y cómo se llevan",
+    excerpt:
+      "La moneda de plata es un símbolo tradicional de protección y prosperidad. Te explicamos qué representa, en qué joya se usa y por qué se trabaja en plata.",
+    keywords: [
+      "moneda de plata santeria",
+      "monedas de plata orishas",
+      "significado moneda de plata",
+      "monedas para el santo",
+      "collar de monedas de plata",
+    ],
+    date: "2026-07-14",
+    cover: "/assets/images/banner/3_1.jpg",
+    category: "Tradición",
+    readingMinutes: 4,
+    cta: { label: "Ver las Monedas de plata", href: "/collections/monedas" },
+    blocks: [
+      { p: "La **moneda de plata** es una de las piezas más pedidas en joyería religiosa: se lleva como dije, como charm en una pulsera o como parte de un collar completo de monedas. Es un símbolo tradicional de **protección y prosperidad**, muy presente tanto en la santería como en la joyería popular latinoamericana." },
+      { h2: "¿Qué representan las monedas de plata?" },
+      { p: "La moneda —como objeto redondo, metálico y de valor— se asocia desde hace generaciones con la **abundancia y la buena suerte**. Se regala o se lleva puesta como un recordatorio de prosperidad, y muchas familias la pasan de una generación a otra como pieza de protección. No hay un significado único ni una sola casa de santo que lo defina igual: si tu padrino o madrina te indica un uso o una fecha específica para llevarla, esa orientación es la que debes seguir." },
+      { h2: "¿En qué joya se usan las monedas de plata?" },
+      { p: "La forma más común es el **dije** de una sola moneda, colgado en cadena o gargantilla. También se usa como **charm en una pulsera**, junto a otros dijes, o como un **collar completo de monedas** engarzadas una junto a otra. Trabajamos la moneda en plata y, por encargo, también en oro." },
+      { h2: "Plata vs. oro: ¿por qué monedas en plata?" },
+      { p: "La plata es un metal más accesible que el oro y es, tradicionalmente, el material en el que se trabaja la moneda, por su brillo blanco y porque así se ha hecho siempre esta pieza. Si prefieres la versión en oro, también la fabricamos por encargo; compara pureza, color y precio en nuestra [guía de oro 10k, 14k o 18k](/blog/oro-10k-14k-18k-cual-elegir)." },
+      { h2: "Cómo cuidar tus monedas de plata" },
+      { p: "La plata se opaca con el tiempo si no se cuida — es normal, no es un defecto:" },
+      { ul: [
+        "Guárdala en una bolsita cerrada o en tela suave, lejos del aire y la humedad.",
+        "Evita el contacto con perfumes, cremas, cloro y productos de limpieza.",
+        "Límpiala con un paño de pulir plata o un paño suave y seco.",
+        "Si se opaca mucho, tráela a nuestro taller para una limpieza profesional.",
+      ] },
+      { p: "Si buscas una moneda de plata hecha a mano en Miami —en dije, pulsera o collar completo— puedes verla en nuestra [colección de Monedas de plata](/collections/monedas) o pedirla por encargo a tu medida." },
+    ],
+  },
 
   // --- Backlog: se publican solos, uno por semana (fechas futuras) -----------
   {

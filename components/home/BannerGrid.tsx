@@ -17,7 +17,7 @@ export default function BannerGrid({
           {images.map((img, i) => (
             <div className={colClass} key={`${img}-${i}`}>
               <div className="banner-item img-hover_effect">
-                <Link href="/shop">
+                <Link href="/shop-left-sidebar">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="img-full" src={`/assets/images/banner/${img}`} alt="Promotion" />
                 </Link>

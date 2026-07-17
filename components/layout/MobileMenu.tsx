@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MAIN_MENU, type MenuItem, type MenuLink } from "@/lib/menu";
+import { type MenuItem, type MenuLink } from "@/lib/menu";
 
 // Recursive accordion item mirroring the template's offcanvas mobile menu.
 function Item({
@@ -34,15 +34,20 @@ function Item({
         <span
           className="menu-expand"
           onClick={() => setOpen((v) => !v)}
+          role="button"
+          aria-expanded={open}
+          aria-label={open ? `Cerrar ${label}` : `Abrir ${label}`}
           style={{ cursor: "pointer" }}
         >
           <i className="ion-ios-plus-empty" />
         </span>
       )}
       {hasChildren && (
-        <ul className="sub-menu" style={{ display: open ? "block" : "none" }}>
-          {children}
-        </ul>
+        // Grid-rows 0fr→1fr animates to the list's natural height with no
+        // hardcoded max-height — smooth for a 4-link column or a 12-link one.
+        <div className={`mm-collapse${open ? " is-open" : ""}`}>
+          <ul className="sub-menu">{children}</ul>
+        </div>
       )}
     </li>
   );
@@ -88,11 +93,17 @@ function renderItem(item: MenuItem, onNavigate: () => void) {
   );
 }
 
-export default function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
+export default function MobileMenu({
+  menu,
+  onNavigate,
+}: {
+  menu: MenuItem[];
+  onNavigate: () => void;
+}) {
   return (
     <nav className="offcanvas-navigation">
       <ul className="mobile-menu">
-        {MAIN_MENU.map((item) => renderItem(item, onNavigate))}
+        {menu.map((item) => renderItem(item, onNavigate))}
       </ul>
     </nav>
   );

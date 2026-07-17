@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MAIN_MENU, type MenuItem } from "@/lib/menu";
+import { buildMainMenu, type MenuItem, type MenuCollection } from "@/lib/menu";
 import { SITE } from "@/lib/site";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -19,7 +19,7 @@ function DesktopMenuItem({ item }: { item: MenuItem }) {
         <Link href={item.href}>{item.label}</Link>
         <ul className="hm-megamenu">
           {item.megaColumns.map((col) => (
-            <li key={col.title}>
+            <li key={col.title} className={col.className}>
               <span className="megamenu-title">{col.title}</span>
               <ul>
                 {col.links.map((l) => (
@@ -30,7 +30,6 @@ function DesktopMenuItem({ item }: { item: MenuItem }) {
               </ul>
             </li>
           ))}
-          <li className="menu-item_img" />
         </ul>
       </li>
     );
@@ -59,7 +58,12 @@ function DesktopMenuItem({ item }: { item: MenuItem }) {
 }
 
 // Header "Two" — single-row header from index-2.html, wired to the cart.
-export default function Header() {
+export default function Header({
+  collections = [],
+}: {
+  collections?: MenuCollection[];
+}) {
+  const menu = buildMainMenu(collections);
   const { lines, count, subtotal, currencyCode, removeItem, cartOpen, setCartOpen } =
     useCart();
   const { count: wishCount } = useWishlist();
@@ -82,6 +86,18 @@ export default function Header() {
   // the cart opens keeps two offcanvas drawers from stacking at the same z-index.
   useEffect(() => {
     if (cartOpen) setPanel(null);
+  }, [cartOpen]);
+
+  // Flag the <body> while the mobile menu OR cart drawer is open so the bottom
+  // tab bar (a sibling, not reachable via a CSS combinator) can drop its top
+  // edge and fuse with the glass drawer — see globals.css.
+  useEffect(() => {
+    document.body.classList.toggle("pyj-menu-open", panel === "menu");
+    return () => document.body.classList.remove("pyj-menu-open");
+  }, [panel]);
+  useEffect(() => {
+    document.body.classList.toggle("pyj-cart-open", cartOpen);
+    return () => document.body.classList.remove("pyj-cart-open");
   }, [cartOpen]);
 
   const close = () => {
@@ -114,7 +130,7 @@ export default function Header() {
               <div className="main-menu_area">
                 <nav>
                   <ul>
-                    {MAIN_MENU.map((item) => (
+                    {menu.map((item) => (
                       <DesktopMenuItem key={item.label} item={item} />
                     ))}
                   </ul>
@@ -125,16 +141,16 @@ export default function Header() {
               <div className="header-right_area">
                 <ul>
                   <li>
-                    <Link href="/wishlist" className="wishlist-btn" title="Favoritos">
-                      <i className="ion-android-favorite-outline" />
+                    <Link href="/wishlist" className="wishlist-btn" title="Favoritos" aria-label="Favoritos">
+                      <i className="ion-android-favorite-outline" aria-hidden="true" />
                       {wishCount > 0 && (
                         <span className="minicart-count">{wishCount}</span>
                       )}
                     </Link>
                   </li>
                   <li>
-                    <Link href="/compare" className="wishlist-btn" title="Comparar">
-                      <i className="ion-ios-shuffle-strong" />
+                    <Link href="/compare" className="wishlist-btn" title="Comparar" aria-label="Comparar">
+                      <i className="ion-ios-shuffle-strong" aria-hidden="true" />
                       {compareCount > 0 && (
                         <span className="minicart-count">{compareCount}</span>
                       )}
@@ -145,8 +161,9 @@ export default function Header() {
                       type="button"
                       className="search-btn toolbar-btn"
                       onClick={() => openPanel("search")}
+                      aria-label="Buscar"
                     >
-                      <i className="ion-ios-search-strong" />
+                      <i className="ion-ios-search-strong" aria-hidden="true" />
                     </button>
                   </li>
                   <li>
@@ -154,8 +171,9 @@ export default function Header() {
                       type="button"
                       className="mobile-menu_btn toolbar-btn color--white d-lg-none d-block"
                       onClick={() => openPanel("menu")}
+                      aria-label="Abrir menú"
                     >
-                      <i className="ion-navicon" />
+                      <i className="ion-navicon" aria-hidden="true" />
                     </button>
                   </li>
                   <li>
@@ -163,8 +181,9 @@ export default function Header() {
                       type="button"
                       className="minicart-btn toolbar-btn"
                       onClick={toggleCart}
+                      aria-label="Carrito"
                     >
-                      <i className="ion-bag" />
+                      <i className="ion-bag" aria-hidden="true" />
                       {count > 0 && <span className="minicart-count">{count}</span>}
                     </button>
                   </li>
@@ -179,8 +198,8 @@ export default function Header() {
       <div className={`offcanvas-search_wrapper${panel === "search" ? " open" : ""}`} id="searchBar">
         <div className="offcanvas-menu-inner">
           <div className="container">
-            <button type="button" className="btn-close" onClick={close}>
-              <i className="ion-android-close" />
+            <button type="button" className="btn-close" onClick={close} aria-label="Cerrar">
+              <i className="ion-android-close" aria-hidden="true" />
             </button>
             <div className="offcanvas-search">
               <SearchBar onNavigate={close} />
@@ -192,8 +211,8 @@ export default function Header() {
       {/* Offcanvas: minicart */}
       <div className={`offcanvas-minicart_wrapper${cartOpen ? " open" : ""}`} id="miniCart">
         <div className="offcanvas-menu-inner">
-          <button type="button" className="btn-close" onClick={close}>
-            <i className="ion-android-close" />
+          <button type="button" className="btn-close" onClick={close} aria-label="Cerrar">
+              <i className="ion-android-close" aria-hidden="true" />
           </button>
           <div className="minicart-content">
             <div className="minicart-heading">
@@ -258,15 +277,17 @@ export default function Header() {
 
       {/* Offcanvas: mobile menu */}
       <div className={`mobile-menu_wrapper${panel === "menu" ? " open" : ""}`} id="mobileMenu">
+        {/* Tap the dimmed/blurred area outside the card to close it. */}
+        <div className="pyj-offcanvas-backdrop" onClick={close} aria-hidden="true" />
         <div className="offcanvas-menu-inner">
           <div className="container">
-            <button type="button" className="btn-close" onClick={close}>
-              <i className="ion-android-close" />
+            <button type="button" className="btn-close" onClick={close} aria-label="Cerrar">
+              <i className="ion-android-close" aria-hidden="true" />
             </button>
             <div className="offcanvas-inner_search">
               <SearchBar onNavigate={close} />
             </div>
-            <MobileMenu onNavigate={close} />
+            <MobileMenu menu={menu} onNavigate={close} />
           </div>
         </div>
       </div>

@@ -15,13 +15,11 @@ import { CartProvider } from "@/lib/cart-context";
 import { CompareProvider } from "@/lib/compare-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { AccountProvider } from "@/lib/account-context";
-import { SITE } from "@/lib/site";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { getCollections } from "@/lib/products";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE.name} — Joyería Yoruba en Oro · Miami`,
     template: `%s | ${SITE.name}`,
@@ -43,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_US",
-    url: siteUrl,
+    url: SITE_URL,
     siteName: SITE.name,
     title: `${SITE.name} — Joyería Yoruba en Oro`,
     description: SITE.tagline,
@@ -72,7 +70,7 @@ export const metadata: Metadata = {
     verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION },
   }),
   applicationName: SITE.name,
-  authors: [{ name: SITE.name, url: siteUrl }],
+  authors: [{ name: SITE.name, url: SITE_URL }],
   creator: SITE.name,
   publisher: SITE.name,
   category: "shopping",
@@ -84,11 +82,18 @@ export const viewport = {
   themeColor: "#0d0a07",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Live Shopify collections feed the "Colecciones" column of the nav mega
+  // menu (getCollections is cached + fails gracefully to []).
+  const collections = (await getCollections()).map((c) => ({
+    handle: c.handle,
+    title: c.title,
+  }));
+
   return (
     <html lang="es">
       <body className="template-color-1">
@@ -104,7 +109,7 @@ export default function RootLayout({
             <ElekeBar />
             <div className="main-wrapper">
               <NewsletterPopup />
-              <Header />
+              <Header collections={collections} />
               {children}
               <Footer />
             </div>

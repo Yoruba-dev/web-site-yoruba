@@ -1,27 +1,15 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
+import { SITE_URL as siteUrl } from "@/lib/site";
 
 // Private / no-SEO-value routes.
 const PRIVATE = ["/checkout", "/cart", "/my-account", "/login-register", "/api/"];
 
-// Template demo layout variants — they render the same content as the real
-// shop (/shop-left-sidebar) and product pages (/products/*), so letting them
-// be crawled creates duplicate content that dilutes ranking.
-const DEMO_VARIANTS = [
-  "/shop$",
-  "/shop-3-column",
-  "/shop-4-column",
-  "/shop-right-sidebar",
-  "/shop-list-fullwidth",
-  "/shop-list-left-sidebar",
-  "/shop-list-right-sidebar",
-  "/single-product",
-  "/compare",
-  "/wishlist",
-  "/coming-soon",
-];
+// /shop is a simpler duplicate of the real shop (/shop-left-sidebar) and
+// product pages (/products/*) — kept live as a lightweight CTA destination
+// (footer, banners, checkout "keep shopping") but noindexed so it doesn't
+// dilute ranking against the indexed pages it duplicates. /compare, /wishlist
+// and /coming-soon are real utility/placeholder pages with no SEO value.
+const DEMO_VARIANTS = ["/shop$", "/compare", "/wishlist", "/coming-soon"];
 
 export default function robots(): MetadataRoute.Robots {
   const disallow = [...PRIVATE, ...DEMO_VARIANTS];

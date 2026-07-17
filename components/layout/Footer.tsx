@@ -45,8 +45,8 @@ export default function Footer() {
                         <li>
                           <Link href="/joyeria-en-miami">Joyería en Miami</Link>
                         </li>
-                        <li><Link href="/shop">New products</Link></li>
-                        <li><Link href="/shop">Best sales</Link></li>
+                        <li><Link href="/shop-left-sidebar">New products</Link></li>
+                        <li><Link href="/shop-left-sidebar">Best sales</Link></li>
                         <li><Link href="/contact">Contact us</Link></li>
                       </ul>
                     </div>
@@ -112,13 +112,13 @@ export default function Footer() {
               <div className="col-lg-12">
                 <div className="footer-links">
                   <ul>
-                    <li><Link href="/shop">Online Shopping</Link></li>
+                    <li><Link href="/shop-left-sidebar">Online Shopping</Link></li>
                     <li><Link href="/mayoreo">Mayorista</Link></li>
                     <li><Link href="/my-account">My Orders</Link></li>
                     <li><Link href="/faq">Help</Link></li>
                     <li><Link href="/contact">Customer Service</Link></li>
-                    <li><Link href="/shop">New Arrivals</Link></li>
-                    <li><Link href="/shop">Special Products</Link></li>
+                    <li><Link href="/shop-left-sidebar">New Arrivals</Link></li>
+                    <li><Link href="/shop-left-sidebar">Special Products</Link></li>
                     <li><Link href="/contact">Our Stores</Link></li>
                     <li><Link href="/faq">Shipping</Link></li>
                     <li><Link href="/garantia-y-devoluciones">Garantía y devoluciones</Link></li>

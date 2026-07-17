@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Slider, { type Settings } from "react-slick";
 import { SITE } from "@/lib/site";
+import { sizedImageUrl } from "@/lib/utils";
 
 type ArrowProps = {
   className?: string;
@@ -65,16 +66,22 @@ export default function HeroSlider() {
   return (
     <div className="hiraola-slider_area-2 hero-banner_slider">
       <Slider {...settings} className="main-slider">
-        {SITE.heroSlides.map((slide) => (
+        {SITE.heroSlides.map((slide, i) => (
           <div key={slide.image} className="hero-slide">
             <Link href={slide.href} className="single-slide" aria-label={slide.alt}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="hero-slide_img"
-                src={slide.image}
+                // Size through the Shopify CDN (webp + width) like every other
+                // image — the raw PNG is ~2 MB. The first slide is the LCP, so
+                // load it eagerly with high priority; later slides lazy-load.
+                src={sizedImageUrl(slide.image, slide.width)}
                 alt={slide.alt}
                 width={slide.width}
                 height={slide.height}
+                fetchPriority={i === 0 ? "high" : "low"}
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
               />
             </Link>
           </div>

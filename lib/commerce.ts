@@ -1,9 +1,6 @@
-import { SITE } from "./site";
+import { SITE, SITE_URL } from "./site";
 import type { Money } from "./types";
 import { formatMoney } from "./utils";
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://pedrojewelryyoruba.com";
 
 // ---------------------------------------------------------------------------
 // Commerce / purchase policy — the single source of truth for HOW a piece can

@@ -1,11 +1,18 @@
-# Hiraola Storefront (Next.js + Shopify)
+# Pedro Yoruba Jewelry — Storefront (Next.js + Shopify)
 
-A Next.js 16 (App Router, TypeScript) rebuild of the **Hiraola** jewellery template.
-The original design is preserved **pixel-for-pixel** by reusing the template's own
-CSS; the markup was re-built as reusable React components driven by data, and the
-commerce layer is **Shopify-ready** (with a demo catalogue so it runs with zero config).
+A Next.js 16 (App Router, TypeScript) headless storefront, originally rebuilt from
+the **Hiraola** jewellery template and now the live site for **Pedro Yoruba Jewelry**
+(pedrojewelryyoruba.com), deployed on Netlify with auto-deploy from `main`. The
+original design is preserved **pixel-for-pixel** by reusing the template's own CSS;
+the markup is reusable React components driven by data, and the commerce layer runs
+on Shopify's Storefront API (with a demo catalogue as an offline fallback so it runs
+with zero config).
 
 The original HTML template lives in `../hiraola/` and is kept only as a design reference.
+
+**For day-to-day work — local setup, deploy steps, where things live, git rules —
+see [`CONTINUAR.md`](./CONTINUAR.md).** This README covers the project's shape and
+architecture; CONTINUAR.md is the living "how to keep working on this" guide.
 
 ## Getting started
 
@@ -49,22 +56,33 @@ Runs immediately on a built-in demo catalogue — no Shopify account needed yet.
 
 ```
 app/                     # routes (App Router)
-  page.tsx               # homepage (hero, categories, banners, product sliders, shipping)
-  shop/                  # product grid
-  products/[handle]/     # product detail
-  cart, checkout, ...    # scaffolded pages (see roadmap)
+  page.tsx               # homepage (hero, categories, banners, product sliders)
+  shop-left-sidebar/     # main catalogue browser (filters, sort, pagination)
+  collections/[handle]/  # per-collection landing pages (live Shopify collections)
+  products/[handle]/     # product detail (gallery, 3D/AR, reviews, purchase)
+  cart, checkout/        # real Shopify cart + checkout flow
+  mayoreo/                # B2B wholesale (botánicas) landing page
+  joyeria-en-miami/       # local-SEO pillar page
+  garantia-y-devoluciones/# returns/warranty/repair policy page
+  blog/[slug]/            # "Diario" editorial articles (SEO/GEO content)
+  faq/, about-us/, contact/, my-account/, wishlist/, compare/
 components/
-  layout/                # Header, Footer, Stylesheets, Breadcrumb, popups
-  product/               # ProductCard, ProductSlider, ProductPurchase
-  home/                  # HeroSlider, CategoryMenu
-  ui/                    # SectionTitle, RatingStars
+  layout/                # Header (mega menu), Footer, MobileTabBar, offcanvas drawers
+  product/               # ProductCard, ProductSlider, ProductDetail, ReviewStars
+  shop/                  # ShopBrowser (filters/sort/pagination), ShopContent
+  home/                  # HeroSlider, CategoryMenu, category carousel
+  seo/                   # JsonLd (schema.org structured data)
+  ui/                    # SafeImage, shared UI primitives
 lib/
   site.ts                # 👉 brand name, contact, social, logo paths (EDIT HERE)
-  menu.ts                # navigation model
-  products.ts            # data access (Shopify ⇄ mock)
-  shopify.ts             # Storefront API client
-  mock-data.ts           # demo catalogue
-  types.ts / utils.ts
+  commerce.ts             # direct-checkout vs. made-to-order (WhatsApp) policy
+  menu.ts                # navigation model (collections fed live from Shopify)
+  products.ts             # data access (Shopify ⇄ mock fallback)
+  shopify.ts              # Storefront API client
+  mock-data.ts             # offline demo catalogue (used only if Shopify isn't configured)
+  schema.ts                # shared JSON-LD builders (breadcrumb, FAQPage, …)
+  judgeme.ts               # real product review ratings (Judge.me)
+  faq-data.ts, blog-data.ts, collection-content.ts  # SEO/GEO content, single source of truth
 public/assets/           # original template CSS, fonts, images
 ```
 
@@ -74,17 +92,30 @@ Everything reads from **`lib/site.ts`** — edit the name, contact details, soci
 and logo paths there once and it updates the whole header/footer. Drop real logo files
 into `public/assets/images/` (or update the paths).
 
-## Build roadmap
+## Current state
+
+This is a **live production storefront**, not a scaffold — the checklist below
+tracks the shape of what's built, not a to-do list.
 
 - [x] Foundation: layout, global CSS, data layer, Shopify client + mock fallback
-- [x] Header (mega menu, mobile offcanvas, minicart, sticky), Footer, popups
-- [x] Homepage (hero slider, category menu, banners, product sliders, shipping)
-- [x] Shop grid + Product detail (basic)
-- [x] All routes scaffolded (no 404s)
-- [ ] Real cart + checkout via Shopify cart API
-- [ ] Product detail gallery + zoom + variants
-- [ ] Shop filtering/sorting + sidebar
-- [ ] Blog, About, Contact, FAQ, account/login content
-- [ ] Replace placeholder hero/banner/product images with real photos
-- [ ] SEO metadata, sitemap, structured data
+- [x] Header (mega menu w/ live Shopify collections, mobile offcanvas, minicart —
+      both drawers share a "liquid glass" material with the floating tab bar),
+      Footer, popups
+- [x] Homepage (hero slider from real Shopify banners, category carousel, product
+      sliders, entity/SEO block)
+- [x] Shop grid with filters/sort/pagination, per-collection landing pages, product
+      detail (gallery, 3D model/AR viewer, real reviews, purchase flow)
+- [x] Real cart + checkout via Shopify (direct checkout or WhatsApp made-to-order
+      consult, decided per-product by `lib/commerce.ts`)
+- [x] Blog ("Diario"), About, Contact, FAQ, wholesale (mayoreo), warranty/returns
+      policy, local-SEO pillar page
+- [x] Real product photos throughout (no placeholders)
+- [x] SEO/GEO: per-page metadata, sitemap, JSON-LD structured data (Product,
+      FAQPage, BreadcrumbList, CollectionPage, …), llms.txt, robots.ts tuned for
+      AI crawlers (GPTBot, ClaudeBot, PerplexityBot, …)
+- [x] Real review ratings via Judge.me (`attachRatings`), read AND write (review
+      submission form posts to Judge.me)
+- [ ] Grid/list view toggle on the shop page (removed a broken template-era
+      version; ShopBrowser already supports both render modes — just needs a
+      working toggle, see the flagged follow-up task)
 ```

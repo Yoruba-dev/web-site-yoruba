@@ -3,7 +3,10 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import Countdown from "@/components/coming-soon/Countdown";
 
-export const metadata: Metadata = { title: "Coming Soon" };
+export const metadata: Metadata = {
+  title: "Coming Soon",
+  robots: { index: false, follow: true },
+};
 
 export default function ComingSoonPage() {
   return (

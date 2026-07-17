@@ -38,7 +38,7 @@ export default function CheckoutView() {
                 Te enviamos una confirmación por correo. (Checkout de demostración —
                 conecta Shopify para cobrar pagos reales.)
               </p>
-              <Link href="/shop" className="hiraola-btn">
+              <Link href="/shop-left-sidebar" className="hiraola-btn">
                 Seguir comprando
               </Link>
             </div>
@@ -57,7 +57,7 @@ export default function CheckoutView() {
               <p style={{ marginBottom: 20 }}>
                 Tu carrito está vacío — no hay nada que pagar.
               </p>
-              <Link href="/shop" className="hiraola-btn">
+              <Link href="/shop-left-sidebar" className="hiraola-btn">
                 Volver a la tienda
               </Link>
             </div>

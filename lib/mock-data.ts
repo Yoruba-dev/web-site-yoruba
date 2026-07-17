@@ -11,7 +11,7 @@ const C = "USD";
 interface Seed {
   id: string; handle: string; title: string; description: string;
   price: number; compare: number | null; images: string[];
-  rating: number; badge: string | null; available: boolean; tags: string[];
+  badge: string | null; available: boolean; tags: string[];
   variants: { id: string; title: string; price: number; available: boolean }[];
 }
 
@@ -27,7 +27,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0228.heic?v=1778862250&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0228.heic?v=1778862250&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -54,7 +53,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0227.heic?v=1778861502&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0227.heic?v=1778861502&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -81,7 +79,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DD675DDF-843B-437E-8ED1-2958FAF726D0.jpg?v=1778854672&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DD675DDF-843B-437E-8ED1-2958FAF726D0.jpg?v=1778854672&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -110,7 +107,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DE7AE4EC-1E02-402B-8769-C6FAF67136A9.jpg?v=1778611256&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/8E93EFDC-F293-4BAE-A222-A67D39B178D0.jpg?v=1778611256&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -138,7 +134,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0219.heic?v=1778608013&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0218.heic?v=1778607965&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -165,7 +160,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0216.heic?v=1778601232&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0214.heic?v=1778601273&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -193,7 +187,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0173.heic?v=1778012575&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0172.heic?v=1778012609&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -221,7 +214,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0213.heic?v=1778258635&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0211.heic?v=1778258635&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -247,7 +239,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0209.heic?v=1778257391&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0209.heic?v=1778257391&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -274,7 +265,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0207.heic?v=1778257121&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0206.heic?v=1778257121&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -300,7 +290,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0205.heic?v=1778255922&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0205.heic?v=1778255922&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -326,7 +315,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0204.heic?v=1778255250&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0204.heic?v=1778255250&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -352,7 +340,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0203.heic?v=1778254549&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0203.heic?v=1778254549&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -378,7 +365,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0202.heic?v=1778187240&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0202.heic?v=1778187240&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -404,7 +390,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0192.heic?v=1778169863&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0192.heic?v=1778169863&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -431,7 +416,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0191.heic?v=1778169478&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0191.heic?v=1778169478&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -457,7 +441,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_f692c2b7-3ae7-41b2-9073-13abb8e2f11c.heic?v=1778168180&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_c1065175-8ae0-442c-9888-55c2252d7be6.heic?v=1778168180&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -483,7 +466,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/9D57462F-3815-4AA7-8BEA-3426802171CC.jpg?v=1778166807&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/4733E304-0217-4254-9626-4431CD1BFC30.jpg?v=1778166944&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -509,7 +491,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/D61C8DF3-1182-4384-B7BE-42FBC447821E.jpg?v=1778100020&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/D61C8DF3-1182-4384-B7BE-42FBC447821E.jpg?v=1778100020&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -535,7 +516,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0184.heic?v=1778099600&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0184.heic?v=1778099600&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -561,7 +541,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0181.heic?v=1778097766&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0183.heic?v=1778098058&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -587,7 +566,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0180.heic?v=1778096478&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0180.heic?v=1778096478&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -613,7 +591,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0179.heic?v=1778095833&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0178.heic?v=1778095833&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -639,7 +616,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0176.heic?v=1778093157&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0177.heic?v=1778093157&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -666,7 +642,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0170.heic?v=1777999947&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0170.heic?v=1777999947&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -705,7 +680,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/F329D98D-A620-4519-BF41-20396F1AAB1B.jpg?v=1777998851&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/F329D98D-A620-4519-BF41-20396F1AAB1B.jpg?v=1777998851&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -750,7 +724,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0168.heic?v=1777998051&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0168.heic?v=1777998051&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -795,7 +768,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0167.heic?v=1777997693&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0167.heic?v=1777997693&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -834,7 +806,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0166.heic?v=1777997354&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0166.heic?v=1777997354&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -873,7 +844,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0165.heic?v=1777996917&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0165.heic?v=1777996917&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -912,7 +882,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0161.heic?v=1777927476&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0162.heic?v=1777927476&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -938,7 +907,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0160.heic?v=1777923880&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0160.heic?v=1777923880&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -965,7 +933,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0159.heic?v=1777923501&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0159.heic?v=1777923501&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -992,7 +959,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0158.heic?v=1777922304&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0158.heic?v=1777922304&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1019,7 +985,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0156.heic?v=1777920626&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0156.heic?v=1777920626&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1046,7 +1011,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0155.heic?v=1777918195&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0155.heic?v=1777918195&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1073,7 +1037,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0153.heic?v=1778251419&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0153.heic?v=1778251419&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1100,7 +1063,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/E6AD060E-772D-4E4F-AD49-5D6E61425802.jpg?v=1777911207&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/06CB009D-70ED-4DE6-9B11-2BC55083780E.jpg?v=1777911207&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1126,7 +1088,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0144.heic?v=1777669314&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0145.heic?v=1777669348&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1153,7 +1114,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0143.heic?v=1777667022&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0143.heic?v=1777667022&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1197,7 +1157,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0140.heic?v=1777656290&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0142.heic?v=1777656685&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1224,7 +1183,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0139.heic?v=1777651700&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0138.heic?v=1777651700&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": false,
     "tags": [
@@ -1251,7 +1209,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0137.heic?v=1777583003&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0136.heic?v=1777583004&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1277,7 +1234,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_8c80b0c1-23a3-4125-9e4e-3c154934d1bb.heic?v=1777574855&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_8c80b0c1-23a3-4125-9e4e-3c154934d1bb.heic?v=1777574855&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1303,7 +1259,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0129.heic?v=1777494917&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0128.heic?v=1777494917&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1329,7 +1284,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/E54288E6-C33C-4122-9AC9-5DFC899B160F.jpg?v=1777494431&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/3307F16F-4A8B-49B1-AE37-4C5BB9F95E5A.jpg?v=1777494021&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1355,7 +1309,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0123.heic?v=1777493114&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0124.heic?v=1777493114&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1381,7 +1334,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-8560.heic?v=1777482486&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-8559.heic?v=1777482486&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1408,7 +1360,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0114.heic?v=1777396321&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0115.heic?v=1777479663&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1434,7 +1385,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_917ca581-7b0b-4d0c-920d-cb400035ddbe.heic?v=1777478274&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_617395fa-a638-4304-b3cc-e8990d6a997e.heic?v=1777478735&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1466,7 +1416,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/E3018C6C-B08D-4628-8221-9852359B9A6D.jpg?v=1777475678&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/82414D8D-8E8A-437F-BC70-969A3F071316.jpg?v=1777475708&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1492,7 +1441,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/2E939A4B-1D44-43A7-BBE3-11E3A272E367.jpg?v=1777052886&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/F074268E-B020-4DAD-B393-1DF9986D8779.jpg?v=1777052886&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1518,7 +1466,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0101.heic?v=1779152883&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0102.heic?v=1777910124&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1545,7 +1492,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0092.heic?v=1776891112&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/4D794E9B-FD1F-4AA8-8C3B-641C97964212.jpg?v=1777044837&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1583,7 +1529,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/8778E18B-FBF4-4953-902F-85C4C301A2D5.jpg?v=1777573832&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/8778E18B-FBF4-4953-902F-85C4C301A2D5.jpg?v=1777573832&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1609,7 +1554,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0082.heic?v=1777329571&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0079.heic?v=1777329590&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1635,7 +1579,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0078.heic?v=1776799435&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0077.heic?v=1776799435&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1668,7 +1611,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/63AD3D31-45D7-45A0-ACC4-AAC02676F3A0.jpg?v=1776791262&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/D4687E9F-B056-4843-B6AC-131A9008F9D4.jpg?v=1776791229&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1695,7 +1637,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/594A2A84-D17B-4082-B567-9E9F3373E98A.jpg?v=1777429513&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/594A2A84-D17B-4082-B567-9E9F3373E98A.jpg?v=1777429513&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1723,7 +1664,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/6635CFBD-6642-4FE0-8F25-1BF244852448.jpg?v=1777430800&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DD4FF7B7-304D-42C8-866B-2AF436F2E005.jpg?v=1777430841&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1756,7 +1696,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/C261C67B-173D-4603-8ADD-14DD96367AD6.jpg?v=1777430901&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/CE2C9345-3B21-41D8-A497-399D92DAEDD0.jpg?v=1777430949&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1795,7 +1734,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0035.heic?v=1776712419&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-0033.heic?v=1776712419&width=800"
     ],
-    "rating": 5,
     "badge": "Nuevo",
     "available": true,
     "tags": [
@@ -1840,7 +1778,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240205-114004.jpg?v=1707151624&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240205-114148.jpg?v=1707151624&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -1880,7 +1817,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240205-112149.jpg?v=1707150334&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240205-112237.jpg?v=1707150335&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -1907,7 +1843,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DD675DDF-843B-437E-8ED1-2958FAF726D0.jpg?v=1778854672&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/DD675DDF-843B-437E-8ED1-2958FAF726D0.jpg?v=1778854672&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -1934,7 +1869,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/B9328704-2958-44E9-84C4-B9F46B5A3A81.jpg?v=1780367162&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/B9328704-2958-44E9-84C4-B9F46B5A3A81.jpg?v=1780367162&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -1961,7 +1895,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/5B1FD3BD-A819-4138-AC13-456A00512E37.jpg?v=1780367102&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/5B1FD3BD-A819-4138-AC13-456A00512E37.jpg?v=1780367102&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -1987,7 +1920,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/8EC85657-1249-4C0B-B1D5-AB78B9468730.jpg?v=1772107737&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/8EC85657-1249-4C0B-B1D5-AB78B9468730.jpg?v=1772107737&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2019,7 +1951,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-9272.heic?v=1762273093&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-9268.heic?v=1762273093&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2054,7 +1985,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/1DCF7FC4-30B4-46E6-B532-869C12CC4C47.jpg?v=1758649105&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/4CDF8641-B655-4CDC-84F0-0720E2242F34.jpg?v=1758649105&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2084,7 +2014,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/687667B8-66BC-418C-A771-C4BD1080634C.jpg?v=1758648945&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/52B1B3C9-0325-4B25-A56E-5D54CA9C8B4E.jpg?v=1758648945&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2115,7 +2044,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/1ED54308-CC0F-45A3-B3C5-15D3F39C6751.jpg?v=1758647243&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/C2AF1247-4CB0-437B-A01A-16F72CA36A51.jpg?v=1758647242&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2143,7 +2071,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/B51E8560-3263-4E77-BF58-0624A4A0A413.jpg?v=1758645412&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/947A80D0-8088-4895-AD05-2046BCE4A477.jpg?v=1758645411&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2172,7 +2099,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/41D1D3B4-E037-4456-9BB4-9CD91B9C25C7.jpg?v=1758645168&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/A0CDBF35-B107-41A4-A7F4-63515850FC14.jpg?v=1758645167&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2204,7 +2130,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-6823.heic?v=1757363346&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-6820.heic?v=1757363346&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2236,7 +2161,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-6814.heic?v=1757363208&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-6813.heic?v=1757363208&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2264,7 +2188,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/903455DD-A3FF-46BE-B3BE-FB75A8338624.jpg?v=1757362987&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/53F190A0-C296-4CC3-8673-22548F7FB49F.jpg?v=1757363001&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2294,7 +2217,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-8617.heic?v=1777580942&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-8616.heic?v=1777580986&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2335,7 +2257,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-172549.jpg?v=1725658701&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMAGE-EDIT_12a72fd5-737a-4ab3-95f4-3e48cec0c372.png?v=1725658700&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2362,7 +2283,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender_844ce4e9-df46-484c-a4f3-0d66187a10ae.heic?v=1776872753&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender.heic?v=1776872753&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2390,7 +2310,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-165035.jpg?v=1725656743&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-165102.jpg?v=1725656743&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2419,7 +2338,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-160105.jpg?v=1725654095&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-160147.jpg?v=1725654095&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2453,7 +2371,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-110508_2.jpg?v=1725650312&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240906-110314.jpg?v=1725650312&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2481,7 +2398,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/27254F5E-CF62-4C50-B53D-A1C7FD1CB9E1.png?v=1725627105&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/79DE4600-E3EB-4917-B9B0-07486EDF87D2.png?v=1725627105&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2509,7 +2425,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240905-123510.jpg?v=1762878489&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240905-123547.jpg?v=1762878528&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2537,7 +2452,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-3413.jpg?v=1723144532&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/IMG-3409.jpg?v=1723144533&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2582,7 +2496,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240729-104218.jpg?v=1722266048&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240729-104158.jpg?v=1722266047&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2617,7 +2530,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/6058D4AA-C104-4FA4-BE13-53B918632127.jpg?v=1718396288&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/4EC2212B-26FE-488C-9CE7-FF321BA2907B.jpg?v=1718396288&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2643,7 +2555,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240527-161307.jpg?v=1716841013&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240527-161314.jpg?v=1716841014&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -2671,7 +2582,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240527-160219.jpg?v=1716840429&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240527-160141.jpg?v=1716840430&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -2697,7 +2607,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240208-122805.jpg?v=1707413527&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240208-122834.jpg?v=1707413527&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2723,7 +2632,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240207-161918.jpg?v=1707341079&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240207-161813.jpg?v=1707341080&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2750,7 +2658,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240129-124506.jpg?v=1774459571&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240129-124506.jpg?v=1774459571&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -2776,7 +2683,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240129-114746.jpg?v=1706547062&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240129-114746.jpg?v=1706547062&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -2802,7 +2708,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240122-141145.jpg?v=1705951789&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240122-141145.jpg?v=1705951789&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2848,7 +2753,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240119-155625.jpg?v=1705699310&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240119-160731.jpg?v=1705699310&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2874,7 +2778,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-144730.jpg?v=1705609256&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-144812.jpg?v=1705609255&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2900,7 +2803,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-141734.jpg?v=1705605978&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-141755.jpg?v=1705605978&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2926,7 +2828,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-141309.jpg?v=1705605428&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20240118-141323.jpg?v=1705605429&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2952,7 +2853,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231127-172251.jpg?v=1701124451&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231127-172559.jpg?v=1701124451&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -2979,7 +2879,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231127-171624.jpg?v=1701123677&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231127-171652.jpg?v=1701123677&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3006,7 +2905,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20231031_121525_Shopify.jpg?v=1698769185&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20231031_121525_Shopify.jpg?v=1698769185&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3034,7 +2932,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231026-104618.jpg?v=1698332194&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231026-104751.jpg?v=1698332195&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3061,7 +2958,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231026-102511.jpg?v=1698330572&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231026-102609.jpg?v=1698330572&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3088,7 +2984,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-142740.jpg?v=1698258601&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-142751.jpg?v=1698258601&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3126,7 +3021,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-131330.jpg?v=1698254503&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-131351.jpg?v=1698254503&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3158,7 +3052,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-113548.jpg?v=1698249220&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-113631.jpg?v=1698249220&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3185,7 +3078,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-101904.jpg?v=1698248323&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-101749_de9c1e0e-a98b-4ccf-8689-77a12bb1ae25.jpg?v=1698248322&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3235,7 +3127,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-101943.jpg?v=1698244796&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231025-101749.jpg?v=1698244795&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3291,7 +3182,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231019-155325.jpg?v=1697745909&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231019-155325.jpg?v=1697745909&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3318,7 +3208,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231019-152049.jpg?v=1697744155&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231019-152124.jpg?v=1697744155&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3344,7 +3233,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231012-175653_0.jpg?v=1697148151&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231012-175725.jpg?v=1697148151&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3371,7 +3259,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231012-174843.jpg?v=1697147674&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231012-174753.jpg?v=1697147674&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3398,7 +3285,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231011-162737.jpg?v=1697056519&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231011-162940.jpg?v=1697056519&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3425,7 +3311,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231011-161049.jpg?v=1697055703&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231011-161235.jpg?v=1697055703&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3452,7 +3337,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231010-172942.jpg?v=1696975382&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231010-173058.jpg?v=1696975382&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3485,7 +3369,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20230929_175233_Shopify.jpg?v=1696024643&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20230929_175237_Shopify.jpg?v=1696024643&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3512,7 +3395,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230915-155638.jpg?v=1694807917&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230915-155705.jpg?v=1694807917&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3538,7 +3420,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230912-174229.jpg?v=1694555190&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230912-174042.jpg?v=1694555190&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3566,7 +3447,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20230908_174005_Shopify.jpg?v=1694209378&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20230908_174009_Shopify.jpg?v=1694209378&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3592,7 +3472,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_cc05d9d8-da4a-4bf9-94ae-68485586a5df.jpg?v=1693323049&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_fdbf09a5-c35c-4202-bab2-cf82a57bda9a.jpg?v=1693323050&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3619,7 +3498,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_5cd61015-99c1-4afa-9d67-d1099efd400a.jpg?v=1692997312&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230825-165837.jpg?v=1692997313&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3645,7 +3523,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_9d03eb5f-77b0-4e82-bf1c-3bb2193783a8.jpg?v=1692996794&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_612f51eb-cfac-450e-a743-9b5094444060.jpg?v=1692996795&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3689,7 +3566,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_18738dd9-1b5f-4e7d-836b-e2ec6aba4393.jpg?v=1692912963&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_a712546d-b450-4e96-9dc5-eb056010d726.jpg?v=1692912963&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3718,7 +3594,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230815-144153.jpg?v=1692125322&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230815-143334_bdce5c79-7694-44d9-8831-2192e6bea59b.jpg?v=1692125323&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3746,7 +3621,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230815-143159.jpg?v=1692124827&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230815-143334.jpg?v=1692124828&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3772,7 +3646,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_8d23836d-28b1-46b3-b6c9-c398bc798e77.jpg?v=1691690864&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/rn-image_picker_lib_temp_4d7528b0-8d52-4ef0-ba30-36f95c76fa67.jpg?v=1691690865&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3800,7 +3673,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230706_123143.jpg?v=1688661239&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230706_123220.jpg?v=1688661239&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3827,7 +3699,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230627_173805.jpg?v=1687902110&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230627_173847.jpg?v=1687902110&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -3854,7 +3725,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231102-121534.jpg?v=1698942265&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20231102-121534.jpg?v=1698942265&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3881,7 +3751,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_121627.jpg?v=1686154681&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_121627.jpg?v=1686154681&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3907,7 +3776,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_120828.jpg?v=1686154213&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_120828.jpg?v=1686154213&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3933,7 +3801,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_120326.jpg?v=1686153882&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_120326.jpg?v=1686153882&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3959,7 +3826,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_115117.jpg?v=1686153181&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230607_115117.jpg?v=1686153181&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -3985,7 +3851,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_164751.jpg?v=1683838879&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_165016.jpg?v=1683838879&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4011,7 +3876,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_164127.jpg?v=1683838013&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_164257.jpg?v=1683838013&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4037,7 +3901,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender.jpg?v=1772564325&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/FullSizeRender.jpg?v=1772564325&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4064,7 +3927,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_160128.jpg?v=1683835485&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_160158.jpg?v=1683835485&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4090,7 +3952,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_155618.jpg?v=1683835142&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/20230511_155657.jpg?v=1683835142&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4116,7 +3977,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230413_125052_79c8ceeb-fd35-4ec0-b20e-3f8c26b84223.jpg?v=1681405148&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230413_125052_79c8ceeb-fd35-4ec0-b20e-3f8c26b84223.jpg?v=1681405148&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4143,7 +4003,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230413_125052.jpg?v=1681404874&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230413_125052.jpg?v=1681404874&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4172,7 +4031,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230216_181143.jpg?v=1676589185&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230216_181143_fcd22c83-8280-45b4-857e-cdf2245af2bf.jpg?v=1676589185&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4198,7 +4056,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230208_150910.jpg?v=1675887700&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230208_151113.jpg?v=1675887700&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4225,7 +4082,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot_20230620_125502_Shopify.jpg?v=1687280352&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot_20230620_125459_Shopify.jpg?v=1687280352&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4252,7 +4108,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230125_135111.jpg?v=1674672889&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230125_135111.jpg?v=1674672889&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": false,
     "tags": [
@@ -4279,7 +4134,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230118_121252.jpg?v=1674062218&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230118_121252.jpg?v=1674062218&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4306,7 +4160,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20231110_235045_Shopify.jpg?v=1699678278&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/Screenshot-20231110_235045_Shopify.jpg?v=1699678278&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4333,7 +4186,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_152938.jpg?v=1673987617&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_152957.jpg?v=1673987617&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4359,7 +4211,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_150940.jpg?v=1673986378&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_150921.jpg?v=1673986378&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4385,7 +4236,6 @@ const SEEDS: Seed[] = [
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_145003.jpg?v=1673985999&width=800",
       "https://cdn.shopify.com/s/files/1/0667/9475/0174/products/20230117_144930.jpg?v=1673986000&width=800"
     ],
-    "rating": 5,
     "badge": null,
     "available": true,
     "tags": [
@@ -4410,7 +4260,6 @@ export const MOCK_PRODUCTS: Product[] = SEEDS.map((s) => ({
   price: money(s.price, C),
   compareAtPrice: s.compare ? money(s.compare, C) : null,
   images: s.images.map((url) => ({ url, altText: s.title })),
-  rating: s.rating,
   badge: s.badge,
   availableForSale: s.available,
   tags: s.tags,

@@ -57,6 +57,30 @@ export const FAQS = [
       "Garantía de por vida contra defectos de fabricación (fallas de mano de obra o material), mientras el comprador original conserve la pieza y su comprobante. No cubre el desgaste normal, golpes, daño por químicos ni trabajos de terceros. Si una pieza es irreparable, la reemplazamos por otra de valor similar.",
   },
   {
+    id: "Herramientas",
+    question: "¿Qué son las herramientas de santo o herramientas yoruba?",
+    answer:
+      "Son los objetos metálicos que representan el poder de cada Orisha y forman parte del trono de quien se corona en la Regla de Ocha. Las hacemos en acero inoxidable y en oro por encargo — ver la colección de Herramientas y nuestra guía ¿Qué son las herramientas de santo?",
+  },
+  {
+    id: "Idde",
+    question: "¿Qué es el Idde y dónde lo consigo en Miami?",
+    answer:
+      "El Idde de Orula es la pulsera sagrada de quien se acerca a Ifá, hecha en oro o plata a tu medida. Lo fabricamos en nuestro taller de Miami — ver la colección de Idde y la guía ¿Qué es el Idde de Orula?",
+  },
+  {
+    id: "Monedas",
+    question: "¿Qué significan las monedas de plata en la santería?",
+    answer:
+      "Se llevan tradicionalmente como símbolo de protección y prosperidad, en dije, pulsera o collar. Ver la colección de Monedas de plata y nuestro artículo del Diario sobre su significado.",
+  },
+  {
+    id: "Mayoreo",
+    question: "¿Venden al por mayor a botánicas?",
+    answer:
+      "Sí. Vendemos herramientas de santo, monedas, Idde y otras piezas al por mayor a botánicas y tiendas religiosas en todo Estados Unidos — ver Mayorista · Botánicas.",
+  },
+  {
     id: "Eight",
     question: "¿Puedo recoger mi pedido o hacen envíos?",
     answer:

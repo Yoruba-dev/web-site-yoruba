@@ -5,7 +5,7 @@ import { ProductGridSkeleton } from "@/components/ui/Skeletons";
 export default function Loading() {
   return (
     <>
-      <Breadcrumb title="Shop" crumbs={[{ label: "Shop Left Sidebar" }]} />
+      <Breadcrumb title="Shop" crumbs={[{ label: "Shop Left Sidebar" }]} titleAs="p" />
       <div className="hiraola-content_wrapper">
         <div className="container">
           <div style={{ padding: "20px 0 60px" }}>
