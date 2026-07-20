@@ -709,6 +709,63 @@ body.template-color-1 {
   color: var(--dk-text) !important;
 }
 
+/* Startup popup in "offer" mode — mirrors the home "Oferta destacada" look:
+   product photo + gold -%off medallion on the right; eyebrow, name, struck
+   "was" price, gold "now" price and CTA on the left. (Popup is desktop-only —
+   the theme hides it under 992px; on phones the offer shows via the home band.) */
+.popup_wrapper .test.pyj-pop--offer {
+  background-image: none !important; /* replace the generic bg image with product media */
+  padding-left: 48px;
+}
+.pyj-pop--offer .subscribe_area {
+  max-width: 56%;
+  padding-right: 20px;
+}
+.pyj-pop--offer .subscribe_area h2 {
+  font-family: "Cinzel", serif;
+  font-size: 27px;
+  padding-bottom: 10px;
+  margin-top: 2px;
+  text-transform: none !important; /* keep real casing ("Pulsos de Yemaya", not "De") */
+}
+.pyj-pop--offer .subscribe_area > p {
+  padding-bottom: 16px;
+}
+.pyj-pop--offer .subscribe_area > p strong {
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-pop--offer .pyj-offer_prices {
+  margin-bottom: 22px;
+}
+.pyj-pop--offer .pyj-offer_now {
+  font-size: 30px;
+}
+.pyj-pop_media {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 42%;
+  overflow: hidden;
+}
+.pyj-pop_media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pyj-pop_media .pyj-offer_pct {
+  width: 74px;
+  height: 74px;
+  font-size: 22px;
+  top: 16px;
+  left: 16px; /* top-left of the media, clear of the close (X) button */
+}
+/* keep the close button clickable above the media/medallion */
+.popup_wrapper .test.pyj-pop--offer .popup_off {
+  z-index: 4;
+}
+
 /* Accessibility: visible focus ring on all interactive elements (gold) */
 a:focus-visible,
 button:focus-visible,
@@ -2862,6 +2919,132 @@ body.template-color-1 {
   filter: brightness(1.08);
   transform: translateY(-1px);
   color: #0d0a07;
+}
+
+/* ---------------------------------------------------------------------------
+   Home "Oferta destacada" (FeaturedOffer.tsx) — a live promo band for the one
+   on-sale featured piece: product photo + big -%off medallion on one side;
+   name, struck "was" price, gold "now" price and CTA on the other.
+--------------------------------------------------------------------------- */
+.pyj-offer {
+  padding: 56px 0;
+  background:
+    radial-gradient(140% 90% at 100% 0%, rgba(227, 178, 60, 0.1), transparent 55%),
+    var(--dk-base, #14100a);
+}
+.pyj-offer_card {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(227, 178, 60, 0.35);
+  background: var(--dk-raised, #1d160d);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.pyj-offer_media {
+  position: relative;
+  flex: 0 0 46%;
+  min-height: 320px;
+  display: block;
+  overflow: hidden;
+}
+.pyj-offer_media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pyj-offer_card:hover .pyj-offer_media img {
+  transform: scale(1.05);
+}
+.pyj-offer_pct {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  line-height: 1;
+  color: #2c1f0a;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42);
+}
+.pyj-offer_pct b {
+  font-size: 23px;
+  font-weight: 800;
+}
+.pyj-offer_pct small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  margin-top: 3px;
+  padding-left: 0.22em; /* optical-center the letter-spaced "OFF" */
+}
+.pyj-offer_body {
+  flex: 1 1 auto;
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.pyj-offer_title {
+  font-family: "Cinzel", serif;
+  font-size: 30px;
+  letter-spacing: 1.5px;
+  color: var(--dk-head, #ece2cd);
+  margin: 4px 0 10px;
+}
+.pyj-offer_sub {
+  font-size: 15px;
+  color: #a99d83;
+  margin: 0 0 18px;
+}
+.pyj-offer_sub strong {
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-offer_prices {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.pyj-offer_was {
+  font-size: 20px;
+  color: #8a7f68;
+  text-decoration: line-through;
+}
+.pyj-offer_now {
+  font-family: "Cinzel", serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--pyj-gold, #e3b23c);
+}
+@media (max-width: 767px) {
+  .pyj-offer_card {
+    flex-direction: column;
+  }
+  .pyj-offer_media {
+    flex-basis: auto;
+    width: 100%;
+    min-height: 260px;
+  }
+  .pyj-offer_body {
+    padding: 30px 24px 34px;
+  }
+  .pyj-offer_title {
+    font-size: 25px;
+  }
+  .pyj-offer_now {
+    font-size: 30px;
+  }
 }
 
 /* ---------------------------------------------------------------------------

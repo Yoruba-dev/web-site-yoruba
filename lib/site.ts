@@ -14,6 +14,12 @@ export const OG_IMAGE = [
   { url: "/og-image.png", width: 1200, height: 630, alt: "Pedro Yoruba Jewelry" },
 ];
 
+// Handle of the piece featured in the home "Oferta destacada" banner. The banner
+// only appears when THIS product is on sale (i.e. has a real compareAtPrice > price
+// in Shopify) — so the promo turns itself off when the sale ends, and turns on for
+// a new product simply by putting that product on sale and changing this handle.
+export const FEATURED_OFFER_HANDLE = "pulsos-de-yemaya";
+
 export const SITE = {
   name: "Pedro Yoruba Jewelry",
   tagline:

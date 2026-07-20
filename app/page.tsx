@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types";
 import HeroSlider from "@/components/home/HeroSlider";
 import ProductSlider from "@/components/product/ProductSlider";
 import BannerGrid from "@/components/home/BannerGrid";
-import StaticBanner from "@/components/home/StaticBanner";
+import FeaturedOffer from "@/components/home/FeaturedOffer";
 import CategorySection from "@/components/home/CategorySection";
 import CategoryCircles from "@/components/home/CategoryCircles";
 import WholesaleBanner from "@/components/home/WholesaleBanner";
@@ -99,6 +99,10 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Oferta destacada — live promo band for the featured on-sale piece,
+          placed high so the deal gets top billing right under Novedades. */}
+      <FeaturedOffer />
+
       {/* Shipping bar */}
       <div className="hiraola-shipping_area hiraola-shipping_area-2">
         <div className="container">
@@ -133,9 +137,6 @@ export default async function HomePage() {
         products={herramientas.slice(0, 12)}
         href="/shop-left-sidebar?cat=Herramientas"
       />
-
-      {/* Featured Product promo banner */}
-      <StaticBanner />
 
       {/* Mayoristas y botánicas — B2B wholesale channel */}
       <WholesaleBanner />

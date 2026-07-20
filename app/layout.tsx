@@ -16,6 +16,7 @@ import { CompareProvider } from "@/lib/compare-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { AccountProvider } from "@/lib/account-context";
 import { getCollections } from "@/lib/products";
+import { getFeaturedOffer } from "@/lib/featured-offer";
 import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -95,6 +96,11 @@ export default async function RootLayout({
     image: c.image ?? undefined,
   }));
 
+  // Featured offer (if a piece is on sale) — powers the startup popup's promo
+  // variant. null when there's no active offer, so the popup falls back to the
+  // newsletter signup.
+  const offer = await getFeaturedOffer();
+
   return (
     <html lang="es">
       <body className="template-color-1">
@@ -109,7 +115,7 @@ export default async function RootLayout({
             <AnnouncementBar />
             <ElekeBar />
             <div className="main-wrapper">
-              <NewsletterPopup />
+              <NewsletterPopup offer={offer} />
               <Header collections={collections} />
               {children}
               <Footer />
