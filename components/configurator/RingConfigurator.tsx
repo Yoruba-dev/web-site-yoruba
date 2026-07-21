@@ -10,7 +10,7 @@ import {
   type PlacedItem,
 } from "@/lib/symbols";
 import FaceCanvas from "./FaceCanvas";
-import SymbolPalette from "./SymbolPalette";
+import SymbolPalette, { type TowerMode } from "./SymbolPalette";
 import ConfiguratorOrderPanel, {
   type RingDesign,
   type ConfiguratorProduct,
@@ -50,6 +50,7 @@ export default function RingConfigurator({
   const [design, setDesign] = useState<RingDesign>({ front: [], right: [], left: [] });
   const [stepIdx, setStepIdx] = useState(0);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [towerMode, setTowerMode] = useState<TowerMode>("both");
   const uid = useRef(0);
 
   const step = STEPS[stepIdx];
@@ -72,7 +73,7 @@ export default function RingConfigurator({
         y,
         scale: ITEM_DEFAULTS.scale,
         rotation: ITEM_DEFAULTS.rotation,
-        tower: p.kind === "tower" ? "both" : undefined,
+        tower: p.kind === "tower" ? towerMode : undefined,
       },
     ]);
     setSelectedUid(id);
@@ -177,7 +178,11 @@ export default function RingConfigurator({
 
         <div className="pyj-cfg2_palette">
           <h2 className="pyj-cfg_palette-title">Arrastra tus símbolos</h2>
-          <SymbolPalette onPick={(ref) => addItem(ref, 0.5, 0.5)} />
+          <SymbolPalette
+            onPick={(ref) => addItem(ref, 0.5, 0.5)}
+            towerMode={towerMode}
+            onTowerMode={setTowerMode}
+          />
         </div>
       </div>
 

@@ -5919,6 +5919,38 @@ button[type="submit"],
   text-transform: uppercase;
   color: var(--pyj-gold-light, #f0d79b);
 }
+/* "Which tower to place" selector (Ambas / Izquierda / Derecha). */
+.pyj-towermode {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.pyj-towermode_btn {
+  flex: 1;
+  padding: 6px 4px;
+  background: var(--dk-base, #14100a);
+  border: 1px solid rgba(227, 178, 60, 0.28);
+  color: var(--dk-text, #c9bfa8);
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.pyj-towermode_btn:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-towermode_btn.is-on {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.12);
+  color: var(--pyj-gold-light, #f0d79b);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pyj-towermode_btn {
+    transition: none;
+  }
+}
 .pyj-palette2_grid {
   list-style: none;
   margin: 0;
