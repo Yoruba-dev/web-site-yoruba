@@ -147,7 +147,7 @@ export default function FaceCanvas({
             <button
               type="button"
               onClick={() => onFlipTower(selectedUid)}
-              aria-label="Cambiar torre (izquierda / derecha)"
+              aria-label="Torres: ambas / izquierda / derecha"
             >
               <ToolIcon d="M12 4v16M7 9l-4 3 4 3M17 9l4 3-4 3" />
             </button>

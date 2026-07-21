@@ -72,14 +72,19 @@ export default function RingConfigurator({
         y,
         scale: ITEM_DEFAULTS.scale,
         rotation: ITEM_DEFAULTS.rotation,
-        tower: p.kind === "tower" ? "left" : undefined,
+        tower: p.kind === "tower" ? "both" : undefined,
       },
     ]);
     setSelectedUid(id);
   }
   function flipTower(u: string) {
+    const next: Record<"both" | "left" | "right", "both" | "left" | "right"> = {
+      both: "left",
+      left: "right",
+      right: "both",
+    };
     mapFace((it) =>
-      it.uid === u ? { ...it, tower: it.tower === "right" ? "left" : "right" } : it,
+      it.uid === u ? { ...it, tower: next[it.tower ?? "both"] } : it,
     );
   }
   const mapFace = (fn: (it: PlacedItem) => PlacedItem) =>

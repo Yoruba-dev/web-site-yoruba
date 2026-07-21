@@ -101,9 +101,9 @@ export interface PlacedItem {
   y: number;
   scale: number;
   rotation: number;
-  /** For tower placeables: which column of the Odù is engraved (izq/der). A Meji's
-   *  two towers look identical, but this lets you pick each one. */
-  tower?: "left" | "right";
+  /** For tower placeables: "both" = the full Odù (two towers, like the chart, the
+   *  default); "left"/"right" = engrave a single tower. */
+  tower?: "both" | "left" | "right";
 }
 
 export const ITEM_DEFAULTS = { scale: 1, rotation: 0 };

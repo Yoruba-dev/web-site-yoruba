@@ -7,12 +7,13 @@ import MotifGlyph from "./MotifGlyph";
 // so the palette, the canvas and the summary all render symbols the same way.
 export default function PlaceableGlyph({
   placeable,
-  tower = "left",
+  tower = "both",
   className,
   decorative = true,
 }: {
   placeable: Placeable;
-  tower?: "left" | "right";
+  /** "both" = the full Odù (two towers, as in the chart); "left"/"right" = a single tower. */
+  tower?: "both" | "left" | "right";
   className?: string;
   decorative?: boolean;
 }) {
@@ -20,7 +21,12 @@ export default function PlaceableGlyph({
     const odu = getOdu(placeable.oduId);
     if (!odu) return null;
     return (
-      <OduGlyph odu={odu} tower={tower} className={className} decorative={decorative} />
+      <OduGlyph
+        odu={odu}
+        tower={tower === "both" ? undefined : tower}
+        className={className}
+        decorative={decorative}
+      />
     );
   }
   if (placeable.kind === "motif" && placeable.motif) {

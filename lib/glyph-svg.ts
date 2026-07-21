@@ -8,9 +8,8 @@ import type { RingSlotId } from "./odu";
 
 const GOLD = "#e3b23c";
 
-// A tower (single column) in a 50×106 box.
-function towerInner(marks: readonly Mark[]): string {
-  const cx = 25;
+// One Odù column at horizontal center `cx`.
+function colInner(marks: readonly Mark[], cx: number): string {
   const rowY = [8, 33, 58, 83];
   const h = 15;
   const half = 7;
@@ -64,15 +63,19 @@ function motifInner(id: MotifId): string {
 
 function placeable(
   ref: string,
-  tower?: "left" | "right",
+  tower?: "both" | "left" | "right",
 ): { inner: string; w: number; h: number } | null {
   const p = getPlaceable(ref);
   if (!p) return null;
   if (p.kind === "tower" && p.oduId) {
     const odu = getOdu(p.oduId);
     if (!odu) return null;
+    if (!tower || tower === "both") {
+      // The full Odù — both towers, like the chart.
+      return { inner: colInner(odu.left, 27) + colInner(odu.right, 73), w: 100, h: 106 };
+    }
     return {
-      inner: towerInner(tower === "right" ? odu.right : odu.left),
+      inner: colInner(tower === "right" ? odu.right : odu.left, 25),
       w: 50,
       h: 106,
     };
