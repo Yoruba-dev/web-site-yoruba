@@ -60,13 +60,27 @@ export default function RingConfigurator({
     setDesign((d) => ({ ...d, [id]: next }));
 
   function addItem(ref: string, x: number, y: number) {
-    if (!getPlaceable(ref)) return;
+    const p = getPlaceable(ref);
+    if (!p) return;
     const id = `it${++uid.current}`;
     patch(face, [
       ...design[face],
-      { uid: id, ref, x, y, scale: ITEM_DEFAULTS.scale, rotation: ITEM_DEFAULTS.rotation },
+      {
+        uid: id,
+        ref,
+        x,
+        y,
+        scale: ITEM_DEFAULTS.scale,
+        rotation: ITEM_DEFAULTS.rotation,
+        tower: p.kind === "tower" ? "left" : undefined,
+      },
     ]);
     setSelectedUid(id);
+  }
+  function flipTower(u: string) {
+    mapFace((it) =>
+      it.uid === u ? { ...it, tower: it.tower === "right" ? "left" : "right" } : it,
+    );
   }
   const mapFace = (fn: (it: PlacedItem) => PlacedItem) =>
     patch(face, design[face].map(fn));
@@ -130,6 +144,7 @@ export default function RingConfigurator({
             onRemove={removeItem}
             onScale={scaleItem}
             onRotate={rotateItem}
+            onFlipTower={flipTower}
           />
 
           <div className="pyj-cfg2_nav">

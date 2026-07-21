@@ -5752,15 +5752,43 @@ button[type="submit"],
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 18px 34px rgba(0, 0, 0, 0.5);
   touch-action: none; /* let pointer-drag work without the page scrolling */
 }
+.pyj-face_wrap {
+  position: relative;
+  display: inline-flex;
+}
 .pyj-face--round .pyj-face_canvas {
   width: min(340px, 82vw);
   aspect-ratio: 1;
   border-radius: 50% !important;
 }
+/* Stone halo (pavé) around the signet — two dotted rings (green + gold), like the
+   real rings. Sits on the wrap (not clipped by the canvas overflow). */
+.pyj-face--round .pyj-face_wrap::before,
+.pyj-face--round .pyj-face_wrap::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.pyj-face--round .pyj-face_wrap::before {
+  inset: -13px;
+  border: 5px dotted #5f8f42;
+  opacity: 0.85;
+}
+.pyj-face--round .pyj-face_wrap::after {
+  inset: -5px;
+  border: 3px dotted var(--pyj-gold, #e3b23c);
+}
+/* The shoulder reads as an engraved leaf / marquise cartouche (the clip-path
+   trims the gold border into a leaf outline). */
 .pyj-face--shoulder .pyj-face_canvas {
-  width: min(230px, 66vw);
-  aspect-ratio: 3 / 4;
-  border-radius: 22px !important;
+  width: min(212px, 62vw);
+  aspect-ratio: 3 / 4.4;
+  border-radius: 0 !important;
+  clip-path: polygon(
+    50% 0%, 66% 5%, 84% 24%, 92% 50%, 84% 76%, 66% 95%,
+    50% 100%, 34% 95%, 16% 76%, 8% 50%, 16% 24%, 34% 5%
+  );
 }
 .pyj-face_empty {
   position: absolute;

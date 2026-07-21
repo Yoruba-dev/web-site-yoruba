@@ -16,7 +16,11 @@ export type MotifId =
   | "cruz"
   | "ojo"
   | "corona"
-  | "hacha";
+  | "hacha"
+  | "yunque"
+  | "herradura"
+  | "ancla"
+  | "flecha";
 
 export interface Motif {
   id: MotifId;
@@ -37,6 +41,10 @@ export const MOTIFS: readonly Motif[] = [
   { id: "corona", name: "Corona", note: "Realeza y coronación (Ocha)." },
   { id: "ojo", name: "Ojo", note: "Vigilancia y resguardo." },
   { id: "cruz", name: "Cruz", note: "Encrucijada y sincretismo." },
+  { id: "yunque", name: "Yunque", note: "El hierro y el trabajo; atributo de Ogún." },
+  { id: "herradura", name: "Herradura", note: "Camino y buena fortuna." },
+  { id: "ancla", name: "Ancla", note: "Firmeza y esperanza; las aguas." },
+  { id: "flecha", name: "Flecha", note: "Rumbo y cacería; atributo de Ochosi." },
 ] as const;
 
 export type PlaceableKind = "tower" | "motif";
@@ -93,6 +101,9 @@ export interface PlacedItem {
   y: number;
   scale: number;
   rotation: number;
+  /** For tower placeables: which column of the Odù is engraved (izq/der). A Meji's
+   *  two towers look identical, but this lets you pick each one. */
+  tower?: "left" | "right";
 }
 
 export const ITEM_DEFAULTS = { scale: 1, rotation: 0 };

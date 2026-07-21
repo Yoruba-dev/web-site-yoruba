@@ -35,6 +35,7 @@ export default function FaceCanvas({
   onRemove,
   onScale,
   onRotate,
+  onFlipTower,
 }: {
   shape: "round" | "shoulder";
   items: PlacedItem[];
@@ -46,9 +47,15 @@ export default function FaceCanvas({
   onRemove: (uid: string) => void;
   onScale: (uid: string, delta: number) => void;
   onRotate: (uid: string, delta: number) => void;
+  onFlipTower: (uid: string) => void;
 }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const drag = useRef<string | null>(null);
+
+  const selected = items.find((i) => i.uid === selectedUid);
+  const selectedIsTower = selected
+    ? getPlaceable(selected.ref)?.kind === "tower"
+    : false;
 
   function toFraction(clientX: number, clientY: number) {
     const el = canvasRef.current;
@@ -62,6 +69,7 @@ export default function FaceCanvas({
 
   return (
     <div className={`pyj-face pyj-face--${shape}`}>
+      <div className="pyj-face_wrap">
       <div
         ref={canvasRef}
         className="pyj-face_canvas"
@@ -118,12 +126,13 @@ export default function FaceCanvas({
                 else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); onRemove(it.uid); }
               }}
             >
-              <PlaceableGlyph placeable={p} className="pyj-item_glyph" />
+              <PlaceableGlyph placeable={p} tower={it.tower} className="pyj-item_glyph" />
             </div>
           );
         })}
 
         {items.length === 0 && <span className="pyj-face_empty">{emptyHint}</span>}
+      </div>
       </div>
 
       {selectedUid && (
@@ -134,6 +143,15 @@ export default function FaceCanvas({
           <button type="button" onClick={() => onScale(selectedUid, 0.15)} aria-label="Más grande">
             <ToolIcon d="M12 5v14M5 12h14" />
           </button>
+          {selectedIsTower && (
+            <button
+              type="button"
+              onClick={() => onFlipTower(selectedUid)}
+              aria-label="Cambiar torre (izquierda / derecha)"
+            >
+              <ToolIcon d="M12 4v16M7 9l-4 3 4 3M17 9l4 3-4 3" />
+            </button>
+          )}
           <button type="button" onClick={() => onRotate(selectedUid, 15)} aria-label="Girar">
             <ToolIcon d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />
           </button>
