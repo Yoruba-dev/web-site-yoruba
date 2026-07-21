@@ -1,6 +1,7 @@
 import { SITE, SITE_URL } from "./site";
 import type { Money } from "./types";
 import { formatMoney } from "./utils";
+import { RING_SLOTS, getOdu, type RingConfig } from "./odu";
 
 // ---------------------------------------------------------------------------
 // Commerce / purchase policy — the single source of truth for HOW a piece can
@@ -40,9 +41,24 @@ export const MADE_TO_ORDER_TAGS = [
   "por orden",
 ];
 
+/** Tags that mark a ring as customizable in the /configurador editor — the
+ *  product page then shows a "Diseña este anillo" entry that opens the editor
+ *  tied to that piece. Tag a product with any of these in Shopify to enable it. */
+export const CONFIGURABLE_TAGS = ["personalizable", "configurable"];
+
+/** True when a piece can be personalised in the ring configurator. */
+export function isConfigurable(tags?: readonly string[]): boolean {
+  const normalized = (tags ?? []).map((t) => t.toLowerCase().trim());
+  return CONFIGURABLE_TAGS.some((t) => normalized.includes(t));
+}
+
 /** Internal control tags that steer behaviour but must NEVER be shown to shoppers
  *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
-const CONTROL_TAGS = new Set([...MADE_TO_ORDER_TAGS, "color-orisha"]);
+const CONTROL_TAGS = new Set([
+  ...MADE_TO_ORDER_TAGS,
+  "color-orisha",
+  ...CONFIGURABLE_TAGS,
+]);
 
 /** A product's tags with internal control tags stripped — safe to display. */
 export function publicTags(tags?: readonly string[]): string[] {
@@ -148,6 +164,76 @@ export function whatsappWholesaleUrl(): string {
     "Tengo una botánica / tienda y me interesa revender sus piezas.",
     "¿Me comparten el catálogo y los precios de mayorista?",
   ].join("\n");
+  const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
+  return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
+}
+
+/** Label for the ring-configurator call-to-action. */
+export const RING_CONFIG_LABEL = "Pedir mi diseño por WhatsApp";
+
+/**
+ * Builds the WhatsApp link for a CUSTOM RING designed in the /configurador —
+ * lists the chosen Odù on each face (frente + laterales) plus optional metal and
+ * size, and (optionally) links back to the shared design so the workshop can
+ * reopen it. Same brand-number + prefill pattern as `whatsappConsultUrl`, so the
+ * "diseña → pide" flow stays consistent with the rest of the encargo journey.
+ */
+export function whatsappRingConfigUrl(
+  config: RingConfig,
+  opts?: { karat?: string; size?: string; shareUrl?: string },
+): string {
+  const lines: string[] = [
+    "Hola 👋 Diseñé un *anillo personalizado* en la web de Pedro Yoruba Jewelry.",
+    "",
+    "Signos de Ifá elegidos:",
+  ];
+  for (const slot of RING_SLOTS) {
+    const id = config[slot.id];
+    const odu = id ? getOdu(id) : undefined;
+    lines.push(`• ${slot.short}: ${odu ? odu.name : "—"}`);
+  }
+  if (opts?.karat?.trim()) {
+    lines.push("");
+    lines.push(`Oro: ${opts.karat.trim()}`);
+  }
+  if (opts?.size?.trim()) lines.push(`Medida: ${opts.size.trim()}`);
+  if (opts?.shareUrl?.trim()) {
+    lines.push("");
+    lines.push(`🔗 Mi diseño: ${opts.shareUrl.trim()}`);
+  }
+  lines.push("");
+  lines.push("¿Me ayudan a cotizarlo y coordinar el pedido?");
+  const message = lines.join("\n");
+  const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
+  return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * WhatsApp link for a FREE-FORM ring design (the /configurador editor): lists the
+ * symbols placed on each face. `faces` is already resolved to display names, so
+ * this stays free of the symbol/Odù data model. Same brand-number + prefill
+ * pattern as the other builders.
+ */
+export function whatsappRingDesignUrl(
+  faces: { label: string; items: string[] }[],
+  opts?: { productTitle?: string; shareUrl?: string },
+): string {
+  const lines: string[] = [
+    "Hola 👋 Diseñé un *anillo personalizado* en la web de Pedro Yoruba Jewelry.",
+    "",
+  ];
+  if (opts?.productTitle?.trim()) {
+    lines.push(`Anillo: ${opts.productTitle.trim()}`, "");
+  }
+  lines.push("Mi diseño:");
+  for (const f of faces) {
+    lines.push(`• ${f.label}: ${f.items.length ? f.items.join(", ") : "—"}`);
+  }
+  if (opts?.shareUrl?.trim()) {
+    lines.push("", `🔗 ${opts.shareUrl.trim()}`);
+  }
+  lines.push("", "¿Me ayudan a cotizarlo y coordinar el pedido?");
+  const message = lines.join("\n");
   const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
   return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
 }

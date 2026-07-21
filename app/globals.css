@@ -5326,3 +5326,695 @@ button[type="submit"],
     row-gap: 20px;
   }
 }
+
+/* ===========================================================================
+   Ring configurator (/configurador) — design your Ifá ring. Built entirely on
+   the existing --pyj-* / --dk-* tokens. Layout: ring stage + order panel on top,
+   symbol palette below (stacks on mobile). See components/configurator/*.
+   =========================================================================== */
+.pyj-cfg-page {
+  padding: 34px 0 64px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(227, 178, 60, 0.08), transparent 60%),
+    var(--dk-base, #14100a);
+}
+.pyj-cfg-intro {
+  max-width: 720px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+.pyj-cfg-intro_lead {
+  margin: 6px 0 0;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--dk-text, #c9bfa8);
+}
+.pyj-cfg-intro_lead strong {
+  color: var(--pyj-gold, #e3b23c);
+}
+
+.pyj-cfg {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas: "stage order" "palette palette";
+  align-items: start;
+}
+.pyj-cfg_stage {
+  grid-area: stage;
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  padding: 24px;
+}
+.pyj-cfg_side {
+  grid-area: order;
+}
+.pyj-cfg_palette-wrap {
+  grid-area: palette;
+}
+@media (max-width: 900px) {
+  .pyj-cfg {
+    grid-template-columns: 1fr;
+    grid-template-areas: "stage" "palette" "order";
+  }
+}
+
+/* --- The ring stage --- */
+.pyj-ringcanvas {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  aspect-ratio: 360 / 300;
+}
+.pyj-ringcanvas_art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.5));
+}
+.pyj-ringslot_wrap {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.pyj-ringslot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 46px;
+  border-radius: 50% !important;
+  border: 2px dashed rgba(227, 178, 60, 0.6);
+  background: rgba(20, 14, 8, 0.55);
+  color: rgba(227, 178, 60, 0.8);
+  display: grid;
+  place-items: center;
+  padding: 11%;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease,
+    box-shadow 0.18s ease, transform 0.12s ease;
+}
+.pyj-ringslot:hover,
+.pyj-ringslot.is-active {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(30, 22, 13, 0.85);
+}
+.pyj-ringslot.is-drag {
+  border-style: solid;
+  border-color: var(--pyj-gold, #e3b23c);
+  box-shadow: 0 0 0 4px rgba(227, 178, 60, 0.25);
+  transform: scale(1.05);
+}
+.pyj-ringslot.is-filled {
+  border-style: solid;
+  border-color: rgba(227, 178, 60, 0.95);
+  background: linear-gradient(150deg, #f0d79b, #cda557 55%, #8f5f28);
+  color: #2c1f0a;
+}
+.pyj-ringslot_glyph {
+  width: 64%;
+  height: 64%;
+}
+.pyj-ringslot_plus {
+  display: grid;
+  place-items: center;
+}
+.pyj-ringslot_label {
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f0d79b);
+  white-space: nowrap;
+}
+.pyj-ringslot_clear {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% !important;
+  background: #2c1f0a;
+  color: #f0d79b;
+  border: 1px solid rgba(227, 178, 60, 0.6);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.pyj-ringslot_clear:hover {
+  background: #5a3d15;
+}
+.pyj-cfg_hint {
+  text-align: center;
+  margin: 16px 0 0;
+  min-height: 20px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--pyj-gold-light, #f0d79b);
+}
+
+/* --- Order / summary panel --- */
+.pyj-cfg_order {
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  padding: 22px 20px;
+  position: sticky;
+  top: 96px;
+}
+.pyj-cfg_order-title,
+.pyj-cfg_palette-title {
+  margin: 0 0 16px;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--dk-head, #ece2cd);
+  text-align: center;
+}
+.pyj-cfg_summary {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.pyj-cfg_summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.12);
+}
+.pyj-cfg_summary-face {
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f0d79b);
+}
+.pyj-cfg_summary-odu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--dk-text, #e9dfc9);
+}
+.pyj-cfg_summary-glyph {
+  width: 18px;
+  height: 22px;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-cfg_summary-empty {
+  font-size: 13px;
+  font-style: italic;
+  color: #8a7f68;
+}
+.pyj-cfg_cta {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.pyj-cfg_cta.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.pyj-cfg_reset {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(227, 178, 60, 0.35);
+  color: var(--pyj-gold, #e3b23c);
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.pyj-cfg_reset:hover:not(:disabled) {
+  background: rgba(227, 178, 60, 0.08);
+}
+.pyj-cfg_reset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pyj-cfg_disclaimer {
+  margin: 16px 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #8a7f68;
+}
+
+/* --- Symbol palette --- */
+.pyj-palette {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+}
+.pyj-palette_cell {
+  display: flex;
+}
+.pyj-palette_item {
+  position: relative;
+  width: 100%;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 8px 11px;
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  color: var(--pyj-gold, #e3b23c);
+  cursor: grab;
+  transition: border-color 0.18s ease, background 0.18s ease,
+    transform 0.12s ease, box-shadow 0.18s ease;
+}
+.pyj-palette_item:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+}
+.pyj-palette_item:active {
+  cursor: grabbing;
+}
+.pyj-palette_item.is-selected {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: linear-gradient(150deg, rgba(227, 178, 60, 0.16), rgba(227, 178, 60, 0.04));
+  box-shadow: inset 0 0 0 2px rgba(227, 178, 60, 0.5);
+}
+.pyj-palette_glyph {
+  width: 34px;
+  height: 40px;
+}
+.pyj-palette_name {
+  font-family: var(--font-body, "Lato"), sans-serif;
+  font-size: 11.5px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--dk-text, #c9bfa8);
+}
+.pyj-palette_num {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 10px;
+  color: rgba(227, 178, 60, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-palette_item,
+  .pyj-ringslot,
+  .pyj-cfg_reset,
+  .pyj-ringslot_clear {
+    transition: none;
+  }
+  .pyj-palette_item:hover,
+  .pyj-ringslot.is-drag {
+    transform: none;
+  }
+}
+
+/* ===========================================================================
+   Ring configurator v2 — step wizard + free composition canvas per face.
+   =========================================================================== */
+.pyj-cfg2 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* --- Step tabs / progress --- */
+.pyj-steps {
+  display: flex !important;
+  flex-flow: row wrap;
+  width: 100%;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+}
+.pyj-step {
+  flex: 0 0 auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* the template puts a border/box on <li> — strip it so only the chip shows */
+  border: 0 !important;
+  background: none !important;
+}
+.pyj-step_btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  color: var(--dk-text, #c9bfa8);
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.pyj-step_btn:hover {
+  border-color: rgba(227, 178, 60, 0.6);
+}
+.pyj-step.is-active .pyj-step_btn {
+  border-color: var(--pyj-gold, #e3b23c);
+  color: var(--pyj-gold-light, #f0d79b);
+  background: rgba(227, 178, 60, 0.08);
+}
+.pyj-step.is-done .pyj-step_btn {
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-step_mark {
+  display: grid;
+  place-items: center;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-step_count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px !important;
+  background: var(--pyj-gold, #e3b23c);
+  color: #2c1f0a;
+  font-family: var(--font-body, "Lato"), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* --- Main: stage + palette --- */
+.pyj-cfg2_main {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .pyj-cfg2_main {
+    grid-template-columns: 1fr;
+  }
+}
+.pyj-cfg2_stage {
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  padding: 24px;
+}
+
+/* --- A face canvas --- */
+.pyj-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.pyj-face_canvas {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 50% 20%, rgba(227, 178, 60, 0.12), transparent 60%),
+    #171009;
+  border: 3px solid;
+  border-image: linear-gradient(150deg, #f0d79b, #cda557 55%, #8f5f28) 1;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 18px 34px rgba(0, 0, 0, 0.5);
+  touch-action: none; /* let pointer-drag work without the page scrolling */
+}
+.pyj-face--round .pyj-face_canvas {
+  width: min(340px, 82vw);
+  aspect-ratio: 1;
+  border-radius: 50% !important;
+}
+.pyj-face--shoulder .pyj-face_canvas {
+  width: min(230px, 66vw);
+  aspect-ratio: 3 / 4;
+  border-radius: 22px !important;
+}
+.pyj-face_empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 18%;
+  text-align: center;
+  font-size: 12.5px;
+  font-style: italic;
+  color: rgba(201, 191, 168, 0.55);
+  pointer-events: none;
+}
+.pyj-item {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  color: var(--pyj-gold, #e3b23c);
+  cursor: grab;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+.pyj-item:active {
+  cursor: grabbing;
+}
+.pyj-item_glyph {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+.pyj-item.is-selected {
+  outline: 2px dashed rgba(240, 215, 155, 0.9);
+  outline-offset: 4px;
+  border-radius: 6px !important;
+}
+.pyj-face_tools {
+  display: inline-flex;
+  gap: 8px;
+  padding: 7px 9px;
+  background: var(--dk-base, #14100a);
+  border: 1px solid rgba(227, 178, 60, 0.3);
+  border-radius: 999px !important;
+}
+.pyj-face_tools button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50% !important;
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.3);
+  color: var(--pyj-gold-light, #f0d79b);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+.pyj-face_tools button:hover {
+  background: rgba(227, 178, 60, 0.12);
+  border-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-face_tool-del {
+  color: #e2867d !important;
+}
+
+/* --- Stage nav --- */
+.pyj-cfg2_nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+.pyj-cfg2_navbtn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid rgba(227, 178, 60, 0.4);
+  color: var(--pyj-gold, #e3b23c);
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.pyj-cfg2_navbtn:hover:not(:disabled) {
+  background: rgba(227, 178, 60, 0.1);
+}
+.pyj-cfg2_navbtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pyj-cfg2_navbtn--next {
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+  color: #0d0a07;
+  border-color: transparent;
+}
+.pyj-cfg2_navlabel {
+  font-size: 12px;
+  color: var(--dk-text, #a99d83);
+  text-align: center;
+}
+
+/* --- Palette v2 --- */
+.pyj-cfg2_palette {
+  background: var(--dk-raised, #1d160d);
+  border: 1px solid rgba(227, 178, 60, 0.22);
+  padding: 18px 16px;
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+}
+@media (max-width: 860px) {
+  .pyj-cfg2_palette {
+    position: static;
+    max-height: none;
+  }
+}
+.pyj-palette2_group + .pyj-palette2_group {
+  margin-top: 18px;
+}
+.pyj-palette2_gtitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f0d79b);
+}
+.pyj-palette2_grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+  gap: 8px;
+}
+.pyj-palette2_item {
+  width: 100%;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 4px 7px;
+  background: var(--dk-base, #14100a);
+  border: 1px solid rgba(227, 178, 60, 0.2);
+  color: var(--pyj-gold, #e3b23c);
+  cursor: grab;
+  transition: border-color 0.16s ease, transform 0.12s ease, background 0.16s ease;
+}
+.pyj-palette2_item:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+  transform: translateY(-2px);
+  background: rgba(227, 178, 60, 0.06);
+}
+.pyj-palette2_item:active {
+  cursor: grabbing;
+}
+.pyj-palette2_glyph {
+  width: 26px;
+  height: 34px;
+}
+.pyj-palette2_name {
+  font-family: var(--font-body, "Lato"), sans-serif;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--dk-text, #c9bfa8);
+}
+
+/* --- Order panel wrapper in v2 (not sticky, centered card) --- */
+.pyj-cfg2_order .pyj-cfg_order {
+  position: static;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-palette2_item,
+  .pyj-step_btn,
+  .pyj-cfg2_navbtn,
+  .pyj-face_tools button {
+    transition: none;
+  }
+  .pyj-palette2_item:hover {
+    transform: none;
+  }
+}
+
+/* --- Product-tied bits: "Diseña este anillo" CTA + configurator order/pay --- */
+.pyj-design-cta {
+  display: block;
+  text-align: center;
+  margin: 6px 0 18px;
+}
+.pyj-cfg_prod {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.pyj-cfg_prod-eyebrow {
+  font-family: var(--font-accent, "Cormorant Garamond"), serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-cfg_prod-price {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 18px;
+  color: var(--pyj-gold-light, #f0d79b);
+}
+.pyj-cfg_variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.pyj-cfg_variant {
+  padding: 7px 14px;
+  background: var(--dk-base, #14100a);
+  border: 1px solid rgba(227, 178, 60, 0.3);
+  color: var(--dk-text, #c9bfa8);
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.pyj-cfg_variant:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-cfg_variant.is-selected {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.12);
+  color: var(--pyj-gold-light, #f0d79b);
+}
+.pyj-cfg_cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pyj-cfg_altlink {
+  display: block;
+  text-align: center;
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--pyj-gold, #e3b23c);
+  text-decoration: underline;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pyj-cfg_variant {
+    transition: none;
+  }
+}

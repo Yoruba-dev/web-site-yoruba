@@ -38,6 +38,7 @@ export interface MenuCollection {
 
 // Curated informational/landing pages shown in the "Páginas" mega menu.
 const GUIDE_LINKS: MenuLink[] = [
+  { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Joyería en Miami", href: "/joyeria-en-miami" },
   { label: "Mayorista · Botánicas", href: "/mayoreo" },
   { label: "Garantía y devoluciones", href: "/garantia-y-devoluciones" },

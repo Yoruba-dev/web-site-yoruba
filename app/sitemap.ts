@@ -9,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths: { path: string; priority: number }[] = [
     { path: "", priority: 1 },
     { path: "/shop-left-sidebar", priority: 0.9 },
+    { path: "/configurador", priority: 0.8 },
     { path: "/mayoreo", priority: 0.8 },
     { path: "/joyeria-en-miami", priority: 0.8 },
     { path: "/garantia-y-devoluciones", priority: 0.6 },

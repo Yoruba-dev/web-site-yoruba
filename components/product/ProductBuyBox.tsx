@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import {
   CONSULT_LABEL,
   CONSULT_PRICE_LABEL,
+  isConfigurable,
   isMadeToOrder,
   isPlaceholderPriced,
   publicTags,
@@ -119,6 +121,15 @@ export default function ProductBuyBox({
           </>
         )}
       </div>
+
+      {isConfigurable(product.tags) && (
+        <Link
+          href={`/configurador?anillo=${encodeURIComponent(product.handle)}`}
+          className="pyj-btn-gold pyj-design-cta"
+        >
+          Diseña este anillo con tus signos de Ifá
+        </Link>
+      )}
 
       <div className="sp-essential_stuff">
         <ul>
