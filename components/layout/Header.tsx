@@ -235,8 +235,17 @@ export default function Header({
                     >
                       <i className="ion-android-close" />
                     </button>
-                    <div className="product-item_img">
+                    <div className="product-item_img pyj-cart-imgs">
                       <SafeImage src={l.image || undefined} width={160} alt={l.title} />
+                      {l.customization?.preview && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          className="pyj-cart-design"
+                          src={l.customization.preview}
+                          alt="Tu diseño de Ifá"
+                          loading="lazy"
+                        />
+                      )}
                     </div>
                     <div className="product-item_content">
                       <Link

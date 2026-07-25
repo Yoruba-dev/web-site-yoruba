@@ -3,6 +3,8 @@
 import { useRef } from "react";
 import { getPlaceable, type PlacedItem } from "@/lib/symbols";
 import PlaceableGlyph from "./PlaceableGlyph";
+import RingFrame from "./RingFrame";
+import ShoulderFrame from "./ShoulderFrame";
 
 // A free composition canvas for ONE ring face. Drop symbols from the palette
 // (or tap one to drop it in the middle), then drag each to position, and use the
@@ -28,7 +30,8 @@ export default function FaceCanvas({
   shape,
   items,
   selectedUid,
-  emptyHint = "Arrastra aquí tus símbolos, o toca uno de la paleta",
+  emptyHint,
+  gems,
   onAdd,
   onMove,
   onSelect,
@@ -41,6 +44,7 @@ export default function FaceCanvas({
   items: PlacedItem[];
   selectedUid: string | null;
   emptyHint?: string;
+  gems?: string[];
   onAdd: (ref: string, x: number, y: number) => void;
   onMove: (uid: string, x: number, y: number) => void;
   onSelect: (uid: string | null) => void;
@@ -70,6 +74,7 @@ export default function FaceCanvas({
   return (
     <div className={`pyj-face pyj-face--${shape}`}>
       <div className="pyj-face_wrap">
+      {shape === "round" ? <RingFrame gems={gems} /> : <ShoulderFrame gems={gems} />}
       <div
         ref={canvasRef}
         className="pyj-face_canvas"
@@ -131,7 +136,14 @@ export default function FaceCanvas({
           );
         })}
 
-        {items.length === 0 && <span className="pyj-face_empty">{emptyHint}</span>}
+        {items.length === 0 && (
+          <span className="pyj-face_empty">
+            {emptyHint ??
+              (shape === "shoulder"
+                ? "Coloca aquí tu torre"
+                : "Arrastra aquí tus símbolos, o toca uno de la paleta")}
+          </span>
+        )}
       </div>
       </div>
 

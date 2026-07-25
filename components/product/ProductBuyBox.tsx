@@ -122,12 +122,12 @@ export default function ProductBuyBox({
         )}
       </div>
 
-      {isConfigurable(product.tags) && (
+      {isConfigurable(product) && (
         <Link
           href={`/configurador?anillo=${encodeURIComponent(product.handle)}`}
-          className="pyj-btn-gold pyj-design-cta"
+          className="pyj-design-cta"
         >
-          Diseña este anillo con tus signos de Ifá
+          ✦ Diseña este anillo con tus signos de Ifá →
         </Link>
       )}
 

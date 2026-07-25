@@ -46,10 +46,23 @@ export const MADE_TO_ORDER_TAGS = [
  *  tied to that piece. Tag a product with any of these in Shopify to enable it. */
 export const CONFIGURABLE_TAGS = ["personalizable", "configurable"];
 
-/** True when a piece can be personalised in the ring configurator. */
-export function isConfigurable(tags?: readonly string[]): boolean {
-  const normalized = (tags ?? []).map((t) => t.toLowerCase().trim());
-  return CONFIGURABLE_TAGS.some((t) => normalized.includes(t));
+/** Collections whose products are ALL configurable in the ring editor. Every ring
+ *  in "Anillos de Ifá" is designable + payable on the web with NO per-product
+ *  tagging — add a new Ifá ring to the collection and it just works. Add more
+ *  collection handles here to extend it. */
+export const CONFIGURABLE_COLLECTIONS = ["anillos-de-ifa"];
+
+/** True when a piece can be personalised in the ring configurator — either it's
+ *  tagged personalizable/configurable, OR it belongs to a configurable collection
+ *  (e.g. any Anillo de Ifá). Accepts a product-like object with tags/collections. */
+export function isConfigurable(product?: {
+  tags?: readonly string[];
+  collections?: readonly string[];
+}): boolean {
+  const tags = (product?.tags ?? []).map((t) => t.toLowerCase().trim());
+  if (CONFIGURABLE_TAGS.some((t) => tags.includes(t))) return true;
+  const cols = (product?.collections ?? []).map((c) => c.toLowerCase().trim());
+  return CONFIGURABLE_COLLECTIONS.some((c) => cols.includes(c));
 }
 
 /** Internal control tags that steer behaviour but must NEVER be shown to shoppers

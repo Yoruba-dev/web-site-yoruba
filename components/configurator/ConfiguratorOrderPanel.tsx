@@ -7,6 +7,9 @@ import { whatsappRingDesignUrl } from "@/lib/commerce";
 import { useCart } from "@/lib/cart-context";
 import { formatMoney } from "@/lib/utils";
 import { designToPreviewDataUrl } from "@/lib/glyph-svg";
+import { encodeDesign } from "@/lib/design-code";
+import { getOrisha } from "@/lib/orisha-colors";
+import { SITE_URL } from "@/lib/site";
 
 export type RingDesign = Record<RingSlotId, PlacedItem[]>;
 
@@ -38,12 +41,15 @@ const FACE_ORDER: { id: RingSlotId; label: string }[] = [
 export default function ConfiguratorOrderPanel({
   design,
   product,
+  orisha,
   onReset,
 }: {
   design: RingDesign;
   product?: ConfiguratorProduct;
+  orisha?: string;
   onReset: () => void;
 }) {
+  const santo = orisha ? getOrisha(orisha) : undefined;
   const { addLine, setCartOpen } = useCart();
   const [variantId, setVariantId] = useState(product?.variants[0]?.id ?? "");
   const [added, setAdded] = useState(false);
@@ -62,12 +68,33 @@ export default function ConfiguratorOrderPanel({
 
   function addToCart() {
     if (!product || !chosen || !ready) return;
-    const properties = faces
-      .filter((f) => f.names.length)
-      .map((f) => ({ key: f.label, value: f.names.join(", ") }));
+    const metal =
+      chosen.title && chosen.title !== "Default Title" ? chosen.title : undefined;
+    const santoLabel = santo ? `${santo.name} · ${santo.saint}` : undefined;
+    // one link that carries the WHOLE design → a printable sheet (mockup + spec)
+    const designUrl = `${SITE_URL}/diseno?d=${encodeDesign({
+      design,
+      ring: { handle: product.handle, title: product.title, variant: metal, santo: santoLabel },
+    })}`;
+    const properties = [
+      {
+        key: "Diseño",
+        value: `Diseño de Ifá — ${product.title}${metal ? ` (${metal})` : ""}`,
+      },
+      ...(santoLabel
+        ? [{ key: "Santo / Ángel de la guarda", value: santoLabel }]
+        : []),
+      ...faces
+        .filter((f) => f.names.length)
+        .map((f) => ({ key: f.label, value: f.names.join(", ") })),
+      { key: "🔗 Ver e imprimir el diseño", value: designUrl },
+    ];
+    // Customer-facing summary (cart + the "Grabado" order attribute): the symbols
+    // per face, kept short and clean — the sheet URL rides only in `properties`.
     const summary = faces
-      .map((f) => `${f.label}: ${f.names.length ? f.names.join(", ") : "—"}`)
-      .join(" | ");
+      .filter((f) => f.names.length)
+      .map((f) => `${f.label}: ${f.names.join(", ")}`)
+      .join(" · ");
     const uid =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -80,7 +107,9 @@ export default function ConfiguratorOrderPanel({
         merchandiseId: chosen.id,
         productHandle: product.handle,
         title: `${product.title} — diseño de Ifá${chosen.title && chosen.title !== "Default Title" ? ` (${chosen.title})` : ""}`,
-        image: preview ?? product.image,
+        // main cart thumbnail = the real ring photo; the design mockup shows beside
+        // it (customization.preview) so the customer sees the piece AND their design.
+        image: product.image || preview || "",
         price: Number(chosen.amount),
         currencyCode: chosen.currencyCode,
         properties,

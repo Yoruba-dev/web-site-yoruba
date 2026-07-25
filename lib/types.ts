@@ -52,6 +52,9 @@ export interface Product {
   isNew?: boolean;
   availableForSale: boolean;
   tags: string[];
+  /** Handles of the Shopify collections this piece belongs to. Only populated by
+   *  the single-product query (`shopifyGetProductByHandle`); undefined on cards. */
+  collections?: string[];
   variants: ProductVariant[];
   /** Label of the primary variant option (e.g. "Tamaño"); undefined for
    *  single-variant products or Shopify's default "Title" option. */

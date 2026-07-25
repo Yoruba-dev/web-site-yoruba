@@ -152,6 +152,8 @@ interface ShopifyProduct {
       };
     }[];
   };
+  // Only requested by the single-product query (not the card fragment).
+  collections?: { nodes: { handle: string }[] };
 }
 
 // A product wears the "Nuevo" badge for this many days after it's CREATED (added
@@ -209,6 +211,7 @@ function reshape(p: ShopifyProduct): Product {
     // Merge any real Shopify tags with type/Orisha tags derived from the title,
     // so the shop filters + "Comprar por Orisha" work even when products are untagged.
     tags: Array.from(new Set([...p.tags, ...deriveTags(p.title)])),
+    collections: p.collections?.nodes.map((n) => n.handle),
     variants: p.variants.edges.map((e) => ({
       id: e.node.id,
       title: e.node.title,
@@ -282,7 +285,10 @@ export async function shopifyGetProductByHandle(
     /* GraphQL */ `
       ${PRODUCT_FRAGMENT}
       query Product($handle: String!) {
-        product(handle: $handle) { ...ProductCard }
+        product(handle: $handle) {
+          ...ProductCard
+          collections(first: 20) { nodes { handle } }
+        }
       }
     `,
     { handle },

@@ -99,10 +99,6 @@ export default function NewsletterPopup({
             <div className="pyj-pop_media">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={offer.image} alt={offer.title} />
-              <span className="pyj-offer_pct">
-                <b>{offer.pct}%</b>
-                <small>OFF</small>
-              </span>
             </div>
           )}
         </div>

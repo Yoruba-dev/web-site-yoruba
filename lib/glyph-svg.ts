@@ -104,28 +104,64 @@ function itemsGroup(items: PlacedItem[], cx: number, cy: number, r: number): str
   return s;
 }
 
-/** Build a data-URL SVG thumbnail of the design (the front face is the hero; if
- *  it's empty, the first non-empty face is used). Safe to drop into an <img>. */
+// One face panel: the face outline (round signet or tapering shoulder) with its
+// placed symbols and a caption. Used to build the 3-face order diagram below.
+function facePanel(
+  items: PlacedItem[],
+  label: string,
+  shape: "round" | "shoulder",
+  cx: number,
+  cy: number,
+  captionY: number,
+): string {
+  let out: string;
+  let region: string;
+  if (shape === "round") {
+    const r = 76;
+    out =
+      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1d160d" stroke="${GOLD}" stroke-width="3"/>` +
+      // the fixed "+" that crowns the front template (upper-middle)
+      `<g fill="${GOLD}"><rect x="${cx - 3}" y="${cy - 34}" width="6" height="26" rx="2"/>` +
+      `<rect x="${cx - 13}" y="${cy - 24}" width="26" height="6" rx="2"/></g>`;
+    region = itemsGroup(items, cx, cy + 8, r - 22);
+  } else {
+    const w = 92;
+    const top = cy - 84;
+    const bottom = cy + 84;
+    out = `<path d="M${cx - w / 2 + 6} ${top} L${cx + w / 2 - 6} ${top} L${cx} ${bottom} Z" fill="#1d160d" stroke="${GOLD}" stroke-width="3" stroke-linejoin="round"/>`;
+    region = itemsGroup(items, cx, cy - 6, 38);
+  }
+  const caption = `<text x="${cx}" y="${captionY}" fill="${GOLD}" font-family="Georgia, serif" font-size="15" text-anchor="middle">${label}</text>`;
+  return out + region + caption;
+}
+
+/** Build a data-URL SVG diagram of the WHOLE design — the FRONT signet on top and
+ *  the two LATERALS below, each with its symbols, in a near-square frame so all
+ *  three faces stay visible even in a small square cart thumbnail. Safe to drop
+ *  into an <img>. */
 export function designToPreviewDataUrl(
   design: Record<RingSlotId, PlacedItem[]>,
 ): string | undefined {
-  const order: RingSlotId[] = ["front", "right", "left"];
-  const faceId = order.find((id) => (design[id] ?? []).length) ?? "front";
-  const items = design[faceId] ?? [];
-  if (!items.length) return undefined;
+  const empty =
+    !(design.front ?? []).length &&
+    !(design.right ?? []).length &&
+    !(design.left ?? []).length;
+  if (empty) return undefined;
 
-  const W = 220;
-  const cx = W / 2;
-  const cy = W / 2;
-  const r = 92;
+  const W = 420;
+  const H = 400;
+  const body =
+    facePanel(design.front ?? [], "Frente", "round", 210, 118, 214) +
+    facePanel(design.left ?? [], "Izquierdo", "shoulder", 112, 290, 388) +
+    facePanel(design.right ?? [], "Derecho", "shoulder", 308, 290, 388);
+
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${W}">` +
-    `<rect width="${W}" height="${W}" fill="#171009"/>` +
-    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1d160d" stroke="${GOLD}" stroke-width="4"/>` +
-    itemsGroup(items, cx, cy, r - 10) +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">` +
+    `<rect width="${W}" height="${H}" fill="#171009"/>` +
+    body +
     `</svg>`;
 
-  // btoa is fine here (the SVG is pure ASCII). Client-only (called from the panel).
+  // btoa is fine here (the SVG is pure ASCII). Runs client- and server-side.
   if (typeof btoa === "undefined") return undefined;
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }

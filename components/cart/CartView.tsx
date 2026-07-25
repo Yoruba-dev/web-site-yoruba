@@ -32,9 +32,20 @@ export default function CartView() {
           <div className="pyj-cart-lines">
             {lines.map((l) => (
               <div className="pyj-cart-line" key={l.id}>
-                <Link href={`/products/${l.productHandle}`} className="pyj-cart-thumb">
-                  <SafeImage src={l.image} width={300} alt={l.title} />
-                </Link>
+                <div className="pyj-cart-thumbs">
+                  <Link href={`/products/${l.productHandle}`} className="pyj-cart-thumb">
+                    <SafeImage src={l.image} width={300} alt={l.title} />
+                  </Link>
+                  {l.customization?.preview && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      className="pyj-cart-design"
+                      src={l.customization.preview}
+                      alt="Tu diseño de Ifá"
+                      loading="lazy"
+                    />
+                  )}
+                </div>
 
                 <div className="pyj-cart-info">
                   <Link href={`/products/${l.productHandle}`} className="pyj-cart-title">
@@ -42,7 +53,8 @@ export default function CartView() {
                   </Link>
                   {l.customization && (
                     <span className="pyj-cart-note">
-                      ✦ Grabado: «{l.customization.text}» · {l.customization.font}
+                      ✦ Grabado: «{l.customization.text}»
+                      {l.customization.font ? ` · ${l.customization.font}` : ""}
                       {l.customization.metal ? ` · ${l.customization.metal}` : ""}
                     </span>
                   )}

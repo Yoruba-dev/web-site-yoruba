@@ -22,10 +22,6 @@ export default async function FeaturedOffer() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={offer.image} alt={offer.title} loading="lazy" />
             )}
-            <span className="pyj-offer_pct">
-              <b>{offer.pct}%</b>
-              <small>OFF</small>
-            </span>
           </Link>
 
           <div className="pyj-offer_body">

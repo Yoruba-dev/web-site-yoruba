@@ -9,6 +9,7 @@ import {
   ITEM_MAX_SCALE,
   type PlacedItem,
 } from "@/lib/symbols";
+import { ORISHAS, getOrishaGems } from "@/lib/orisha-colors";
 import FaceCanvas from "./FaceCanvas";
 import SymbolPalette, { type TowerMode } from "./SymbolPalette";
 import ConfiguratorOrderPanel, {
@@ -29,6 +30,9 @@ const STEPS: {
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// Fixed size for an Odù engraved on the FRONT — it fills the central red field.
+const FRONT_ITEM_SCALE = 2.3;
 
 function StepIcon({ done }: { done: boolean }) {
   return (
@@ -51,8 +55,10 @@ export default function RingConfigurator({
   const [stepIdx, setStepIdx] = useState(0);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [towerMode, setTowerMode] = useState<TowerMode>("both");
+  const [orisha, setOrisha] = useState("");
   const uid = useRef(0);
 
+  const gems = getOrishaGems(orisha);
   const step = STEPS[stepIdx];
   const face = step.id;
   const items = design[face];
@@ -64,14 +70,23 @@ export default function RingConfigurator({
     const p = getPlaceable(ref);
     if (!p) return;
     const id = `it${++uid.current}`;
+    // A tower's SIDE follows the tower choice so it reads left→right: left tower to
+    // the left, right tower to the right, both centered. On the FRONT it's engraved
+    // large & centered; on the SIDE it snaps into the gate. Motifs stay free on the
+    // sides.
+    const front = step.shape === "round";
+    const isTower = p.kind === "tower";
+    const off = 0.08; // side spread — towers sit close, forming the two-column sign
+    const sideX =
+      towerMode === "left" ? 0.5 - off : towerMode === "right" ? 0.5 + off : 0.5;
     patch(face, [
       ...design[face],
       {
         uid: id,
         ref,
-        x,
-        y,
-        scale: ITEM_DEFAULTS.scale,
+        x: front ? (isTower ? sideX : 0.5) : isTower ? sideX : x,
+        y: front ? 0.5 : isTower ? 0.37 : y,
+        scale: front ? FRONT_ITEM_SCALE : ITEM_DEFAULTS.scale,
         rotation: ITEM_DEFAULTS.rotation,
         tower: p.kind === "tower" ? towerMode : undefined,
       },
@@ -138,12 +153,42 @@ export default function RingConfigurator({
         })}
       </ol>
 
+      {/* Gems by the wearer's Orisha (santo / ángel de la guarda) */}
+      <div className="pyj-orisha">
+        <label className="pyj-orisha_label" htmlFor="pyj-orisha-sel">
+          Gemas según tu santo / ángel de la guarda
+        </label>
+        <div className="pyj-orisha_row">
+          <select
+            id="pyj-orisha-sel"
+            className="pyj-orisha_sel"
+            value={orisha}
+            onChange={(e) => setOrisha(e.target.value)}
+          >
+            <option value="">Sin gemas de santo (predeterminado)</option>
+            {ORISHAS.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name} · {o.saint}
+              </option>
+            ))}
+          </select>
+          {gems && (
+            <span className="pyj-orisha_swatches" aria-hidden="true">
+              {gems.map((c, i) => (
+                <span key={i} style={{ background: c }} />
+              ))}
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="pyj-cfg2_main">
         <div className="pyj-cfg2_stage">
           <FaceCanvas
             shape={step.shape}
             items={items}
             selectedUid={selectedUid}
+            gems={gems}
             onAdd={addItem}
             onMove={moveItem}
             onSelect={setSelectedUid}
@@ -176,25 +221,28 @@ export default function RingConfigurator({
           </div>
         </div>
 
-        <div className="pyj-cfg2_palette">
-          <h2 className="pyj-cfg_palette-title">Arrastra tus símbolos</h2>
-          <SymbolPalette
-            onPick={(ref) => addItem(ref, 0.5, 0.5)}
-            towerMode={towerMode}
-            onTowerMode={setTowerMode}
-          />
-        </div>
-      </div>
+        <div className="pyj-cfg2_side">
+          <div className="pyj-cfg2_palette">
+            <h2 className="pyj-cfg_palette-title">Arrastra tus símbolos</h2>
+            <SymbolPalette
+              onPick={(ref) => addItem(ref, 0.5, step.shape === "shoulder" ? 0.37 : 0.5)}
+              towerMode={towerMode}
+              onTowerMode={setTowerMode}
+            />
+          </div>
 
-      <div className="pyj-cfg2_order">
-        <ConfiguratorOrderPanel
-          design={design}
-          product={product}
-          onReset={() => {
-            setDesign({ front: [], right: [], left: [] });
-            setSelectedUid(null);
-          }}
-        />
+          <div className="pyj-cfg2_order">
+            <ConfiguratorOrderPanel
+              design={design}
+              product={product}
+              orisha={orisha}
+              onReset={() => {
+                setDesign({ front: [], right: [], left: [] });
+                setSelectedUid(null);
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

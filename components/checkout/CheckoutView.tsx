@@ -85,7 +85,8 @@ export default function CheckoutView() {
                 <strong className="product-quantity"> × {l.quantity}</strong>
                 {l.customization && (
                   <span className="cart-customization">
-                    ✦ Grabado: «{l.customization.text}» · {l.customization.font}
+                    ✦ Grabado: «{l.customization.text}»
+                    {l.customization.font ? ` · ${l.customization.font}` : ""}
                   </span>
                 )}
               </td>
