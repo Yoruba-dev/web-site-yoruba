@@ -109,13 +109,22 @@ export default function HeroSlider() {
   }, []);
 
   return (
-    <section className="pyj-hero" aria-label="Destacados">
+    <section
+      className="pyj-hero"
+      aria-roledescription="carrusel"
+      aria-label="Destacados"
+    >
       <Slider {...settings} className="main-slider">
         {SITE.heroSlides.map((slide, i) => {
           const show = i === 0 || restReady;
           return (
             <div key={slide.banner} className="pyj-hero_slide">
-              <div className={`pyj-hero_stage pyj-hero_stage--${slide.align}`}>
+              <div
+                className={`pyj-hero_stage pyj-hero_stage--${slide.align}`}
+                role="group"
+                aria-roledescription="diapositiva"
+                aria-label={`${i + 1} de ${SITE.heroSlides.length}: ${slide.title}`}
+              >
                 {show && (
                   <picture className="pyj-hero_pic">
                     <source
@@ -163,9 +172,16 @@ export default function HeroSlider() {
 
                 {/* Visible on phones; on desktop this is the accessible and
                     indexable equivalent of the text baked into the banner, so it
-                    is visually hidden rather than removed. */}
+                    is visually hidden rather than removed.
+
+                    NOT a heading. These are promotional lines, not document
+                    structure, and as <h2> they wrecked the page outline: seven of
+                    them, four saying the same thing, and that same sentence is
+                    already a real <h2> further down the page — five identical
+                    <h2>s on one URL. The copy is indexed exactly the same as a
+                    <p>; what changes is that the outline now reflects the page. */}
                 <div className="pyj-hero_copy">
-                  <h2 className="pyj-hero_title">{slide.title}</h2>
+                  <p className="pyj-hero_title">{slide.title}</p>
                   <p className="pyj-hero_text">
                     {goldenPhrases(slide.text, slide.oro)}
                   </p>
