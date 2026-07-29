@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Slider, { type Settings } from "react-slick";
 import { SITE } from "@/lib/site";
-import { sizedImageUrl } from "@/lib/utils";
 
 type ArrowProps = {
   className?: string;
@@ -27,18 +26,20 @@ function NextArrow({ className, style, onClick }: ArrowProps) {
   );
 }
 
-// Home hero: crossfading carousel of the store's designed Shopify banners
-// (SITE.heroSlides). The banners are pre-composed (copy baked into the image), so
-// each slide is just the image — no HTML overlay (that would double the text).
-// Height is capped on desktop so the banner stays compact; mobile shows it whole.
+// Home hero. Every slide is COMPOSED from three layers rather than one flat
+// banner: the scene (bg), the cut-out piece (art) and real HTML copy. Slides
+// crossfade — nothing slides sideways. See SITE.heroSlides for the why.
 const settings: Settings = {
   infinite: true,
   arrows: true,
   autoplay: true,
   fade: true,
   dots: true,
-  autoplaySpeed: 5000,
-  speed: 1000,
+  // 7 slides — at 7s each a full cycle took 49s and the last ones were never
+  // seen. 5.5s keeps every slide within a realistic visit.
+  autoplaySpeed: 5500,
+  speed: 1600,
+  cssEase: "cubic-bezier(0.16, 1, 0.3, 1)",
   adaptiveHeight: false,
   pauseOnHover: false,
   pauseOnFocus: false,
@@ -64,29 +65,46 @@ export default function HeroSlider() {
   }, []);
 
   return (
-    <div className="hiraola-slider_area-2 hero-banner_slider">
+    <section className="pyj-hero" aria-label="Destacados">
       <Slider {...settings} className="main-slider">
         {SITE.heroSlides.map((slide, i) => (
-          <div key={slide.image} className="hero-slide">
-            <Link href={slide.href} className="single-slide" aria-label={slide.alt}>
+          <div key={slide.title} className="pyj-hero_slide">
+            <div className={`pyj-hero_stage pyj-hero_stage--${slide.align}`}>
+              {/* layer 1 — the scene */}
+              <div
+                className="pyj-hero_bg"
+                style={{ backgroundImage: `url(${slide.bg})` }}
+                aria-hidden="true"
+              />
+              {/* layer 2 — the cut-out piece, placed exactly where it sits in
+                  the composed original (geometry measured from the masters) */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                className="hero-slide_img"
-                // Size through the Shopify CDN (webp + width) like every other
-                // image — the raw PNG is ~2 MB. The first slide is the LCP, so
-                // load it eagerly with high priority; later slides lazy-load.
-                src={sizedImageUrl(slide.image, slide.width)}
-                alt={slide.alt}
-                width={slide.width}
-                height={slide.height}
+                className="pyj-hero_art"
+                style={
+                  {
+                    "--art-w": slide.artW,
+                    "--art-top": slide.artTop,
+                  } as React.CSSProperties
+                }
+                src={slide.art}
+                alt={slide.artAlt}
                 fetchPriority={i === 0 ? "high" : "low"}
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
               />
-            </Link>
+              {/* layer 3 — real text */}
+              <div className="pyj-hero_copy">
+                <h2 className="pyj-hero_title">{slide.title}</h2>
+                <p className="pyj-hero_text">{slide.text}</p>
+                <Link href={slide.href} className="pyj-btn-gold pyj-hero_cta">
+                  {slide.cta}
+                </Link>
+              </div>
+            </div>
           </div>
         ))}
       </Slider>
-    </div>
+    </section>
   );
 }

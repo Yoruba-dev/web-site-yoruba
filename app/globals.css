@@ -4554,6 +4554,387 @@ button[type="submit"],
 }
 
 /* ===========================================================================
+   HERO — each slide REBUILDS the original artwork from separate layers.
+   The scene and the cut-out piece share ONE 1376×768 canvas, so the piece keeps
+   the exact position and scale it had in the composed design (and bleeds off the
+   frame instead of floating with a cut edge). The copy is real HTML on top.
+   On entry the scene eases in, the piece drifts in from its own side and the copy
+   arrives from the other — staggered.
+   =========================================================================== */
+.pyj-hero {
+  position: relative;
+  overflow: hidden;
+  background: #070603;
+}
+.pyj-hero_slide {
+  outline: none;
+}
+.pyj-hero_stage {
+  position: relative;
+  display: grid;
+  align-items: center;
+  /* SAME proportion as the artwork (1376×768), so the scene shows whole, at true
+     scale, and every element lands where it does in the composed original.
+     `width: 100%` is LOad-BEARING, not decoration: with an automatic inline size,
+     `max-height` is transferred back through `aspect-ratio` into an implicit
+     max-WIDTH (CSS Sizing 4, transferred size suggestion), so the stage silently
+     stopped filling the section — a black band down the right of the hero on any
+     window wider than ~1.5× its height, i.e. essentially every desktop. Stating
+     the width makes the inline size definite, so the cap only clamps the height. */
+  width: 100%;
+  aspect-ratio: 1376 / 768;
+  max-height: 84vh;
+  overflow: hidden;
+}
+
+/* ---- layer 1: the scene fills the stage ---- */
+.pyj-hero_bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+/* ---- layer 2: the piece, FLUSH TO THE OUTER FRAME EDGE (never floating).
+   Several of these exports are rectangular photo crops, not organic cut-outs
+   (arte-boceto's right edge is 91% opaque, arte-mano-idde's left 47%,
+   arte-mano-anillo's right 37%). Floating one of those with clearance shows the
+   straight cut as a "pasted rectangle" edge. Every hard edge happens to face
+   the piece's own outer side, so seating the art against that frame edge sends
+   the cut off-frame for all of them at once — and the true cut-outs just read
+   as anchored instead of adrift. Only the vertical position stays per-slide. ---- */
+.pyj-hero_art {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  left: auto;
+  top: var(--art-top, 0%);
+  width: var(--art-w, 40%);
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  /* Safety net: the stage height is fixed by the aspect-ratio above, so the art
+     must never be what decides it. If a future cut-out is taller than expected,
+     it shrinks inside its box (object-fit) instead of spilling out. */
+  max-height: 88%;
+  filter: drop-shadow(0 20px 38px rgba(0, 0, 0, 0.5));
+}
+/* copy on the right → the piece seats against the LEFT frame edge instead */
+.pyj-hero_stage--right .pyj-hero_art {
+  right: auto;
+  left: 0;
+}
+/* scrim on the copy side so the text always holds up */
+.pyj-hero_bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(5, 4, 2, 0.9) 0%,
+    rgba(5, 4, 2, 0.66) 30%,
+    rgba(5, 4, 2, 0.18) 58%,
+    rgba(5, 4, 2, 0) 76%
+  );
+}
+.pyj-hero_stage--right .pyj-hero_bg::after {
+  background: linear-gradient(
+    270deg,
+    rgba(5, 4, 2, 0.9) 0%,
+    rgba(5, 4, 2, 0.66) 30%,
+    rgba(5, 4, 2, 0.18) 58%,
+    rgba(5, 4, 2, 0) 76%
+  );
+}
+
+/* ---- layer 3: the copy ---- */
+.pyj-hero_copy {
+  position: relative;
+  z-index: 2;
+  /* measured against the STAGE (90%), never the viewport (90vw) — the stage can
+     be narrower than the window, and this box lives inside its `overflow:hidden`,
+     so a viewport-sized copy gets clipped mid-word on right-aligned slides. */
+  width: min(1180px, 90%);
+  margin: 0 auto;
+  padding: 40px 0;
+}
+.pyj-hero_stage--right .pyj-hero_copy {
+  text-align: right;
+}
+.pyj-hero_title {
+  margin: 0 0 14px;
+  max-width: 12ch;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: clamp(30px, 4.4vw, 54px);
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  /* polished-gold lettering: a vertical gradient painted through the glyphs,
+     like the metal in the artwork. `color` stays as the fallback for engines
+     that don't do background-clip:text. */
+  color: var(--pyj-gold-light, #f0d79b);
+  background: linear-gradient(
+    177deg,
+    #fdf1cf 0%,
+    #e8c988 26%,
+    #c9a227 52%,
+    #a97d1c 66%,
+    #e6c987 82%,
+    #fbeec6 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* text-shadow can't paint through clipped text — use a filter instead */
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 0 24px rgba(0, 0, 0, 0.5));
+}
+/* the subhead keeps a warm gold lead-in like the designs */
+.pyj-hero_text strong,
+.pyj-hero_text b {
+  color: var(--pyj-gold, #e3b23c);
+  font-weight: 600;
+}
+.pyj-hero_stage--right .pyj-hero_title {
+  margin-left: auto;
+}
+.pyj-hero_text {
+  margin: 0 0 24px;
+  max-width: 32ch;
+  font-size: clamp(15px, 1.7vw, 18px);
+  line-height: 1.62;
+  color: rgba(246, 240, 228, 0.94);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.92);
+}
+.pyj-hero_stage--right .pyj-hero_text {
+  margin-left: auto;
+}
+.pyj-hero_cta {
+  display: inline-block;
+}
+
+/* ---- entrance choreography ----------------------------------------------
+   Long, soft easing. The piece drifts only ~3% and is scaled 1.05 so a
+   full-bleed layer never exposes an empty edge while it moves. */
+@keyframes pyjHeroScene {
+  from { opacity: 0; transform: scale(1.07); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pyjHeroArtRight {
+  from { opacity: 0; transform: translateX(5%) scale(0.98); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes pyjHeroArtLeft {
+  from { opacity: 0; transform: translateX(-5%) scale(0.98); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes pyjHeroCopyLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pyjHeroCopyRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* THE LAYERS REST AT opacity:1 — do not "hide until active" here.
+   The obvious version (opacity:0 by default + a delayed 0s transition to defer
+   the reset past the crossfade) LOOKS right and does nothing: a transition can't
+   start from an animated value. When react-slick drops `.slick-active` the
+   entrance @keyframes disappears with it and opacity resolves straight to the
+   base — no before-change style differs, so no transition is ever created. Every
+   layer of the OUTGOING slide snapped to 0 while its wrapper was still mid-fade,
+   and the hero blinked to solid black on every single slide change.
+   Resting at 1 hands the crossfade back to slick's own wrapper opacity (which is
+   a real transition), while the staggered entrance still works because each
+   @keyframes starts at opacity 0 on its own. */
+.pyj-hero .slick-slide .pyj-hero_bg,
+.pyj-hero .slick-slide .pyj-hero_art,
+.pyj-hero .slick-slide .pyj-hero_title,
+.pyj-hero .slick-slide .pyj-hero_text,
+.pyj-hero .slick-slide .pyj-hero_cta {
+  opacity: 1;
+}
+.pyj-hero .slick-active .pyj-hero_bg {
+  animation: pyjHeroScene 2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pyj-hero .slick-active .pyj-hero_art {
+  animation: pyjHeroArtRight 1.6s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_art {
+  animation-name: pyjHeroArtLeft;
+}
+.pyj-hero .slick-active .pyj-hero_title {
+  animation: pyjHeroCopyLeft 1.1s 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pyj-hero .slick-active .pyj-hero_text {
+  animation: pyjHeroCopyLeft 1.1s 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pyj-hero .slick-active .pyj-hero_cta {
+  animation: pyjHeroCopyLeft 1.1s 0.64s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_title,
+.pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_text,
+.pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_cta {
+  animation-name: pyjHeroCopyRight;
+}
+
+/* ---------------------------------------------------------------------------
+   PHONES — a different composition, not a squeezed desktop. The stage stops
+   being 16:9 (that would leave a letterbox with a tiny piece), the scene turns
+   into a vertical wash, and the piece sits ABOVE the copy in a tight column.
+   The motion changes too: horizontal travel reads badly in a narrow column, so
+   everything rises and settles instead, on shorter delays.
+   --------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  /* The carousel must be ONE fixed size on phones: with fade:true slick locks
+     the track to the tallest slide, so a shorter piece or a shorter headline
+     would otherwise change the height of the whole hero from slide to slide.
+     A flex column with a fixed min-height centres short slides instead of
+     shrinking the stage. (On desktop the aspect-ratio above does the same job.) */
+  .pyj-hero_stage,
+  .pyj-hero_stage--right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    aspect-ratio: auto;
+    max-height: none;
+    min-height: 464px;
+    padding: 4px 0 0;
+  }
+  /* scene: darken downward so the copy reads over it */
+  .pyj-hero_bg::after,
+  .pyj-hero_stage--right .pyj-hero_bg::after {
+    background: linear-gradient(
+      180deg,
+      rgba(5, 4, 2, 0.22) 0%,
+      rgba(5, 4, 2, 0.62) 46%,
+      rgba(5, 4, 2, 0.94) 100%
+    );
+  }
+  /* The piece gets a FIXED BOX (full width × fixed height) and is seated inside
+     it against one edge with object-position. Two things fall out of that:
+     the carousel height can never change — not for a smaller piece, not for a
+     differently-shaped one, because the box is what's measured, not the image;
+     and the piece hugs the frame edge here exactly as it does on desktop, so
+     the rectangular photo crops send their straight cut off-screen. */
+  .pyj-hero_art,
+  .pyj-hero_stage--right .pyj-hero_art {
+    position: relative;
+    top: auto !important;
+    left: auto !important;
+    right: auto;
+    width: 100% !important;
+    max-width: none;
+    height: 190px;
+    flex: none; /* a flex item would otherwise shrink and break the fixed box */
+    object-fit: contain;
+    object-position: right center;
+    margin: 6px 0 0;
+    transform: none;
+    filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.6));
+  }
+  .pyj-hero_stage--right .pyj-hero_art {
+    object-position: left center;
+  }
+  /* the copy: centred, narrow measure, tight rhythm */
+  .pyj-hero_copy,
+  .pyj-hero_stage--right .pyj-hero_copy {
+    width: auto;
+    text-align: center;
+    padding: 10px 20px 2px;
+  }
+  .pyj-hero_title,
+  .pyj-hero_stage--right .pyj-hero_title {
+    max-width: 15ch;
+    margin: 0 auto 10px;
+    font-size: clamp(25px, 7.2vw, 34px);
+    line-height: 1.14;
+  }
+  .pyj-hero_text,
+  .pyj-hero_stage--right .pyj-hero_text {
+    max-width: 30ch;
+    margin: 0 auto 18px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .pyj-hero_cta {
+    font-size: 13px;
+    padding-inline: 26px;
+  }
+
+  /* no dots on phones — they crowded the CTA and the swipe already tells the
+     story. The template pins them absolute, hence the !important. */
+  .pyj-hero .slick-dots {
+    display: none !important;
+  }
+  /* arrows off: on a phone the swipe is the control */
+  .pyj-hero .slick-prev,
+  .pyj-hero .slick-next {
+    display: none !important;
+  }
+
+  /* --- mobile motion: rise + settle, shorter waits --- */
+  @keyframes pyjHeroRise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pyjHeroArtRise {
+    from { opacity: 0; transform: translateY(22px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .pyj-hero .slick-active .pyj-hero_art,
+  .pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_art {
+    animation: pyjHeroArtRise 0.95s 0.06s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .pyj-hero .slick-active .pyj-hero_title,
+  .pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_title {
+    animation: pyjHeroRise 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .pyj-hero .slick-active .pyj-hero_text,
+  .pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_text {
+    animation: pyjHeroRise 0.8s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .pyj-hero .slick-active .pyj-hero_cta,
+  .pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_cta {
+    animation: pyjHeroRise 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  /* the scene keeps its soft fade but without the zoom (cheaper on phones) */
+  .pyj-hero .slick-active .pyj-hero_bg {
+    animation: pyjHeroRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Respect the OS "reduce motion" setting: show everything, move nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .pyj-hero .slick-slide .pyj-hero_bg,
+  .pyj-hero .slick-slide .pyj-hero_art,
+  .pyj-hero .slick-slide .pyj-hero_title,
+  .pyj-hero .slick-slide .pyj-hero_text,
+  .pyj-hero .slick-slide .pyj-hero_cta {
+    opacity: 1;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* slick chrome */
+.pyj-hero .slick-dots {
+  bottom: 14px;
+}
+.pyj-hero .slick-prev,
+.pyj-hero .slick-next {
+  z-index: 3;
+}
+@media (max-width: 767px) {
+  .pyj-hero .slick-dots {
+    position: static;
+    margin: 6px 0 14px;
+  }
+}
+
+
+/* ===========================================================================
    Categorías de Productos — circular category carousel (home), fed by Shopify
    collections. Gold-ringed circular thumbnails with a label; lifts on hover.
 =========================================================================== */

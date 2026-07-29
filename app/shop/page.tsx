@@ -15,7 +15,7 @@ export default function ShopPage() {
       <Breadcrumb
         title="Jewellery"
         crumbs={[{ label: "Shop" }]}
-        bgImage={SITE.heroSlides[1].image}
+        bgImage={SITE.heroSlides[1].bg}
       />
       <ShopContent view="grid" columns={3} />
     </>

@@ -59,28 +59,110 @@ export const SITE = {
   },
   // Google Analytics 4 measurement ID.
   analytics: { gaId: "G-YRQD06WQYY" },
-  // Home hero carousel — the banner images from the Shopify store's homepage
-  // slideshow (Shopify admin › Content › Files). These are designed banners with
-  // their own baked-in text, shown full-bleed (no overlay). To change the hero,
-  // update these URLs or add/remove slides here — nothing else to touch.
-  // Designed banners from the Shopify homepage slideshow (copy is baked into each
-  // image). The hero shows them whole — no HTML overlay. Swap the URLs to change.
+  // ---------------------------------------------------------------------------
+  // Home hero. ONE fixed background (the smoke/incense plate) stays put while the
+  // carousel cycles the CONTENT on top of it — so the copy is real HTML (readable,
+  // responsive, indexable) instead of text baked into a flat banner image.
+  // ---------------------------------------------------------------------------
+  /**
+   * Hero carousel, COMPOSED FROM LAYERS instead of flat pre-baked banners:
+   *   `bg`  — the scene (smoke / velvet / light), a JPEG background layer
+   *   `art` — the piece, cut out with a transparent edge (WebP)
+   *   copy  — real HTML text, never pixels
+   * Slides crossfade; they never slide sideways.
+   *
+   * Why layered: the headline stays razor-sharp at any size, reflows on phones
+   * (baked-in text just shrinks until it's unreadable), is indexable by Google,
+   * and can be reworded without re-exporting artwork. Each layer also weighs a
+   * fraction of a full composite. Masters live in design-assets/hero-originales/.
+   */
+  // artW = width as a % of the stage; artTop = vertical position. There is no
+  // horizontal knob on purpose: the piece is always seated flush against the
+  // frame edge opposite the copy (see .pyj-hero_art in globals.css).
   heroSlides: [
     {
-      image:
-        "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/BANNERS_NUEVOS_PEDRO.png?v=1742513250",
-      alt: "Pedro Yoruba Jewelry — joyería Yoruba hecha a mano en Miami",
+      bg: "/assets/images/hero/capas/fondo-centrado-variante.jpg",
+      art: "/assets/images/hero/capas/arte-pulso-anillo.webp",
+      artW: "46%",
+      artTop: "34.7%",
+      artAlt: "Pulso de Orula en oro con cuentas verdes y amarillas junto a un anillo de sello",
+      title: "Joyería Yoruba hecha a mano en Miami",
+      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
+      cta: "Ver la colección",
       href: "/shop-left-sidebar",
-      width: 1640,
-      height: 924,
+      align: "left",
     },
     {
-      image:
-        "https://cdn.shopify.com/s/files/1/0667/9475/0174/files/BANNERS_NUEVOS_PEDRO_1.png?v=1742563916",
-      alt: "Piezas por encargo para los Orishas — oro 10k, 14k y 18k",
-      href: "/shop-left-sidebar",
-      width: 1640,
-      height: 924,
+      bg: "/assets/images/hero/capas/fondo-diseno-personalizado.jpg",
+      art: "/assets/images/hero/capas/arte-boceto.webp",
+      artW: "48%",
+      artTop: "7.7%",
+      artAlt: "Boceto a mano de un anillo de sello junto a gemas sueltas de colores",
+      title: "Diseña tu pieza a la medida",
+      text: "Anillos e Idde personalizados, hechos a mano según tu santo y tu estilo",
+      cta: "Diseña tu pieza",
+      href: "/configurador",
+      align: "left",
+    },
+    {
+      bg: "/assets/images/hero/capas/fondo-herramientas-santo.jpg",
+      art: "/assets/images/hero/capas/arte-herramientas.webp",
+      artW: "50%",
+      artTop: "15.9%",
+      artAlt: "Herramientas de fundamento en oro y plata: remos, hacha, yunque, martillo y caracoles",
+      title: "Herramientas de cada Oricha",
+      text: "Piezas de fundamento para tu Ocha e Ifá — garantía de por vida",
+      cta: "Ver herramientas",
+      href: "/collections/herramientas",
+      align: "left",
+    },
+    {
+      bg: "/assets/images/hero/capas/fondo-mano-variante.jpg",
+      art: "/assets/images/hero/capas/arte-mano-idde.webp",
+      artW: "48%",
+      artTop: "24.0%",
+      artAlt: "Mano con anillo martillado en oro y pulsos de Orula en la muñeca",
+      title: "Diseña tu Idde de Orula",
+      text: "Piezas de fundamento, hechas a la medida de tu santo",
+      cta: "Ver los iddes",
+      href: "/collections/idde",
+      align: "right",
+    },
+    {
+      bg: "/assets/images/hero/capas/fondo-collar-variante.jpg",
+      art: "/assets/images/hero/capas/arte-collar.webp",
+      artW: "44%",
+      artTop: "21.1%",
+      artAlt: "Collar de cuentas de santo con entrepiezas y medalla en oro",
+      title: "Collares y elekes de santo",
+      text: "Cuentas y oro, montados a mano pieza por pieza",
+      cta: "Ver los collares",
+      href: "/collections/collares-de-santos",
+      align: "left",
+    },
+    {
+      bg: "/assets/images/hero/capas/fondo-hero-oro.jpg",
+      art: "/assets/images/hero/capas/arte-pulso-angulo.webp",
+      artW: "43%",
+      artTop: "30.7%",
+      artAlt: "Pulso de eslabones en oro junto a un anillo de sello",
+      title: "Pulsos y pulseras en oro",
+      text: "Semanarios, esclavas y pulsos de santo en 10k · 14k · 18k",
+      cta: "Ver pulsos y pulseras",
+      href: "/collections/pulsos-y-pulseras",
+      align: "right",
+    },
+    {
+      bg: "/assets/images/hero/capas/fondo-humo-verde-dorado.jpg",
+      art: "/assets/images/hero/capas/arte-mano-anillo.webp",
+      artW: "44%",
+      artTop: "16.6%",
+      artAlt: "Mano con un anillo de sello en oro y un pulso a juego",
+      title: "Anillos de sello y de santo",
+      text: "Hechos a mano, a tu talla y con el sello que tú elijas",
+      cta: "Ver los anillos",
+      href: "/collections/anillos",
+      align: "left",
     },
   ],
 } as const;

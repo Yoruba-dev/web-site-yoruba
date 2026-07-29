@@ -27,7 +27,7 @@ export default function ShopLeftSidebarPage() {
       <Breadcrumb
         title="Shop"
         crumbs={[{ label: "Colección" }]}
-        bgImage={SITE.heroSlides[1].image}
+        bgImage={SITE.heroSlides[1].bg}
       />
       <ShopContent sidebar="left" view="grid" columns={3} />
     </>

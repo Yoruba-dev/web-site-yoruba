@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Source art (heavy PNG masters) — the optimised copies live in public/assets/images/hero/capas
+design-assets/
