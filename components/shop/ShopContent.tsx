@@ -1,5 +1,6 @@
-import { getProducts } from "@/lib/products";
+import { getCollectionCounts, getCollections, getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
+import CategoryRail from "./CategoryRail";
 import ShopBrowser from "./ShopBrowser";
 
 // Server wrapper: fetches the catalogue, then hands it to the client-side
@@ -13,6 +14,17 @@ export interface ShopContentProps {
 
 export default async function ShopContent(props: ShopContentProps) {
   // Show the full catalogue on the shop pages (the filters/sort narrow it down).
-  const products = await attachRatings(await getProducts(500));
-  return <ShopBrowser products={products} {...props} />;
+  // The category rail goes ABOVE it: landing on 160 mixed pieces with only tag
+  // filters to hand makes the shopper do the sorting we already did in Shopify.
+  const [products, collections, counts] = await Promise.all([
+    attachRatings(await getProducts(500)),
+    getCollections(),
+    getCollectionCounts(),
+  ]);
+  return (
+    <>
+      <CategoryRail collections={collections} counts={counts} />
+      <ShopBrowser products={products} {...props} />
+    </>
+  );
 }

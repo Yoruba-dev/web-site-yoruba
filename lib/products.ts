@@ -8,6 +8,7 @@ import {
   shopifyGetNewArrivals,
   shopifyGetProductByHandle,
   shopifyGetProducts,
+  shopifyGetCollectionCounts,
 } from "./shopify";
 
 /** A Shopify collection surfaced as a browsable category (home circles + pages). */
@@ -119,3 +120,18 @@ export async function getHomeSections() {
     special: products.slice(4, 12),
   };
 }
+
+/** Piece counts per collection, for the shop's category rail. Cached with the
+ *  rest of the catalogue; empty when Shopify is off so the rail simply omits
+ *  them rather than showing zeros. */
+export const getCollectionCounts = cache(
+  async (): Promise<Record<string, number>> => {
+    if (!isShopifyConfigured()) return {};
+    try {
+      return await shopifyGetCollectionCounts();
+    } catch (err) {
+      console.error("[shopify] getCollectionCounts failed:", err);
+      return {};
+    }
+  },
+);

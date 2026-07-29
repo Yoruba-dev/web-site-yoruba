@@ -7069,3 +7069,93 @@ button[type="submit"],
   line-height: 1.5;
   color: #e5a3a3;
 }
+
+/* ===========================================================================
+   "Compra por categoría" — the collections rail on the shop pages (2026-07-29)
+   The shop's sidebar filters by tag, which is a refinement, not a way in. This
+   puts the catalogue's real structure first. A scrolling row on phones, a grid
+   from tablet up: 16 categories in a wrapped grid on a phone would push the
+   products themselves below three screens of navigation.
+   =========================================================================== */
+.pyj-catrail {
+  padding: 26px 0 6px;
+}
+.pyj-catrail_title {
+  margin: 0 0 16px;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: clamp(19px, 2.2vw, 24px);
+  letter-spacing: 0.02em;
+  color: var(--pyj-gold-light, #f0d79b);
+}
+.pyj-catrail_list {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  padding: 0 4px 10px;
+  list-style: none;
+  overflow-x: auto;
+  /* one clean stop per tile instead of landing mid-thumbnail */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.pyj-catrail_item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: 116px;
+}
+.pyj-catrail_link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
+.pyj-catrail_thumb {
+  display: block;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #17120a;
+  box-shadow: 0 0 0 1px rgba(205, 165, 87, 0.42);
+  transition:
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+.pyj-catrail_thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pyj-catrail_link:hover .pyj-catrail_thumb {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 2px var(--pyj-gold, #e3b23c);
+}
+.pyj-catrail_link:focus-visible .pyj-catrail_thumb {
+  outline: 2px solid var(--pyj-gold, #e3b23c);
+  outline-offset: 3px;
+}
+.pyj-catrail_name {
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: rgba(241, 231, 210, 0.95);
+}
+.pyj-catrail_count {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: rgba(205, 165, 87, 0.8);
+}
+@media (min-width: 768px) {
+  .pyj-catrail_list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 20px 10px;
+    overflow: visible;
+    padding-inline: 0;
+  }
+  .pyj-catrail_item {
+    width: auto;
+  }
+}

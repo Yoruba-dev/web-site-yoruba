@@ -370,3 +370,32 @@ export async function shopifyGetCollectionProducts(
     products: data.collection.products.edges.map((e) => reshape(e.node)),
   };
 }
+
+/** How many products each collection holds, as the STOREFRONT sees them —
+ *  archived and unpublished pieces are already excluded, so these are the
+ *  numbers a shopper will actually find after the click. Asks for ids only, so
+ *  one request covers the whole store cheaply. (The Storefront API has no count
+ *  field on Collection; the Admin API's productsCount includes archived items
+ *  and would overpromise.) */
+export async function shopifyGetCollectionCounts(): Promise<Record<string, number>> {
+  const data = await shopifyFetch<{
+    collections: { nodes: { handle: string; products: { nodes: { id: string }[] } }[] };
+  }>(
+    /* GraphQL */ `
+      query CollectionCounts {
+        collections(first: 40, sortKey: TITLE) {
+          nodes {
+            handle
+            products(first: 250) {
+              nodes { id }
+            }
+          }
+        }
+      }
+    `,
+    {},
+  );
+  return Object.fromEntries(
+    data.collections.nodes.map((c) => [c.handle, c.products.nodes.length]),
+  );
+}
