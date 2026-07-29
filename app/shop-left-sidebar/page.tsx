@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ShopContent from "@/components/shop/ShopContent";
-import { SITE } from "@/lib/site";
+import { BREADCRUMB_IMAGE } from "@/lib/site";
 
 // STATIC route (revalidates hourly). We deliberately DON'T read `searchParams`
 // here — reading it forced every request to render dynamically (152 cards +
@@ -27,7 +27,7 @@ export default function ShopLeftSidebarPage() {
       <Breadcrumb
         title="Shop"
         crumbs={[{ label: "Colección" }]}
-        bgImage={SITE.heroSlides[1].bg}
+        bgImage={BREADCRUMB_IMAGE}
       />
       <ShopContent sidebar="left" view="grid" columns={3} />
     </>

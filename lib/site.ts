@@ -18,6 +18,12 @@ export const OG_IMAGE = [
 // only appears when THIS product is on sale (i.e. has a real compareAtPrice > price
 // in Shopify) — so the promo turns itself off when the sale ends, and turns on for
 // a new product simply by putting that product on sale and changing this handle.
+// Breadcrumb backdrop for the shop pages. Named on purpose: these pages used to
+// read SITE.heroSlides[1].bg, so re-ordering the carousel silently changed an
+// unrelated page's artwork. This is the only full-size scene still shipped — the
+// hero's own scenes are phone-only now and encoded small to match.
+export const BREADCRUMB_IMAGE = "/assets/images/hero/capas/fondo-diseno-personalizado.jpg";
+
 export const FEATURED_OFFER_HANDLE = "pulsos-de-yemaya";
 
 export const SITE = {
@@ -60,109 +66,129 @@ export const SITE = {
   // Google Analytics 4 measurement ID.
   analytics: { gaId: "G-YRQD06WQYY" },
   // ---------------------------------------------------------------------------
-  // Home hero. ONE fixed background (the smoke/incense plate) stays put while the
-  // carousel cycles the CONTENT on top of it — so the copy is real HTML (readable,
-  // responsive, indexable) instead of text baked into a flat banner image.
+  // Home hero — TWO RENDITIONS OF THE SAME SLIDE, one per breakpoint.
   // ---------------------------------------------------------------------------
   /**
-   * Hero carousel, COMPOSED FROM LAYERS instead of flat pre-baked banners:
-   *   `bg`  — the scene (smoke / velvet / light), a JPEG background layer
-   *   `art` — the piece, cut out with a transparent edge (WebP)
-   *   copy  — real HTML text, never pixels
-   * Slides crossfade; they never slide sideways.
+   * DESKTOP (>=768px) shows `banner`: the owner's fully composed 1376x768 artwork
+   * with the headline already set in it. That is what he designed and signed off,
+   * and no HTML reconstruction matches its typography or registration. He exports
+   * these deliberately WITHOUT the button ("sinboton") so the CTA is a real
+   * <Link> — placed per slide at `ctaTop`/`ctaX`, measured to land just under the
+   * gold rule the artwork leaves for it.
    *
-   * Why layered: the headline stays razor-sharp at any size, reflows on phones
-   * (baked-in text just shrinks until it's unreadable), is indexable by Google,
-   * and can be reworded without re-exporting artwork. Each layer also weighs a
-   * fraction of a full composite. Masters live in design-assets/hero-originales/.
+   * PHONES (<768px) cannot use those: a 1376px-wide banner shown at 375px puts the
+   * headline at ~10px tall and the subline at ~7px — unreadable, and invisible to
+   * Google. So phones compose the slide instead: `bg` (the scene) + `art` (the
+   * piece, cut out) + the copy as real HTML.
+   *
+   * `title`/`text` stay in the DOM at EVERY size. On phones they are what you see;
+   * on desktop they are the accessible/indexable equivalent of the text baked into
+   * the banner, and are visually hidden. They must keep saying exactly what the
+   * banner says — if a banner is re-exported with new wording, change it here too,
+   * or screen readers and Google get a different message than the eye does.
+   *
+   * <picture> picks ONE of the two by media query, so each visitor downloads only
+   * their own rendition. Banners ship as AVIF + WebP at 828/1100/1376 (~59-78KB
+   * AVIF at full width, from 1.0-1.4MB PNG masters, which stay out of public/).
    */
-  // artW = width as a % of the stage; artTop = vertical position. There is no
-  // horizontal knob on purpose: the piece is always seated flush against the
-  // frame edge opposite the copy (see .pyj-hero_art in globals.css).
   heroSlides: [
     {
-      bg: "/assets/images/hero/capas/fondo-centrado-variante.jpg",
+      banner: "hero-centrado",
+      bg: "/assets/images/hero/escena-movil/fondo-centrado-variante.webp",
       art: "/assets/images/hero/capas/arte-pulso-anillo.webp",
-      artW: "46%",
-      artTop: "34.7%",
       artAlt: "Pulso de Orula en oro con cuentas verdes y amarillas junto a un anillo de sello",
       title: "Joyería Yoruba hecha a mano en Miami",
       text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
       cta: "Ver la colección",
       href: "/shop-left-sidebar",
       align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "6.8%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-diseno-personalizado.jpg",
+      banner: "diseno-personalizado",
+      bg: "/assets/images/hero/escena-movil/fondo-diseno-personalizado.webp",
       art: "/assets/images/hero/capas/arte-boceto.webp",
-      artW: "48%",
-      artTop: "7.7%",
       artAlt: "Boceto a mano de un anillo de sello junto a gemas sueltas de colores",
       title: "Diseña tu pieza a la medida",
       text: "Anillos e Idde personalizados, hechos a mano según tu santo y tu estilo",
       cta: "Diseña tu pieza",
       href: "/configurador",
       align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "6.6%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-herramientas-santo.jpg",
+      banner: "herramientas",
+      bg: "/assets/images/hero/escena-movil/fondo-herramientas-santo.webp",
       art: "/assets/images/hero/capas/arte-herramientas.webp",
-      artW: "50%",
-      artTop: "15.9%",
       artAlt: "Herramientas de fundamento en oro y plata: remos, hacha, yunque, martillo y caracoles",
       title: "Herramientas de cada Oricha",
       text: "Piezas de fundamento para tu Ocha e Ifá — garantía de por vida",
       cta: "Ver herramientas",
       href: "/collections/herramientas",
       align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "65%",
+      ctaX: "5.8%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-mano-variante.jpg",
+      banner: "idde-orula",
+      bg: "/assets/images/hero/escena-movil/fondo-mano-variante.webp",
       art: "/assets/images/hero/capas/arte-mano-idde.webp",
-      artW: "48%",
-      artTop: "24.0%",
       artAlt: "Mano con anillo martillado en oro y pulsos de Orula en la muñeca",
       title: "Diseña tu Idde de Orula",
       text: "Piezas de fundamento, hechas a la medida de tu santo",
       cta: "Ver los iddes",
       href: "/collections/idde",
       align: "right",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "4.9%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-collar-variante.jpg",
+      banner: "hero-collar",
+      bg: "/assets/images/hero/escena-movil/fondo-collar-variante.webp",
       art: "/assets/images/hero/capas/arte-collar.webp",
-      artW: "44%",
-      artTop: "21.1%",
       artAlt: "Collar de cuentas de santo con entrepiezas y medalla en oro",
-      title: "Collares y elekes de santo",
-      text: "Cuentas y oro, montados a mano pieza por pieza",
+      title: "Joyería Yoruba hecha a mano en Miami",
+      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
       cta: "Ver los collares",
       href: "/collections/collares-de-santos",
       align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "6.7%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-hero-oro.jpg",
+      banner: "hero-oro",
+      bg: "/assets/images/hero/escena-movil/fondo-hero-oro.webp",
       art: "/assets/images/hero/capas/arte-pulso-angulo.webp",
-      artW: "43%",
-      artTop: "30.7%",
       artAlt: "Pulso de eslabones en oro junto a un anillo de sello",
-      title: "Pulsos y pulseras en oro",
-      text: "Semanarios, esclavas y pulsos de santo en 10k · 14k · 18k",
+      title: "Joyería Yoruba hecha a mano en Miami",
+      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
       cta: "Ver pulsos y pulseras",
       href: "/collections/pulsos-y-pulseras",
-      align: "right",
+      align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "6.7%",
     },
     {
-      bg: "/assets/images/hero/capas/fondo-humo-verde-dorado.jpg",
+      banner: "hero-mano",
+      bg: "/assets/images/hero/escena-movil/fondo-humo-verde-dorado.webp",
       art: "/assets/images/hero/capas/arte-mano-anillo.webp",
-      artW: "44%",
-      artTop: "16.6%",
       artAlt: "Mano con un anillo de sello en oro y un pulso a juego",
-      title: "Anillos de sello y de santo",
-      text: "Hechos a mano, a tu talla y con el sello que tú elijas",
+      title: "Joyería Yoruba hecha a mano en Miami",
+      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
       cta: "Ver los anillos",
       href: "/collections/anillos",
       align: "left",
+      // CTA anchored under the rule the artwork leaves empty for it
+      ctaTop: "70%",
+      ctaX: "6.7%",
     },
   ],
 } as const;

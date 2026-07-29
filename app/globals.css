@@ -4584,45 +4584,97 @@ button[type="submit"],
   width: 100%;
   aspect-ratio: 1376 / 768;
   max-height: 84vh;
+  /* Floor, so the 84vh cap can't starve the stage on a wide/short window. The
+     CTA sits at 70% of the ARTWORK while the stage only shows the artwork's
+     middle band; squeeze that band far enough and the button falls out through
+     `overflow: hidden` (measured: clipped at 1600×500, gone entirely at 32:9).
+     22.33vw + 116px is exactly the height at which 70% + the button still lands
+     inside, derived from the 1376:768 ratio. Below ~346px wide this would fight
+     the ratio, but that is deep inside the phone breakpoint where the frame is
+     `display: contents` anyway. */
+  min-height: calc(22.33vw + 116px);
   overflow: hidden;
 }
 
-/* ---- layer 1: the scene fills the stage ---- */
+/* <picture> must not become a box of its own — the <img> inside is what gets
+   positioned, and an inline wrapper would add a stray baseline gap on phones. */
+.pyj-hero_pic {
+  display: contents;
+}
+
+/* ---- layer 1: the scene. PHONES ONLY — the desktop banner already contains its
+   own scene, and `display:none` here is what stops the browser fetching seven
+   redundant background JPEGs on every desktop visit. ---- */
 .pyj-hero_bg {
+  display: none;
   position: absolute;
   inset: 0;
   background-size: cover;
   background-position: center;
   z-index: 0;
 }
-/* ---- layer 2: the piece, FLUSH TO THE OUTER FRAME EDGE (never floating).
-   Several of these exports are rectangular photo crops, not organic cut-outs
-   (arte-boceto's right edge is 91% opaque, arte-mano-idde's left 47%,
-   arte-mano-anillo's right 37%). Floating one of those with clearance shows the
-   straight cut as a "pasted rectangle" edge. Every hard edge happens to face
-   the piece's own outer side, so seating the art against that frame edge sends
-   the cut off-frame for all of them at once — and the true cut-outs just read
-   as anchored instead of adrift. Only the vertical position stays per-slide. ---- */
+/* ---- layer 2 (DESKTOP): the owner's fully composed banner, filling the stage.
+   It carries the scene, the piece AND the headline, all in register — so on this
+   breakpoint there is nothing to place by hand. It shares the stage's 1376×768
+   proportion, so `cover` never actually crops anything. Phones swap this same
+   <img> for the cut-out piece via <picture> (see the media query further down). */
 .pyj-hero_art {
   position: absolute;
   z-index: 1;
-  right: 0;
-  left: auto;
-  top: var(--art-top, 0%);
-  width: var(--art-w, 40%);
-  height: auto;
-  object-fit: contain;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   pointer-events: none;
-  /* Safety net: the stage height is fixed by the aspect-ratio above, so the art
-     must never be what decides it. If a future cut-out is taller than expected,
-     it shrinks inside its box (object-fit) instead of spilling out. */
-  max-height: 88%;
-  filter: drop-shadow(0 20px 38px rgba(0, 0, 0, 0.5));
 }
-/* copy on the right → the piece seats against the LEFT frame edge instead */
-.pyj-hero_stage--right .pyj-hero_art {
-  right: auto;
+
+/* THE COPY IS IN THE ARTWORK on this breakpoint, so the HTML copy is hidden from
+   the eye but LEFT IN THE DOM — it is the accessible and indexable equivalent of
+   text that only exists as pixels. Not `display:none`, which would drop it from
+   the accessibility tree and leave the hero with no heading at all. */
+.pyj-hero_copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* THE CTA MUST TRACK THE ARTWORK, NOT THE STAGE.
+   `max-height: 84vh` can make the stage wider than 1376:768, and then
+   `object-fit: cover` scales the banner to the stage WIDTH and crops it top and
+   bottom — the baked headline slides up while a stage-relative button stays put.
+   Measured: the clearance between the gold rule and the button falls from 42px
+   at 1440×900 to 7px at 1600×760, and at 1920×800 the button lands ON the
+   subline. This frame reproduces `cover`'s geometry exactly (full width, true
+   ratio, vertically centred and allowed to overflow), so a percentage inside it
+   means the same thing at every window shape. */
+.pyj-hero_frame {
+  position: absolute;
+  top: 50%;
   left: 0;
+  width: 100%;
+  aspect-ratio: 1376 / 768;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none; /* only the button inside it is clickable */
+}
+/* the CTA is the one thing the artwork deliberately leaves out ("sinboton"),
+   anchored per slide just under the gold rule the design leaves for it */
+.pyj-hero_cta {
+  position: absolute;
+  top: var(--cta-top, 70%);
+  left: var(--cta-x, 6.7%);
+  pointer-events: auto;
+}
+.pyj-hero_stage--right .pyj-hero_cta {
+  left: auto;
+  right: var(--cta-x, 6.7%);
 }
 /* scrim on the copy side so the text always holds up */
 .pyj-hero_bg::after {
@@ -4647,20 +4699,9 @@ button[type="submit"],
   );
 }
 
-/* ---- layer 3: the copy ---- */
-.pyj-hero_copy {
-  position: relative;
-  z-index: 2;
-  /* measured against the STAGE (90%), never the viewport (90vw) — the stage can
-     be narrower than the window, and this box lives inside its `overflow:hidden`,
-     so a viewport-sized copy gets clipped mid-word on right-aligned slides. */
-  width: min(1180px, 90%);
-  margin: 0 auto;
-  padding: 40px 0;
-}
-.pyj-hero_stage--right .pyj-hero_copy {
-  text-align: right;
-}
+/* ---- layer 3: the copy. Only PHONES paint this (the desktop banner already
+   carries its own typography); the rules below are the phone presentation, kept
+   here so the cascade reads top-down, and switched on in the media query. ---- */
 .pyj-hero_title {
   margin: 0 0 14px;
   max-width: 12ch;
@@ -4709,10 +4750,6 @@ button[type="submit"],
 .pyj-hero_stage--right .pyj-hero_text {
   margin-left: auto;
 }
-.pyj-hero_cta {
-  display: inline-block;
-}
-
 /* ---- entrance choreography ----------------------------------------------
    Long, soft easing. The piece drifts only ~3% and is scaled 1.05 so a
    full-bleed layer never exposes an empty edge while it moves. */
@@ -4802,6 +4839,40 @@ button[type="submit"],
     min-height: 464px;
     padding: 4px 0 0;
   }
+  /* the scene comes back — on this breakpoint the <img> is only the piece */
+  .pyj-hero_bg {
+    display: block;
+  }
+  /* and the copy goes back to being real, visible text */
+  .pyj-hero_copy {
+    position: relative;
+    z-index: 2;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+  /* no banner here, so nothing to track: the frame dissolves and the CTA rejoins
+     the flow as a plain flex item under the copy */
+  .pyj-hero_frame {
+    display: contents;
+  }
+  /* `position: relative; z-index` is LOAD-BEARING — a static flex item paints
+     BELOW `.pyj-hero_bg` (absolute, z-index 0), so the button ended up behind the
+     scene and its 94%-opaque scrim: invisible AND untappable. It only looked fine
+     because the entrance animation leaves a `transform` behind, which happens to
+     create a stacking context — and `prefers-reduced-motion` kills that animation,
+     so the bug appeared for exactly the visitors least able to work around it.
+     `inset: auto` is required too, or the desktop `top: 70% / left: 6.7%` become
+     relative offsets and shove the button off-centre. */
+  .pyj-hero_cta {
+    position: relative;
+    inset: auto;
+    z-index: 2;
+    align-self: center;
+  }
   /* scene: darken downward so the copy reads over it */
   .pyj-hero_bg::after,
   .pyj-hero_stage--right .pyj-hero_bg::after {
@@ -4812,19 +4883,20 @@ button[type="submit"],
       rgba(5, 4, 2, 0.94) 100%
     );
   }
-  /* The piece gets a FIXED BOX (full width × fixed height) and is seated inside
-     it against one edge with object-position. Two things fall out of that:
+  /* <picture> has handed this <img> the CUT-OUT PIECE here, not the banner, so
+     it stops filling the stage and gets a FIXED BOX (full width × fixed height),
+     seated against one edge with object-position. Two things fall out of that:
      the carousel height can never change — not for a smaller piece, not for a
      differently-shaped one, because the box is what's measured, not the image;
-     and the piece hugs the frame edge here exactly as it does on desktop, so
-     the rectangular photo crops send their straight cut off-screen. */
+     and the piece hugs the frame edge, so the rectangular photo crops among
+     these exports send their straight cut off-screen instead of showing it.
+     `inset` has to be unwound in FULL — a leftover `bottom: 0` from the desktop
+     rule would fight the fixed height. */
   .pyj-hero_art,
   .pyj-hero_stage--right .pyj-hero_art {
     position: relative;
-    top: auto !important;
-    left: auto !important;
-    right: auto;
-    width: 100% !important;
+    inset: auto;
+    width: 100%;
     max-width: none;
     height: 190px;
     flex: none; /* a flex item would otherwise shrink and break the fixed box */
@@ -4921,6 +4993,15 @@ button[type="submit"],
 /* slick chrome */
 .pyj-hero .slick-dots {
   bottom: 14px;
+  /* The dots are a FULL-WIDTH bar at z-index 8 — mostly empty space that still
+     ate clicks. On wide/short windows the CTA descends into that band and the
+     press landed on the <ul> instead of the button. Only the dots themselves
+     need to be interactive. */
+  pointer-events: none;
+}
+.pyj-hero .slick-dots li,
+.pyj-hero .slick-dots li button {
+  pointer-events: auto;
 }
 .pyj-hero .slick-prev,
 .pyj-hero .slick-next {
