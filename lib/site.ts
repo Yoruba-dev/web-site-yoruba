@@ -81,11 +81,19 @@ export const SITE = {
    * Google. So phones compose the slide instead: `bg` (the scene) + `art` (the
    * piece, cut out) + the copy as real HTML.
    *
-   * `title`/`text` stay in the DOM at EVERY size. On phones they are what you see;
-   * on desktop they are the accessible/indexable equivalent of the text baked into
-   * the banner, and are visually hidden. They must keep saying exactly what the
-   * banner says — if a banner is re-exported with new wording, change it here too,
-   * or screen readers and Google get a different message than the eye does.
+   * `title`/`text` stay in the DOM at EVERY size. On phones they are what you see.
+   *
+   * ⚠️ 2026-07-29: the copy here was rewritten (one clear job per slide, no more
+   * four slides repeating "Joyería Yoruba hecha a mano en Miami") but the DESKTOP
+   * banners still have the OLD wording baked into their pixels. Until they are
+   * re-exported with the wording below, desktop shows the old headline and the
+   * hidden text says the new one. Google reads the phone rendition (mobile-first,
+   * ~412px viewport), where this copy is genuinely visible, so indexing is fine;
+   * the gap is a desktop screen reader hearing newer words than the image shows.
+   *
+   * The durable fix is to export the banners WITHOUT the headline too (the owner
+   * already exports them "sinboton"), and let this file own every word. Then copy
+   * changes never need a re-export and nothing can drift.
    *
    * <picture> picks ONE of the two by media query, so each visitor downloads only
    * their own rendition. Banners ship as AVIF + WebP at 828/1100/1376 (~59-78KB
@@ -109,11 +117,11 @@ export const SITE = {
     {
       banner: "diseno-personalizado",
       // frases que el arte original pinta en oro dentro del subtitulo
-      oro: ["Anillos e Idde"],
+      oro: ["tus Odù"],
       artAlt: "Boceto a mano de un anillo de sello junto a gemas sueltas de colores",
-      title: "Diseña tu pieza a la medida",
-      text: "Anillos e Idde personalizados, hechos a mano según tu santo y tu estilo",
-      cta: "Diseña tu pieza",
+      title: "Diseña tu anillo de Ifá",
+      text: "Coloca tus Odù, míralo tomar forma y encárgalo con tu diseño",
+      cta: "Diseña tu anillo",
       href: "/configurador",
       align: "left",
       // CTA anchored under the rule the artwork leaves empty for it
@@ -126,7 +134,7 @@ export const SITE = {
       oro: ["Ocha e Ifá", "por vida"],
       artAlt: "Herramientas de fundamento en oro y plata: remos, hacha, yunque, martillo y caracoles",
       title: "Herramientas de cada Oricha",
-      text: "Piezas de fundamento para tu Ocha e Ifá — garantía de por vida",
+      text: "Fundamento para tu Ocha e Ifá — con garantía de por vida",
       cta: "Ver herramientas",
       href: "/collections/herramientas",
       align: "left",
@@ -137,11 +145,11 @@ export const SITE = {
     {
       banner: "idde-orula",
       // frases que el arte original pinta en oro dentro del subtitulo
-      oro: ["medida"],
+      oro: ["al de lujo"],
       artAlt: "Mano con anillo martillado en oro y pulsos de Orula en la muñeca",
-      title: "Diseña tu Idde de Orula",
-      text: "Piezas de fundamento, hechas a la medida de tu santo",
-      cta: "Ver los iddes",
+      title: "El Idde de Orula, a tu medida",
+      text: "Del tapado clásico al de lujo, en oro 10k, 14k y en plata",
+      cta: "Ver los Iddes",
       href: "/collections/idde",
       align: "right",
       // CTA anchored under the rule the artwork leaves empty for it
@@ -151,10 +159,10 @@ export const SITE = {
     {
       banner: "hero-collar",
       // frases que el arte original pinta en oro dentro del subtitulo
-      oro: ["Oro 10k · 14k · 18k"],
+      oro: ["pieza por pieza"],
       artAlt: "Collar de cuentas de santo con entrepiezas y medalla en oro",
-      title: "Joyería Yoruba hecha a mano en Miami",
-      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
+      title: "Collares y elekes de santo",
+      text: "Cuentas y oro, montados a mano pieza por pieza",
       cta: "Ver los collares",
       href: "/collections/collares-de-santos",
       align: "left",
@@ -165,11 +173,11 @@ export const SITE = {
     {
       banner: "hero-oro",
       // frases que el arte original pinta en oro dentro del subtitulo
-      oro: ["Oro 10k · 14k · 18k"],
+      oro: ["10k, 14k y 18k"],
       artAlt: "Pulso de eslabones en oro junto a un anillo de sello",
-      title: "Joyería Yoruba hecha a mano en Miami",
-      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
-      cta: "Ver pulsos y pulseras",
+      title: "Pulsos y esclavas en oro",
+      text: "Semanarios, pulsos de santo y esclavas en 10k, 14k y 18k",
+      cta: "Ver pulsos y esclavas",
       href: "/collections/pulsos-y-pulseras",
       align: "left",
       // CTA anchored under the rule the artwork leaves empty for it
@@ -179,10 +187,10 @@ export const SITE = {
     {
       banner: "hero-mano",
       // frases que el arte original pinta en oro dentro del subtitulo
-      oro: ["Oro 10k · 14k · 18k"],
+      oro: ["el sello que tú elijas"],
       artAlt: "Mano con un anillo de sello en oro y un pulso a juego",
-      title: "Joyería Yoruba hecha a mano en Miami",
-      text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
+      title: "Anillos de sello y de santo",
+      text: "Hechos a mano, a tu talla y con el sello que tú elijas",
       cta: "Ver los anillos",
       href: "/collections/anillos",
       align: "left",
