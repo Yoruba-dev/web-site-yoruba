@@ -6,6 +6,25 @@ import Slider, { type Settings } from "react-slick";
 import { SITE } from "@/lib/site";
 
 const BANNER_DIR = "/assets/images/hero/banner";
+// Phones get the SAME artwork, cropped to the half the piece lives in (the copy
+// half is dropped — its text is baked in and would be unreadable at 375px).
+const MOBILE_DIR = "/assets/images/hero/movil";
+
+/**
+ * Paints the phrases the original artwork sets in gold, so the HTML subtitle
+ * reads like the banner instead of a flat line of white text. Splits on the
+ * exact phrases rather than styling by position, so re-wording one slide can
+ * never silently gild the wrong words.
+ */
+function goldenPhrases(text: string, gold: readonly string[]) {
+  if (!gold.length) return text;
+  const pattern = gold
+    .map((g) => g.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  return text.split(new RegExp(`(${pattern})`, "g")).map((part, i) =>
+    gold.includes(part) ? <b key={i}>{part}</b> : part,
+  );
+}
 // The three encoded widths. `sizes="100vw"` lets the browser pick one; a phone
 // never reaches these sources at all (they are behind a min-width media query).
 const BANNER_WIDTHS = [828, 1100, 1376] as const;
@@ -97,16 +116,6 @@ export default function HeroSlider() {
           return (
             <div key={slide.banner} className="pyj-hero_slide">
               <div className={`pyj-hero_stage pyj-hero_stage--${slide.align}`}>
-                {/* the scene — phones only; on desktop the banner already
-                    contains it, and `display:none` there stops the fetch */}
-                {show && (
-                  <div
-                    className="pyj-hero_bg"
-                    style={{ backgroundImage: `url(${slide.bg})` }}
-                    aria-hidden="true"
-                  />
-                )}
-
                 {show && (
                   <picture className="pyj-hero_pic">
                     <source
@@ -121,8 +130,17 @@ export default function HeroSlider() {
                       srcSet={bannerSrcSet(slide.banner, "webp")}
                       sizes="100vw"
                     />
-                    {/* phones get just the piece; the copy below is real text */}
-                    <source media="(max-width: 767px)" srcSet={slide.art} />
+                    {/* phones: the same photograph, cropped to the piece */}
+                    <source
+                      media="(max-width: 767px)"
+                      type="image/avif"
+                      srcSet={`${MOBILE_DIR}/${slide.banner}.avif`}
+                    />
+                    <source
+                      media="(max-width: 767px)"
+                      type="image/webp"
+                      srcSet={`${MOBILE_DIR}/${slide.banner}.webp`}
+                    />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       className="pyj-hero_art"
@@ -148,7 +166,9 @@ export default function HeroSlider() {
                     is visually hidden rather than removed. */}
                 <div className="pyj-hero_copy">
                   <h2 className="pyj-hero_title">{slide.title}</h2>
-                  <p className="pyj-hero_text">{slide.text}</p>
+                  <p className="pyj-hero_text">
+                    {goldenPhrases(slide.text, slide.oro)}
+                  </p>
                 </div>
 
                 {/* the frame mirrors the banner's own box (see globals.css), so

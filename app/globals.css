@@ -4602,17 +4602,6 @@ button[type="submit"],
   display: contents;
 }
 
-/* ---- layer 1: the scene. PHONES ONLY — the desktop banner already contains its
-   own scene, and `display:none` here is what stops the browser fetching seven
-   redundant background JPEGs on every desktop visit. ---- */
-.pyj-hero_bg {
-  display: none;
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
-}
 /* ---- layer 2 (DESKTOP): the owner's fully composed banner, filling the stage.
    It carries the scene, the piece AND the headline, all in register — so on this
    breakpoint there is nothing to place by hand. It shares the stage's 1376×768
@@ -4675,28 +4664,6 @@ button[type="submit"],
 .pyj-hero_stage--right .pyj-hero_cta {
   left: auto;
   right: var(--cta-x, 6.7%);
-}
-/* scrim on the copy side so the text always holds up */
-.pyj-hero_bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(5, 4, 2, 0.9) 0%,
-    rgba(5, 4, 2, 0.66) 30%,
-    rgba(5, 4, 2, 0.18) 58%,
-    rgba(5, 4, 2, 0) 76%
-  );
-}
-.pyj-hero_stage--right .pyj-hero_bg::after {
-  background: linear-gradient(
-    270deg,
-    rgba(5, 4, 2, 0.9) 0%,
-    rgba(5, 4, 2, 0.66) 30%,
-    rgba(5, 4, 2, 0.18) 58%,
-    rgba(5, 4, 2, 0) 76%
-  );
 }
 
 /* ---- layer 3: the copy. Only PHONES paint this (the desktop banner already
@@ -4785,15 +4752,11 @@ button[type="submit"],
    Resting at 1 hands the crossfade back to slick's own wrapper opacity (which is
    a real transition), while the staggered entrance still works because each
    @keyframes starts at opacity 0 on its own. */
-.pyj-hero .slick-slide .pyj-hero_bg,
 .pyj-hero .slick-slide .pyj-hero_art,
 .pyj-hero .slick-slide .pyj-hero_title,
 .pyj-hero .slick-slide .pyj-hero_text,
 .pyj-hero .slick-slide .pyj-hero_cta {
   opacity: 1;
-}
-.pyj-hero .slick-active .pyj-hero_bg {
-  animation: pyjHeroScene 2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .pyj-hero .slick-active .pyj-hero_art {
   animation: pyjHeroArtRight 1.6s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -4817,34 +4780,59 @@ button[type="submit"],
 }
 
 /* ---------------------------------------------------------------------------
-   PHONES — a different composition, not a squeezed desktop. The stage stops
-   being 16:9 (that would leave a letterbox with a tiny piece), the scene turns
-   into a vertical wash, and the piece sits ABOVE the copy in a tight column.
-   The motion changes too: horizontal travel reads badly in a narrow column, so
-   everything rises and settles instead, on shorter delays.
+   PHONES — a PORTRAIT TRANSLATION OF THE ARTWORK, not a different design and not
+   a squeezed desktop. <picture> hands the <img> the same photograph cropped to
+   the half the piece lives in (the copy half is dropped: its headline is baked
+   in at a size that would render ~10px here). The photo then fills the frame
+   exactly as the banner does, a vertical scrim takes over from the banner's
+   horizontal one, and the copy is rebuilt in HTML to match what the artwork
+   sets: left-aligned, gold gradient headline, the thin gold rule, and the same
+   phrases picked out in gold inside the subtitle.
    --------------------------------------------------------------------------- */
 @media (max-width: 767px) {
-  /* The carousel must be ONE fixed size on phones: with fade:true slick locks
-     the track to the tallest slide, so a shorter piece or a shorter headline
-     would otherwise change the height of the whole hero from slide to slide.
-     A flex column with a fixed min-height centres short slides instead of
-     shrinking the stage. (On desktop the aspect-ratio above does the same job.) */
+  /* The carousel must be ONE fixed size: with fade:true slick locks the track to
+     the tallest slide, so a shorter headline would otherwise change the height of
+     the whole hero from slide to slide. Copy is pinned to the BOTTOM, over the
+     photo, the way the artwork sets it over the scene. */
   .pyj-hero_stage,
   .pyj-hero_stage--right {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-end;
+    /* `align-items` is inherited from the desktop grid, where it is `center`.
+       Left unreset it shrink-wraps the copy block and centres it, so the text
+       sat 16px in from its own 24px gutter while the button sat at 24 — the two
+       never lined up. */
+    align-items: stretch;
     aspect-ratio: auto;
     max-height: none;
-    min-height: 464px;
-    padding: 4px 0 0;
+    min-height: 600px;
+    padding: 0;
   }
-  /* the scene comes back — on this breakpoint the <img> is only the piece */
-  .pyj-hero_bg {
-    display: block;
+  /* The photograph keeps the TOP 53% to itself and dissolves into the ground
+     rather than ending on a seam. The banner puts copy beside the piece; a phone
+     has to stack them, and stacking with overlap was tried first — the headline
+     landed across the ring. So the split is vertical instead of horizontal, but
+     the piece still gets a clear half, exactly as in the artwork. */
+  .pyj-hero_stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      180deg,
+      rgba(5, 4, 2, 0) 0%,
+      rgba(5, 4, 2, 0) 34%,
+      rgba(5, 4, 2, 0.55) 46%,
+      rgba(5, 4, 2, 0.94) 53%,
+      #070603 58%,
+      #070603 100%
+    );
+    pointer-events: none;
   }
-  /* and the copy goes back to being real, visible text */
-  .pyj-hero_copy {
+  /* the copy goes back to being real, visible text — LEFT-aligned like the art */
+  .pyj-hero_copy,
+  .pyj-hero_stage--right .pyj-hero_copy {
     position: relative;
     z-index: 2;
     width: auto;
@@ -4853,6 +4841,22 @@ button[type="submit"],
     overflow: visible;
     clip-path: none;
     white-space: normal;
+    text-align: left;
+    padding: 0 24px 2px;
+  }
+  /* the hairline the artwork draws between headline and subtitle, fading out to
+     the right exactly as it does there */
+  .pyj-hero_title::after {
+    content: "";
+    display: block;
+    height: 1px;
+    margin: 16px 0 14px;
+    background: linear-gradient(
+      90deg,
+      rgba(230, 205, 136, 0.85) 0%,
+      rgba(230, 205, 136, 0.35) 62%,
+      rgba(230, 205, 136, 0) 100%
+    );
   }
   /* no banner here, so nothing to track: the frame dissolves and the CTA rejoins
      the flow as a plain flex item under the copy */
@@ -4860,79 +4864,61 @@ button[type="submit"],
     display: contents;
   }
   /* `position: relative; z-index` is LOAD-BEARING — a static flex item paints
-     BELOW `.pyj-hero_bg` (absolute, z-index 0), so the button ended up behind the
-     scene and its 94%-opaque scrim: invisible AND untappable. It only looked fine
+     below the photo and its scrim: invisible AND untappable. It only looked fine
      because the entrance animation leaves a `transform` behind, which happens to
      create a stacking context — and `prefers-reduced-motion` kills that animation,
      so the bug appeared for exactly the visitors least able to work around it.
      `inset: auto` is required too, or the desktop `top: 70% / left: 6.7%` become
      relative offsets and shove the button off-centre. */
-  .pyj-hero_cta {
+  /* `position: relative; z-index` is LOAD-BEARING — a static flex item paints
+     below the scrim and the photo, so the button ended up invisible AND
+     untappable. It only looked fine because the entrance animation leaves a
+     `transform` behind, which happens to create a stacking context — and
+     `prefers-reduced-motion` kills that animation, so the bug appeared for
+     exactly the visitors least able to work around it. `inset: auto` is required
+     too, or the desktop `top: 70% / left: 6.7%` become relative offsets. */
+  /* `--right` MUST be in this selector list. The desktop rule
+     `.pyj-hero_stage--right .pyj-hero_cta { right: var(--cta-x) }` is more
+     specific than a bare `.pyj-hero_cta`, so it wins here no matter that the
+     media query comes later — and with `position: relative` that `right`
+     becomes an offset that dragged the button 18px off the copy's left margin,
+     onto the very edge of the screen. */
+  .pyj-hero_cta,
+  .pyj-hero_stage--right .pyj-hero_cta {
     position: relative;
     inset: auto;
     z-index: 2;
-    align-self: center;
+    align-self: flex-start;
+    margin: 0 24px 26px;
+    font-size: 13px;
+    padding-inline: 26px;
   }
-  /* scene: darken downward so the copy reads over it */
-  .pyj-hero_bg::after,
-  .pyj-hero_stage--right .pyj-hero_bg::after {
-    background: linear-gradient(
-      180deg,
-      rgba(5, 4, 2, 0.22) 0%,
-      rgba(5, 4, 2, 0.62) 46%,
-      rgba(5, 4, 2, 0.94) 100%
-    );
-  }
-  /* <picture> has handed this <img> the CUT-OUT PIECE here, not the banner, so
-     it stops filling the stage and gets a FIXED BOX (full width × fixed height),
-     seated against one edge with object-position. Two things fall out of that:
-     the carousel height can never change — not for a smaller piece, not for a
-     differently-shaped one, because the box is what's measured, not the image;
-     and the piece hugs the frame edge, so the rectangular photo crops among
-     these exports send their straight cut off-screen instead of showing it.
-     `inset` has to be unwound in FULL — a leftover `bottom: 0` from the desktop
-     rule would fight the fixed height. */
+  /* The photograph takes the top band — full bleed, never letterboxed. 58% is
+     what the gradient above fully covers, so the image ends inside the wash and
+     no hard edge is ever visible. */
   .pyj-hero_art,
   .pyj-hero_stage--right .pyj-hero_art {
-    position: relative;
-    inset: auto;
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 0;
     width: 100%;
-    max-width: none;
-    height: 190px;
-    flex: none; /* a flex item would otherwise shrink and break the fixed box */
-    object-fit: contain;
-    object-position: right center;
-    margin: 6px 0 0;
-    transform: none;
-    filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.6));
-  }
-  .pyj-hero_stage--right .pyj-hero_art {
-    object-position: left center;
-  }
-  /* the copy: centred, narrow measure, tight rhythm */
-  .pyj-hero_copy,
-  .pyj-hero_stage--right .pyj-hero_copy {
-    width: auto;
-    text-align: center;
-    padding: 10px 20px 2px;
+    height: 58%;
+    object-fit: cover;
+    object-position: center 42%;
   }
   .pyj-hero_title,
   .pyj-hero_stage--right .pyj-hero_title {
-    max-width: 15ch;
-    margin: 0 auto 10px;
-    font-size: clamp(25px, 7.2vw, 34px);
-    line-height: 1.14;
+    max-width: 14ch;
+    margin: 0;
+    font-size: clamp(27px, 8vw, 38px);
+    line-height: 1.1;
   }
   .pyj-hero_text,
   .pyj-hero_stage--right .pyj-hero_text {
     max-width: 30ch;
-    margin: 0 auto 18px;
-    font-size: 14.5px;
-    line-height: 1.55;
-  }
-  .pyj-hero_cta {
-    font-size: 13px;
-    padding-inline: 26px;
+    margin: 0 0 20px;
+    font-size: 15px;
+    line-height: 1.5;
   }
 
   /* no dots on phones — they crowded the CTA and the swipe already tells the
@@ -4972,14 +4958,9 @@ button[type="submit"],
     animation: pyjHeroRise 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   /* the scene keeps its soft fade but without the zoom (cheaper on phones) */
-  .pyj-hero .slick-active .pyj-hero_bg {
-    animation: pyjHeroRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-}
-
+  
 /* Respect the OS "reduce motion" setting: show everything, move nothing. */
 @media (prefers-reduced-motion: reduce) {
-  .pyj-hero .slick-slide .pyj-hero_bg,
   .pyj-hero .slick-slide .pyj-hero_art,
   .pyj-hero .slick-slide .pyj-hero_title,
   .pyj-hero .slick-slide .pyj-hero_text,

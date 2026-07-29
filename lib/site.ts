@@ -94,8 +94,8 @@ export const SITE = {
   heroSlides: [
     {
       banner: "hero-centrado",
-      bg: "/assets/images/hero/escena-movil/fondo-centrado-variante.webp",
-      art: "/assets/images/hero/capas/arte-pulso-anillo.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Oro 10k · 14k · 18k"],
       artAlt: "Pulso de Orula en oro con cuentas verdes y amarillas junto a un anillo de sello",
       title: "Joyería Yoruba hecha a mano en Miami",
       text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
@@ -108,8 +108,8 @@ export const SITE = {
     },
     {
       banner: "diseno-personalizado",
-      bg: "/assets/images/hero/escena-movil/fondo-diseno-personalizado.webp",
-      art: "/assets/images/hero/capas/arte-boceto.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Anillos e Idde"],
       artAlt: "Boceto a mano de un anillo de sello junto a gemas sueltas de colores",
       title: "Diseña tu pieza a la medida",
       text: "Anillos e Idde personalizados, hechos a mano según tu santo y tu estilo",
@@ -122,8 +122,8 @@ export const SITE = {
     },
     {
       banner: "herramientas",
-      bg: "/assets/images/hero/escena-movil/fondo-herramientas-santo.webp",
-      art: "/assets/images/hero/capas/arte-herramientas.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Ocha e Ifá", "por vida"],
       artAlt: "Herramientas de fundamento en oro y plata: remos, hacha, yunque, martillo y caracoles",
       title: "Herramientas de cada Oricha",
       text: "Piezas de fundamento para tu Ocha e Ifá — garantía de por vida",
@@ -136,8 +136,8 @@ export const SITE = {
     },
     {
       banner: "idde-orula",
-      bg: "/assets/images/hero/escena-movil/fondo-mano-variante.webp",
-      art: "/assets/images/hero/capas/arte-mano-idde.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["medida"],
       artAlt: "Mano con anillo martillado en oro y pulsos de Orula en la muñeca",
       title: "Diseña tu Idde de Orula",
       text: "Piezas de fundamento, hechas a la medida de tu santo",
@@ -150,8 +150,8 @@ export const SITE = {
     },
     {
       banner: "hero-collar",
-      bg: "/assets/images/hero/escena-movil/fondo-collar-variante.webp",
-      art: "/assets/images/hero/capas/arte-collar.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Oro 10k · 14k · 18k"],
       artAlt: "Collar de cuentas de santo con entrepiezas y medalla en oro",
       title: "Joyería Yoruba hecha a mano en Miami",
       text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
@@ -164,8 +164,8 @@ export const SITE = {
     },
     {
       banner: "hero-oro",
-      bg: "/assets/images/hero/escena-movil/fondo-hero-oro.webp",
-      art: "/assets/images/hero/capas/arte-pulso-angulo.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Oro 10k · 14k · 18k"],
       artAlt: "Pulso de eslabones en oro junto a un anillo de sello",
       title: "Joyería Yoruba hecha a mano en Miami",
       text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
@@ -178,8 +178,8 @@ export const SITE = {
     },
     {
       banner: "hero-mano",
-      bg: "/assets/images/hero/escena-movil/fondo-humo-verde-dorado.webp",
-      art: "/assets/images/hero/capas/arte-mano-anillo.webp",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Oro 10k · 14k · 18k"],
       artAlt: "Mano con un anillo de sello en oro y un pulso a juego",
       title: "Joyería Yoruba hecha a mano en Miami",
       text: "Oro 10k · 14k · 18k — donde la fe se lleva puesta",
