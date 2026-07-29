@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check:css": "node scripts/check-css.mjs",
+    "prebuild": "node scripts/check-css.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.65.0",

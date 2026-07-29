@@ -4957,8 +4957,8 @@ button[type="submit"],
   .pyj-hero .slick-active .pyj-hero_stage--right .pyj-hero_cta {
     animation: pyjHeroRise 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  /* the scene keeps its soft fade but without the zoom (cheaper on phones) */
-  
+}
+
 /* Respect the OS "reduce motion" setting: show everything, move nothing. */
 @media (prefers-reduced-motion: reduce) {
   .pyj-hero .slick-slide .pyj-hero_art,
