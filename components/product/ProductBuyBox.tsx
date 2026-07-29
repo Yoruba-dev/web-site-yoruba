@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/lib/cart-context";
+import { useCart, type CartLine } from "@/lib/cart-context";
 import {
   CONSULT_LABEL,
   CONSULT_PRICE_LABEL,
@@ -23,6 +23,7 @@ import WishlistButton from "./WishlistButton";
 import ShareButton from "./ShareButton";
 import SafeImage from "@/components/ui/SafeImage";
 import type { Product, ProductVariant } from "@/lib/types";
+import BuyNowButton from "./BuyNowButton";
 
 // The reactive lower half of the product page: price, availability, variant
 // selector, quantity and the add-to-cart / WhatsApp-consult controls. Split out
@@ -71,10 +72,21 @@ export default function ProductBuyBox({
 
   function add() {
     // The customer must WRITE the colour for made-to-order colour pieces.
+    const line = resolveLine();
+    if (!line) return;
+    if (line.merchandiseId) addLine(line, qty);
+    else addItem(product, qty);
+  }
+
+  /** The one definition of "what this shopper is buying right now": selected
+   *  variant, its real Shopify GID and price, the Color/Orisha choice, and the
+   *  validation that goes with it. Add-to-cart and Comprar ahora both go through
+   *  here so they can never disagree. Returns null when the form isn't valid. */
+  function resolveLine(): Omit<CartLine, "quantity"> | null {
     const colorText = color.trim();
     if (needsColor && !colorText) {
       setColorError(true);
-      return;
+      return null;
     }
     const chosen = variant ?? product.variants[0];
     const base =
@@ -85,26 +97,30 @@ export default function ProductBuyBox({
         ? [{ key: "Color / Orisha", value: colorText }]
         : undefined;
 
-    if (chosen) {
-      // Build the cart line around the SELECTED variant so checkout uses its real
-      // Shopify GID (merchandiseId) and its own price. A colour choice gets a
-      // synthetic id so different colours stay as separate lines.
-      addLine(
-        {
-          id: needsColor && colorText ? `${chosen.id}-${colorText}` : chosen.id,
-          merchandiseId: chosen.id,
-          productHandle: product.handle,
-          title,
-          image: product.images[0]?.url ?? "",
-          price: Number(price.amount),
-          currencyCode: price.currencyCode,
-          properties,
-        },
-        qty,
-      );
-    } else {
-      addItem(product, qty);
+    if (!chosen) {
+      // No real variant to point Shopify at — fall back to the plain product line.
+      return {
+        id: product.id,
+        productHandle: product.handle,
+        title,
+        image: product.images[0]?.url ?? "",
+        price: Number(price.amount),
+        currencyCode: price.currencyCode,
+      };
     }
+    // Build the line around the SELECTED variant so checkout uses its real
+    // Shopify GID (merchandiseId) and its own price. A colour choice gets a
+    // synthetic id so different colours stay as separate cart lines.
+    return {
+      id: needsColor && colorText ? `${chosen.id}-${colorText}` : chosen.id,
+      merchandiseId: chosen.id,
+      productHandle: product.handle,
+      title,
+      image: product.images[0]?.url ?? "",
+      price: Number(price.amount),
+      currencyCode: price.currencyCode,
+      properties,
+    };
   }
 
   return (
@@ -259,6 +275,22 @@ export default function ProductBuyBox({
               ? "Esta pieza se hace por encargo. Escríbenos por WhatsApp para confirmar medidas, quilate y detalles antes de tu pedido."
               : "Pieza agotada por ahora. Escríbenos por WhatsApp y te avisamos o la hacemos por encargo."}
         </p>
+      )}
+
+      {/* Pay without a detour through the cart — for the shopper who already
+          decided. Sits ABOVE "Añadir al carrito" because it is the shorter path;
+          it hides itself for made-to-order/out-of-stock pieces, where the only
+          honest next step is the WhatsApp consult below. */}
+      {buyable && (
+        <div className="pyj-buynow_area">
+          <BuyNowButton buildLine={() => {
+            const line = resolveLine();
+            return line ? { ...line, quantity: qty } : null;
+          }} />
+          <span className="pyj-buynow_hint">
+            Vas directo al pago seguro de Shopify. El carrito se queda como está.
+          </span>
+        </div>
       )}
 
       <div className="qty-btn_area">

@@ -7010,3 +7010,62 @@ button[type="submit"],
     transition: none;
   }
 }
+
+/* ===========================================================================
+   "Comprar ahora" — direct checkout, beside the cart (2026-07-29)
+   Placed ABOVE "Añadir al carrito" because it is the shorter path for a shopper
+   who already decided. It is the SOLID gold button and the cart is the outlined
+   one, so the visual weight matches which action we expect most; two equally
+   loud buttons would just make the choice harder.
+   =========================================================================== */
+.pyj-buynow_area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  max-width: 420px;
+}
+.pyj-buynow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 52px: comfortably past the 44px minimum touch target */
+  min-height: 52px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: var(--font-display, "Cinzel"), serif;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #241a08;
+  background: linear-gradient(135deg, #f2dfa6 0%, #d9b45f 46%, #b8912f 100%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+  transition:
+    filter 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.pyj-buynow:hover {
+  filter: brightness(1.07);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42);
+}
+.pyj-buynow:focus-visible {
+  outline: 2px solid #f2dfa6;
+  outline-offset: 3px;
+}
+.pyj-buynow[disabled] {
+  cursor: progress;
+  filter: saturate(0.6) brightness(0.9);
+}
+.pyj-buynow_hint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(210, 198, 173, 0.78);
+}
+.pyj-buynow_error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e5a3a3;
+}

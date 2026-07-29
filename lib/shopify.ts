@@ -332,9 +332,15 @@ export async function shopifyGetCollections(
   }));
 }
 
+/** A collection's products. `first` MUST stay above the biggest collection in the
+ *  store or pieces silently vanish from their category page: this defaulted to 48
+ *  while `idde` held 62, so 14 iddes — the flagship category — were unreachable
+ *  from /collections/idde with nothing to indicate they had been cut. 250 is the
+ *  Storefront API's per-page maximum, so this is as high as one request goes;
+ *  past that this needs real pagination. */
 export async function shopifyGetCollectionProducts(
   handle: string,
-  first = 48,
+  first = 250,
 ): Promise<{ title: string; description: string; products: Product[] } | null> {
   const data = await shopifyFetch<{
     collection: {
