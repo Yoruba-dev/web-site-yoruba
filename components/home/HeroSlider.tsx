@@ -66,8 +66,13 @@ const settings: Settings = {
   // 7 slides — at 7s each a full cycle took 49s and the last ones were never
   // seen. 5.5s keeps every slide within a realistic visit.
   autoplaySpeed: 5500,
-  speed: 1600,
-  cssEase: "cubic-bezier(0.16, 1, 0.3, 1)",
+  // A true CROSS-DISSOLVE: two opacities crossing at a constant rate, which is
+  // why the easing is `linear`. The old expo-out curve did most of the fade in
+  // the first ~300ms and then crawled, so a full-bleed photograph appeared to
+  // snap in and then hang — the "cambio brusco". 2s over 5.5s of hold reads as
+  // deliberate rather than hurried.
+  speed: 2000,
+  cssEase: "linear",
   adaptiveHeight: false,
   pauseOnHover: false,
   pauseOnFocus: false,
