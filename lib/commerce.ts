@@ -67,9 +67,61 @@ export function isConfigurable(product?: {
 
 /** Internal control tags that steer behaviour but must NEVER be shown to shoppers
  *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
+/**
+ * Pieces the workshop personalises to order: the shopper must SAY what they
+ * want before the piece can be added to the cart, and their words ride into the
+ * Shopify order as a line-item property (and into the WhatsApp message when the
+ * piece is also made-to-order).
+ *
+ * Tag-driven so a new kind of personalisation is one entry here plus the tag in
+ * Shopify — no component change. `label` is BOTH the field label and the Shopify
+ * property key, so what the shopper reads is exactly what the workshop reads on
+ * the order; two separate strings would eventually disagree.
+ *
+ * NOTE: personalising does NOT by itself make a piece made-to-order. A bracelet
+ * with a chosen animal is still bought online; only MADE_TO_ORDER_TAGS route to
+ * a WhatsApp consult.
+ */
+export interface PersonalizationField {
+  /** Shopify tag that switches this field on. */
+  tag: string;
+  /** Field label AND the Shopify line-item property key. */
+  label: string;
+  placeholder: string;
+  /** Sentence under the input explaining where the text ends up. */
+  hint: string;
+  /** Shown when the shopper tries to buy without filling it in. */
+  error: string;
+}
+
+export const PERSONALIZATION_FIELDS: readonly PersonalizationField[] = [
+  {
+    tag: "color-orisha",
+    label: "Color / Orisha",
+    placeholder: "Escríbelo — ej: Oshún (amarillo y dorado)",
+    hint: "Se hace por encargo en el color que escribas — tu texto viaja con el pedido (y en el mensaje de WhatsApp).",
+    error: "Escribe el color / orisha antes de añadir al carrito.",
+  },
+  {
+    tag: "animal",
+    label: "Animal",
+    placeholder: "Escríbelo — ej: león, pantera, elefante, águila",
+    hint: "La figura de arriba se talla con el animal que escribas — tu texto viaja con el pedido.",
+    error: "Escribe el animal antes de añadir al carrito.",
+  },
+];
+
+/** The personalisation this piece asks for, if any (first matching tag wins). */
+export function personalizationField(
+  tags?: readonly string[],
+): PersonalizationField | undefined {
+  const normalized = (tags ?? []).map((t) => t.toLowerCase().trim());
+  return PERSONALIZATION_FIELDS.find((f) => normalized.includes(f.tag));
+}
+
 const CONTROL_TAGS = new Set([
   ...MADE_TO_ORDER_TAGS,
-  "color-orisha",
+  ...PERSONALIZATION_FIELDS.map((f) => f.tag),
   ...CONFIGURABLE_TAGS,
 ]);
 
@@ -138,7 +190,9 @@ export const CONSULT_LABEL = "Consultar por WhatsApp";
 export function whatsappConsultUrl(
   product?: { title?: string; handle?: string; price?: Money },
   variant?: { title?: string; price?: Money },
-  opts?: { karat?: boolean; color?: string },
+  // `detailLabel` names what `detail` is ("Color / Orisha", "Animal", …) so the
+  // WhatsApp message can't announce a colour when the shopper wrote an animal.
+  opts?: { karat?: boolean; detail?: string; detailLabel?: string },
 ): string {
   const price = variant?.price ?? product?.price;
   const lines: string[] = [
@@ -147,7 +201,8 @@ export function whatsappConsultUrl(
   ];
   if (product?.title) lines.push(`📿 Pieza: ${product.title}`);
   if (variant?.title) lines.push(`📏 Tamaño / medida: ${variant.title}`);
-  if (opts?.color?.trim()) lines.push(`🎨 Color / Orisha: ${opts.color.trim()}`);
+  if (opts?.detail?.trim())
+    lines.push(`🎨 ${opts.detailLabel ?? "Color / Orisha"}: ${opts.detail.trim()}`);
   if (price) lines.push(`💰 Precio: ${formatMoney(price)}`);
   if (product?.handle) lines.push(`🔗 ${SITE_URL}/products/${product.handle}`);
   if (opts?.karat) {

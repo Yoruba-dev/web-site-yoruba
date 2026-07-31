@@ -9,15 +9,14 @@ import {
   isConfigurable,
   isMadeToOrder,
   isPlaceholderPriced,
+  personalizationField,
   publicTags,
   whatsappConsultUrl,
 } from "@/lib/commerce";
 import { formatMoney, money } from "@/lib/utils";
 import { SITE } from "@/lib/site";
 
-// Pieces tagged this way are made to order in the colours of an Orisha the
-// customer picks — the choice rides along into the Shopify order.
-const COLOR_ORDER_TAG = "color-orisha";
+
 import CompareButton from "./CompareButton";
 import WishlistButton from "./WishlistButton";
 import ShareButton from "./ShareButton";
@@ -50,12 +49,12 @@ export default function ProductBuyBox({
   const hasVariants = variants.length > 1;
   const [qty, setQty] = useState(1);
 
-  // Made-to-order colour (Orisha) selection, for pieces tagged `color-orisha`.
-  const needsColor = product.tags.some(
-    (t) => t.toLowerCase().trim() === COLOR_ORDER_TAG,
-  );
-  const [color, setColor] = useState("");
-  const [colorError, setColorError] = useState(false);
+  // What this piece asks the shopper to specify (colour/Orisha, animal, …).
+  // Declared per tag in lib/commerce.ts so adding a kind needs no change here.
+  const personal = personalizationField(product.tags);
+  const needsDetail = Boolean(personal);
+  const [detail, setDetail] = useState("");
+  const [detailError, setDetailError] = useState(false);
 
   // Price shown follows the selected variant (falls back to the product's
   // "from" price for single-variant pieces).
@@ -71,7 +70,6 @@ export default function ProductBuyBox({
   const buyable = !madeToOrder && !placeholderPrice && inStock;
 
   function add() {
-    // The customer must WRITE the colour for made-to-order colour pieces.
     const line = resolveLine();
     if (!line) return;
     if (line.merchandiseId) addLine(line, qty);
@@ -83,18 +81,18 @@ export default function ProductBuyBox({
    *  validation that goes with it. Add-to-cart and Comprar ahora both go through
    *  here so they can never disagree. Returns null when the form isn't valid. */
   function resolveLine(): Omit<CartLine, "quantity"> | null {
-    const colorText = color.trim();
-    if (needsColor && !colorText) {
-      setColorError(true);
+    const detailText = detail.trim();
+    if (needsDetail && !detailText) {
+      setDetailError(true);
       return null;
     }
     const chosen = variant ?? product.variants[0];
     const base =
       hasVariants && variant ? `${product.title} — ${variant.title}` : product.title;
-    const title = needsColor && colorText ? `${base} · ${colorText}` : base;
+    const title = needsDetail && detailText ? `${base} · ${detailText}` : base;
     const properties =
-      needsColor && colorText
-        ? [{ key: "Color / Orisha", value: colorText }]
+      needsDetail && detailText
+        ? [{ key: personal!.label, value: detailText }]
         : undefined;
 
     if (!chosen) {
@@ -112,7 +110,7 @@ export default function ProductBuyBox({
     // Shopify GID (merchandiseId) and its own price. A colour choice gets a
     // synthetic id so different colours stay as separate cart lines.
     return {
-      id: needsColor && colorText ? `${chosen.id}-${colorText}` : chosen.id,
+      id: needsDetail && detailText ? `${chosen.id}-${detailText}` : chosen.id,
       merchandiseId: chosen.id,
       productHandle: product.handle,
       title,
@@ -214,32 +212,27 @@ export default function ProductBuyBox({
         </div>
       )}
 
-      {needsColor && buyable && (
+      {needsDetail && buyable && (
         <div className="pyj-color-select_wrap">
           <label className="pyj-variant-label" htmlFor="pyj-color-input">
-            Color / Orisha
+            {personal!.label}
           </label>
           <input
             id="pyj-color-input"
             type="text"
             className="pyj-color-select"
-            value={color}
+            value={detail}
             onChange={(e) => {
-              setColor(e.target.value);
-              setColorError(false);
+              setDetail(e.target.value);
+              setDetailError(false);
             }}
-            placeholder="Escríbelo — ej: Oshún (amarillo y dorado)"
-            aria-invalid={colorError}
+            placeholder={personal!.placeholder}
+            aria-invalid={detailError}
             maxLength={120}
           />
-          <p className="pyj-color-hint">
-            Se hace por encargo en el color que escribas — tu texto viaja con el
-            pedido (y en el mensaje de WhatsApp).
-          </p>
-          {colorError && (
-            <p className="pyj-color-error">
-              Escribe el color / orisha antes de añadir al carrito.
-            </p>
+          <p className="pyj-color-hint">{personal!.hint}</p>
+          {detailError && (
+            <p className="pyj-color-error">{personal!.error}</p>
           )}
         </div>
       )}
@@ -303,9 +296,7 @@ export default function ProductBuyBox({
             ) : (
               <a
                 className="qty-cart_btn"
-                href={whatsappConsultUrl(product, variant, {
-                  color: color.trim() || undefined,
-                })}
+                href={whatsappConsultUrl(product, variant, { detail: detail.trim() || undefined, detailLabel: personal?.label })}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -335,7 +326,8 @@ export default function ProductBuyBox({
         className="pyj-custom-note"
         href={whatsappConsultUrl(product, variant, {
           karat: true,
-          color: color.trim() || undefined,
+          detail: detail.trim() || undefined,
+          detailLabel: personal?.label,
         })}
         target="_blank"
         rel="noreferrer"
