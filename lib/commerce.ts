@@ -109,6 +109,16 @@ export const PERSONALIZATION_FIELDS: readonly PersonalizationField[] = [
     hint: "La figura de arriba se talla con el animal que escribas — tu texto viaja con el pedido.",
     error: "Escribe el animal antes de añadir al carrito.",
   },
+  {
+    // Distinto de `color-orisha`: aquí el cliente elige un color a secas, sin
+    // que la pieza tenga nada que ver con un santo. Mezclarlos haría que un
+    // anillo de caballo pidiera "Color / Orisha", que no significa nada ahí.
+    tag: "color-piedra",
+    label: "Color de la piedra",
+    placeholder: "Escríbelo — ej: blanco, rojo, verde, azul",
+    hint: "Las piedras se montan en el color que escribas — tu texto viaja con el pedido.",
+    error: "Escribe el color de la piedra antes de añadir al carrito.",
+  },
 ];
 
 /** The personalisation this piece asks for, if any (first matching tag wins). */
