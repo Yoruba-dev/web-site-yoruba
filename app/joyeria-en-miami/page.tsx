@@ -34,6 +34,15 @@ export const metadata: Metadata = {
 // (same facts as /faq), emitted as FAQPage schema for rich results + AI cites.
 const GUIDE_FAQS = [
   {
+    // Puesta la PRIMERA y con esta redacción exacta a propósito: los datos de
+    // Google del dueño (julio 2026) muestran que "joyería cerca de mí" es la
+    // única búsqueda no-marcada con volumen real — más que cualquier término de
+    // producto. La página hablaba de Miami y de los barrios, pero nunca usaba la
+    // frase con la que la gente pregunta de verdad.
+    q: "¿Hay una joyería cerca de mí en el oeste de Miami?",
+    a: `Sí. Pedro Yoruba Jewelry está en ${SITE.contact.address}, en el código postal 33175, sobre la SW 26th Street. Queda en Tamiami, pegado a Westchester, y a pocos minutos de Sweetwater, Fontainebleau, Olympia Heights, Kendall y Coral Gables. Si vienes por la Calle 8 o el Palmetto llegas en minutos. Escríbenos por WhatsApp al ${SITE.contact.phone} antes de salir y te confirmamos que la pieza que buscas está en el taller.`,
+  },
+  {
     q: "¿Dónde hay una joyería de oro artesanal en Miami?",
     a: `Pedro Yoruba Jewelry está en ${SITE.contact.address}, en el oeste de Miami (zona de Tamiami, junto a Westchester). Es un taller-joyería: las piezas de oro 10k, 14k y 18k se fabrican a mano en el mismo lugar. Atiende de lunes a viernes de 10:00 a 5:00 y sábados de 10:00 a 4:00.`,
   },
