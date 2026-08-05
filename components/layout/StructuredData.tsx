@@ -39,6 +39,26 @@ export default function StructuredData() {
     hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
       SITE.contact.mapQuery,
     )}`,
+    // Where we actually serve. Added 2026-07-29 after the Google query data
+    // showed that the ONLY non-branded search bringing people in is local
+    // intent — "joyería cerca de mí", "joyerias 33175 zip code", "joyería
+    // miami". Naming the surrounding places (the taller sits in 33175, on the
+    // Westchester/Tamiami line) tells Google which "near me" this shop is near.
+    // These are the real neighbourhoods and cities around 11865 SW 26th St.
+    areaServed: [
+      { "@type": "City", name: "Miami" },
+      { "@type": "AdministrativeArea", name: "Miami-Dade County" },
+      ...[
+        "Westchester",
+        "Tamiami",
+        "Sweetwater",
+        "Fontainebleau",
+        "Olympia Heights",
+        "Kendall",
+        "Coral Gables",
+        "Hialeah",
+      ].map((name) => ({ "@type": "Place", name })),
+    ],
     sameAs: [SITE.social.instagram, SITE.social.facebook, SITE.social.tiktok],
     openingHoursSpecification: [
       {
