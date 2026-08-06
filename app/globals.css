@@ -4442,6 +4442,49 @@ body.template-color-1 {
   scroll-margin-top: 90px;
 }
 
+/* Flecha de volver — componente global (components/ui/BackLink.tsx). Se pinta
+   igual sea <a> o <button>, porque cambia según haya historial propio o no. */
+.pyj-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 22px 0 0;
+  padding: 9px 15px 9px 11px;
+  background: transparent;
+  border: 1px solid rgba(205, 165, 87, 0.34);
+  border-radius: 999px !important;
+  color: var(--pyj-gold, #cda557);
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+  /* Nunca hereda el subrayado dorado de los enlaces editoriales. */
+  border-bottom: 1px solid rgba(205, 165, 87, 0.34) !important;
+}
+.pyj-back:hover,
+.pyj-back:focus-visible {
+  color: var(--pyj-gold-light, #e4c89d);
+  border-color: rgba(205, 165, 87, 0.72);
+  background: rgba(205, 165, 87, 0.08);
+}
+.pyj-back svg {
+  flex: none;
+}
+/* En el breadcrumb va arriba del título, alineada con el resto del contenido. */
+.pyj-back--crumb {
+  margin: 0 0 14px;
+}
+/* Altura mínima explícita: dejarla al padding daba 40px, por debajo del mínimo
+   táctil de 44. Se fija aquí y no en una media query para que valga también en
+   escritorio con pantalla táctil. */
+.pyj-back {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
 .pyj-may_intro {
   padding: 26px 0 8px;
 }

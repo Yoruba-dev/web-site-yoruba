@@ -5,6 +5,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { SITE, OG_IMAGE } from "@/lib/site";
 import { sizedImageUrl } from "@/lib/utils";
 import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
+import BackLink from "@/components/ui/BackLink";
 
 // -----------------------------------------------------------------------------
 // /servicios — la página que declara los servicios del taller: diseño de joyas,
@@ -181,7 +182,7 @@ export default function ServiciosPage() {
       </section>
 
       {/* Índice de los cuatro servicios — cada punto ancla a su sección. */}
-      <section className="pyj-may_intro">
+      <section className="pyj-may_intro" id="servicios-indice">
         <div className="container">
           <div className="pyj-may_grid">
             <div>
@@ -198,6 +199,12 @@ export default function ServiciosPage() {
               <p>
                 Atendemos en tienda de lunes a sábado y por WhatsApp. Aceptamos Visa, MasterCard, American Express, Discover y
                 débito, y enviamos a todo Estados Unidos.
+              </p>
+              <p>
+                <a href="#proceso">
+                  Mira el proceso completo de un diseño personalizado, paso a
+                  paso →
+                </a>
               </p>
             </div>
             <ul className="pyj-may_points">
@@ -257,6 +264,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
 
@@ -308,6 +316,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
 
@@ -355,6 +364,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
 
@@ -403,21 +413,37 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
 
-      {/* Cómo se encarga — tres pasos, el mismo flujo real de la tienda. */}
-      <section className="pyj-may_intro">
+      {/* EL PROCESO, paso a paso. Es la sección que explica CÓMO la marca
+          presta el servicio, de la primera llamada a la pieza marcada. */}
+      <section className="pyj-may_intro" id="proceso">
         <div className="container">
-          <h2>Cómo funciona un encargo</h2>
+          <span className="pyj-kicker">Cómo trabajamos</span>
+          <h2>De la idea a la pieza terminada</h2>
+          <p className="pyj-may_lede">
+            Un encargo no empieza en una máquina: empieza en una conversación.
+            Este es el camino que recorre cada pieza personalizada que sale de{" "}
+            <strong>{SITE.name}</strong>, y en cada etapa hay un punto en el que
+            tú apruebas antes de seguir adelante.
+          </p>
           <ol className="pyj-guide_steps">
             <li className="pyj-guide_step">
               <span className="pyj-guide_num">1</span>
               <div>
-                <strong className="pyj-guide_steptitle">Nos cuentas la idea</strong>
+                <strong className="pyj-guide_steptitle">
+                  La consulta — nos llamas o nos escribes
+                </strong>
                 <p className="pyj-guide_stepbody">
-                  Por WhatsApp, en la tienda o armándola tú mismo en los
-                  configuradores de la web.
+                  Atendemos por teléfono, por WhatsApp y en persona en el
+                  taller. Nos cuentas qué quieres, para qué es la pieza y para
+                  cuándo la necesitas. Aquí preguntamos lo que hace falta para
+                  no equivocarnos: el santo, la talla, si es para uso diario o
+                  para una ocasión, y qué presupuesto tienes en mente. De esa
+                  conversación sale el encargo — con qué se puede hacer, en qué
+                  metal y en qué rango de precio.
                 </p>
               </div>
             </li>
@@ -425,25 +451,146 @@ export default function ServiciosPage() {
               <span className="pyj-guide_num">2</span>
               <div>
                 <strong className="pyj-guide_steptitle">
-                  Confirmamos diseño, metal y precio
+                  De la idea al papel — el boceto
                 </strong>
                 <p className="pyj-guide_stepbody">
-                  Nada se fabrica sin que apruebes lo que se va a hacer y lo que
-                  cuesta.
+                  Lo que hablamos se dibuja. El boceto fija la forma, las
+                  proporciones y las medidas: dónde va cada símbolo, qué ancho
+                  lleva el aro, qué tamaño tiene la pieza en milímetros. Es el
+                  primer momento en que ves tu idea fuera de tu cabeza, y el más
+                  barato para cambiarla — sobre el papel se corrige con un lápiz.
                 </p>
               </div>
             </li>
             <li className="pyj-guide_step">
               <span className="pyj-guide_num">3</span>
               <div>
-                <strong className="pyj-guide_steptitle">La hacemos a mano</strong>
+                <strong className="pyj-guide_steptitle">
+                  Del papel al diseño digital y al render 3D
+                </strong>
                 <p className="pyj-guide_stepbody">
-                  La recoges en la tienda o te la enviamos a cualquier parte de
-                  Estados Unidos.
+                  El boceto aprobado pasa a diseño gráfico y se modela en{" "}
+                  <strong>3D</strong>. El render te enseña la pieza como se verá
+                  en el metal —volúmenes, relieves, cómo cae la luz sobre el
+                  grabado— antes de que exista. Aquí se ajusta lo que haga falta
+                  y se vuelve a enseñar. Nada avanza a fabricación hasta que el
+                  render es el que quieres.
+                </p>
+                <p className="pyj-guide_stepbody">
+                  Cuando el encargo se arma en{" "}
+                  <Link href="/configurador">los configuradores de la web</Link>,
+                  este paso lo haces tú: la pieza que compones en pantalla es la
+                  pieza real, y tu pedido llega al taller con esa hoja de diseño.
+                </p>
+              </div>
+            </li>
+            <li className="pyj-guide_step">
+              <span className="pyj-guide_num">4</span>
+              <div>
+                <strong className="pyj-guide_steptitle">
+                  Del render al metal — el fundido
+                </strong>
+                <p className="pyj-guide_stepbody">
+                  Con el diseño aprobado se prepara el modelo y se lleva a
+                  molde, y la pieza se funde en el metal que elegiste: oro de
+                  10k, 14k o 18k, plata 925 o acero inoxidable. Sale en bruto,
+                  con el peso y la forma definitivos.
+                </p>
+              </div>
+            </li>
+            <li className="pyj-guide_step">
+              <span className="pyj-guide_num">5</span>
+              <div>
+                <strong className="pyj-guide_steptitle">
+                  Acabado a mano — limado, pulido, engaste y grabado
+                </strong>
+                <p className="pyj-guide_stepbody">
+                  Es la parte que no hace una máquina. Se lima, se pule hasta el
+                  brillo final, se montan las piedras una a una y se graba lo
+                  que lleve grabado —tu signo de Ifá, el motivo, la inicial— con
+                  el esquema que aprobaste como plano.
+                </p>
+              </div>
+            </li>
+            <li className="pyj-guide_step">
+              <span className="pyj-guide_num">6</span>
+              <div>
+                <strong className="pyj-guide_steptitle">
+                  La pieza se marca con nuestra marca
+                </strong>
+                <p className="pyj-guide_stepbody">
+                  Antes de salir del taller, la pieza queda marcada con la marca
+                  de la casa. Es lo que la identifica como nuestra años después
+                  —y lo que nos permite reconocerla cuando alguien nos la trae a{" "}
+                  <a href="#autenticacion">autenticar</a>.
+                </p>
+              </div>
+            </li>
+            <li className="pyj-guide_step">
+              <span className="pyj-guide_num">7</span>
+              <div>
+                <strong className="pyj-guide_steptitle">
+                  Revisión final y entrega
+                </strong>
+                <p className="pyj-guide_stepbody">
+                  Se revisa contra el diseño aprobado —medidas, acabado,
+                  engastes, grabado— y se entrega. La recoges en el taller de
+                  Miami o te la enviamos a cualquier parte de Estados Unidos.
                 </p>
               </div>
             </li>
           </ol>
+
+          <div className="pyj-may_grid" style={{ marginTop: 34 }}>
+            <div>
+              <h3>Nuestra marca va en la pieza, no solo en la caja</h3>
+              <p>
+                Todo lo que sale de este taller lleva la marca de{" "}
+                <strong>{SITE.name}</strong>. No es un adorno: es la firma del
+                taller sobre su propio trabajo, y la razón por la que podemos
+                responder por una pieza mucho después de venderla.
+              </p>
+              <p>
+                Lo más visible son las <strong>monedas de Ifá</strong>, que
+                llevan el sello <strong>PYJ</strong> acuñado en el propio cuño de
+                la moneda, junto a las medidas de la pieza (plata 925, 36.5 mm).
+                Los encargos hechos en la web viajan además con su{" "}
+                <strong>hoja de diseño</strong> a nombre del taller, que deja
+                constancia de qué se pidió y cómo se hizo.
+              </p>
+            </div>
+            <ul className="pyj-may_points">
+              <li>
+                <strong>En la pieza</strong>
+                La marca del taller, marcada en el metal antes de la entrega.
+              </li>
+              <li>
+                <strong>En la moneda</strong>
+                El sello <strong>PYJ</strong> acuñado en el cuño, junto a los 16
+                Odù Meji del anverso.
+              </li>
+              <li>
+                <strong>En el papel</strong>
+                Hoja de diseño y pedido a nombre de {SITE.name}, con el esquema
+                exacto de lo aprobado.
+              </li>
+              <li>
+                <strong>En la caja</strong>
+                Las piezas de presentación se entregan en el estuche de la casa.
+              </li>
+            </ul>
+          </div>
+
+          <p className="pyj-guide_note">
+            ¿Quieres empezar un encargo?{" "}
+            <a href={wa} target="_blank" rel="noreferrer">
+              Escríbenos por WhatsApp
+            </a>{" "}
+            o llama al{" "}
+            <a href={`tel:${SITE.contact.phoneTel}`}>{SITE.contact.phone}</a>. La
+            primera conversación no cuesta nada.
+          </p>
+          <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
 

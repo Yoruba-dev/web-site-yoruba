@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { sizedImageUrl } from "@/lib/utils";
+import BackLink from "@/components/ui/BackLink";
 
 export interface Crumb {
   label: string;
@@ -41,6 +42,14 @@ export default function Breadcrumb({
     >
       <div className="container">
         <div className="breadcrumb-content">
+          {/* Flecha de volver — en el breadcrumb, así que la tienen las 26
+              rutas que lo usan sin repetirla en cada página. Su destino de
+              respaldo es el último nivel con enlace propio (o el inicio). */}
+          <BackLink
+            href={[...crumbs].reverse().find((c) => c.href)?.href ?? "/"}
+            label="Volver"
+            className="pyj-back--crumb"
+          />
           <TitleTag className="breadcrumb-title">{title}</TitleTag>
           <ul>
             <li>
