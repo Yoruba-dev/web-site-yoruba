@@ -4,7 +4,6 @@
 // string off-screen). Gold on a dark signet. Front-face composition (the hero).
 import { getOdu, type Mark } from "./odu";
 import { getPlaceable, type MotifId, type PlacedItem } from "./symbols";
-import type { RingSlotId } from "./odu";
 
 const GOLD = "#e3b23c";
 
@@ -135,25 +134,50 @@ function facePanel(
   return out + region + caption;
 }
 
-/** Build a data-URL SVG diagram of the WHOLE design — the FRONT signet on top and
- *  the two LATERALS below, each with its symbols, in a near-square frame so all
- *  three faces stay visible even in a small square cart thumbnail. Safe to drop
- *  into an <img>. */
+// One coin face: the struck disc with the engravable field marked, the placed
+// symbols inside it, and a caption. The `field` fraction comes from lib/coin.ts
+// (measured off the workshop render), so the mockup shows the symbols at the
+// same relative size the graver will cut them.
+function coinPanel(
+  items: PlacedItem[],
+  label: string,
+  field: number,
+  cx: number,
+  cy: number,
+  captionY: number,
+): string {
+  const r = 84;
+  const inner = r * field;
+  const out =
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1d160d" stroke="${GOLD}" stroke-width="3"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${inner.toFixed(1)}" fill="none" stroke="${GOLD}" stroke-width="1.4" stroke-dasharray="4 4" opacity="0.55"/>`;
+  const caption = `<text x="${cx}" y="${captionY}" fill="${GOLD}" font-family="Georgia, serif" font-size="15" text-anchor="middle">${label}</text>`;
+  return out + itemsGroup(items, cx, cy, inner - 6) + caption;
+}
+
+/** Build a data-URL SVG diagram of the WHOLE design, for the cart thumbnail and
+ *  the printable sheet. Two layouts:
+ *   • "anillo" — the FRONT signet on top and the two LATERALS below.
+ *   • "moneda" — the two faces of the coin, side by side.
+ *  Safe to drop into an <img>. */
 export function designToPreviewDataUrl(
-  design: Record<RingSlotId, PlacedItem[]>,
+  design: Record<string, PlacedItem[]>,
+  layout: "anillo" | "moneda" = "anillo",
 ): string | undefined {
-  const empty =
-    !(design.front ?? []).length &&
-    !(design.right ?? []).length &&
-    !(design.left ?? []).length;
-  if (empty) return undefined;
+  const faces =
+    layout === "moneda" ? ["anverso", "reverso"] : ["front", "right", "left"];
+  if (!faces.some((f) => (design[f] ?? []).length)) return undefined;
 
   const W = 420;
-  const H = 400;
+  const H = layout === "moneda" ? 250 : 400;
   const body =
-    facePanel(design.front ?? [], "Frente", "round", 210, 118, 214) +
-    facePanel(design.left ?? [], "Izquierdo", "shoulder", 112, 290, 388) +
-    facePanel(design.right ?? [], "Derecho", "shoulder", 308, 290, 388);
+    layout === "moneda"
+      ? // COIN_FACES[].field — anverso 0.45, reverso 0.70
+        coinPanel(design.anverso ?? [], "Anverso", 0.45, 110, 108, 226) +
+        coinPanel(design.reverso ?? [], "Reverso", 0.7, 310, 108, 226)
+      : facePanel(design.front ?? [], "Frente", "round", 210, 118, 214) +
+        facePanel(design.left ?? [], "Izquierdo", "shoulder", 112, 290, 388) +
+        facePanel(design.right ?? [], "Derecho", "shoulder", 308, 290, 388);
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">` +

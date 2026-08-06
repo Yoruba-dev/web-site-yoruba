@@ -2,21 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { decodeDesign } from "@/lib/design-code";
 import { getPlaceable, MOTIFS, type PlacedItem } from "@/lib/symbols";
-import { getOdu, type RingSlotId } from "@/lib/odu";
+import { getOdu } from "@/lib/odu";
+import { COIN_FACES, COIN_SPECS } from "@/lib/coin";
 import { designToPreviewDataUrl } from "@/lib/glyph-svg";
 import { SITE } from "@/lib/site";
 import PrintButton from "./PrintButton";
 
 export const metadata: Metadata = {
-  title: "Hoja de diseño — Anillo de Ifá",
+  title: "Hoja de diseño — Ifá",
   robots: { index: false, follow: false },
 };
 
-const FACES: { id: RingSlotId; label: string }[] = [
+// The faces to spell out depend on the piece. A design encoded before the coin
+// editor existed has no `piece`, so ring stays the default and old order links
+// keep printing exactly as they did.
+const RING_FACES: { id: string; label: string }[] = [
   { id: "front", label: "Frente" },
   { id: "right", label: "Lateral derecho" },
   { id: "left", label: "Lateral izquierdo" },
 ];
+const COIN_SHEET_FACES = COIN_FACES.map((f) => ({ id: f.id as string, label: f.label }));
 
 const towerLabel = (t?: string) =>
   t === "left" ? "torre izquierda" : t === "right" ? "torre derecha" : "ambas torres";
@@ -63,7 +68,10 @@ export default async function DisenoPage({
   }
 
   const design = payload.design;
-  const mockup = designToPreviewDataUrl(design);
+  const piece = payload.piece ?? "anillo";
+  const isCoin = piece === "moneda";
+  const FACES = isCoin ? COIN_SHEET_FACES : RING_FACES;
+  const mockup = designToPreviewDataUrl(design, piece);
   const total = FACES.reduce((n, f) => n + (design[f.id]?.length ?? 0), 0);
 
   return (
@@ -71,7 +79,15 @@ export default async function DisenoPage({
       <div className="pyj-sheet">
         <header className="pyj-sheet_head">
           <span className="pyj-sheet_brand">{SITE.name}</span>
-          <h1 className="pyj-sheet_title">Hoja de diseño · Anillo de Ifá</h1>
+          <h1 className="pyj-sheet_title">
+            Hoja de diseño · {isCoin ? "Moneda de Ifá" : "Anillo de Ifá"}
+          </h1>
+          {isCoin && (
+            <p className="pyj-sheet_santo">
+              Pieza acuñada: {COIN_SPECS.metal} · {COIN_SPECS.diameterMm} mm ·{" "}
+              {COIN_SPECS.thicknessMm} mm de grosor
+            </p>
+          )}
           {payload.ring?.title && (
             <p className="pyj-sheet_ring">
               {payload.ring.title}
@@ -88,7 +104,11 @@ export default async function DisenoPage({
           <img
             className="pyj-sheet_mockup"
             src={mockup}
-            alt="Mockup del diseño en las tres caras del anillo"
+            alt={
+              isCoin
+                ? "Mockup del diseño en las dos caras de la moneda"
+                : "Mockup del diseño en las tres caras del anillo"
+            }
           />
         )}
 
@@ -127,7 +147,10 @@ export default async function DisenoPage({
 
         <div className="pyj-sheet_actions">
           <PrintButton />
-          <Link href="/configurador" className="pyj-sheet_back">
+          <Link
+            href={isCoin ? "/configurador-monedas" : "/configurador"}
+            className="pyj-sheet_back"
+          >
             Abrir el configurador
           </Link>
         </div>

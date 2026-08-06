@@ -7,6 +7,7 @@ import {
   CONSULT_LABEL,
   CONSULT_PRICE_LABEL,
   isConfigurable,
+  isCoinConfigurable,
   isMadeToOrder,
   isPlaceholderPriced,
   personalizationField,
@@ -136,13 +137,24 @@ export default function ProductBuyBox({
         )}
       </div>
 
-      {isConfigurable(product) && (
+      {/* A coin is engraved and a ring is built, so each opens its own editor.
+          Coin wins when a piece somehow matches both. */}
+      {isCoinConfigurable(product) ? (
         <Link
-          href={`/configurador?anillo=${encodeURIComponent(product.handle)}`}
+          href={`/configurador-monedas?moneda=${encodeURIComponent(product.handle)}`}
           className="pyj-design-cta"
         >
-          ✦ Diseña este anillo con tus signos de Ifá →
+          ✦ Diseña esta moneda con tu signo de Ifá →
         </Link>
+      ) : (
+        isConfigurable(product) && (
+          <Link
+            href={`/configurador?anillo=${encodeURIComponent(product.handle)}`}
+            className="pyj-design-cta"
+          >
+            ✦ Diseña este anillo con tus signos de Ifá →
+          </Link>
+        )
       )}
 
       <div className="sp-essential_stuff">

@@ -2,11 +2,13 @@
 
 import { useRef } from "react";
 import { getPlaceable, type PlacedItem } from "@/lib/symbols";
+import type { CoinFace } from "@/lib/coin";
 import PlaceableGlyph from "./PlaceableGlyph";
 import RingFrame from "./RingFrame";
 import ShoulderFrame from "./ShoulderFrame";
+import CoinFrame from "./CoinFrame";
 
-// A free composition canvas for ONE ring face. Drop symbols from the palette
+// A free composition canvas for ONE face of a piece. Drop symbols from the palette
 // (or tap one to drop it in the middle), then drag each to position, and use the
 // toolbar to resize / rotate / remove the selected one. Positions are fractions
 // (0..1) of the canvas so the design is resolution-independent. Works with mouse,
@@ -28,6 +30,7 @@ function ToolIcon({ d, fill = false }: { d: string; fill?: boolean }) {
 
 export default function FaceCanvas({
   shape,
+  coinFace,
   items,
   selectedUid,
   emptyHint,
@@ -40,7 +43,9 @@ export default function FaceCanvas({
   onRotate,
   onFlipTower,
 }: {
-  shape: "round" | "shoulder";
+  shape: "round" | "shoulder" | "coin";
+  /** Required when shape === "coin" — which face of the real piece to show. */
+  coinFace?: CoinFace;
   items: PlacedItem[];
   selectedUid: string | null;
   emptyHint?: string;
@@ -57,9 +62,13 @@ export default function FaceCanvas({
   const drag = useRef<string | null>(null);
 
   const selected = items.find((i) => i.uid === selectedUid);
-  const selectedIsTower = selected
-    ? getPlaceable(selected.ref)?.kind === "tower"
-    : false;
+  // The half-sign toggle only makes sense on a ring, where the two towers sit on
+  // different faces. A struck coin always carries the WHOLE Odù, so the button
+  // would do nothing — don't show it.
+  const selectedIsTower =
+    shape !== "coin" && selected
+      ? getPlaceable(selected.ref)?.kind === "tower"
+      : false;
 
   function toFraction(clientX: number, clientY: number) {
     const el = canvasRef.current;
@@ -71,13 +80,28 @@ export default function FaceCanvas({
     };
   }
 
+  // On a coin the canvas is inset to the engravable field, so a symbol simply
+  // cannot be dropped where the graver can't cut it — the same drag maths then
+  // works unchanged, in field coordinates.
+  const inset =
+    shape === "coin" && coinFace
+      ? { inset: `${(1 - coinFace.field) * 50}%` }
+      : undefined;
+
   return (
     <div className={`pyj-face pyj-face--${shape}`}>
       <div className="pyj-face_wrap">
-      {shape === "round" ? <RingFrame gems={gems} /> : <ShoulderFrame gems={gems} />}
+      {shape === "coin" && coinFace ? (
+        <CoinFrame face={coinFace} gems={gems} />
+      ) : shape === "round" ? (
+        <RingFrame gems={gems} />
+      ) : (
+        <ShoulderFrame gems={gems} />
+      )}
       <div
         ref={canvasRef}
         className="pyj-face_canvas"
+        style={inset}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -145,6 +169,11 @@ export default function FaceCanvas({
           </span>
         )}
       </div>
+      {shape === "coin" && coinFace && (
+        // Announced separately: the frame itself is decorative, but a screen
+        // reader still needs to know which face of the coin is on the canvas.
+        <span className="sr-only">{coinFace.alt}</span>
+      )}
       </div>
 
       {selectedUid && (

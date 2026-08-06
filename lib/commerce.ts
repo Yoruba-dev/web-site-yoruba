@@ -65,6 +65,24 @@ export function isConfigurable(product?: {
   return CONFIGURABLE_COLLECTIONS.some((c) => cols.includes(c));
 }
 
+/** Same idea for the Ifá COIN editor (/configurador-monedas). Kept separate from
+ *  the ring switches so tagging a coin never sends the shopper to the ring
+ *  editor: the coin is engraved, the ring is built, and the two canvases are
+ *  different pieces.
+ *
+ *  DELIBERATELY tag-only — no collection or product-type fallback. "Monedas"
+ *  also holds collector pieces (a 1985 silver dollar, a 1964 US half dollar)
+ *  that are NOT struck by the workshop and must never be offered for engraving.
+ *  Tag the minted Ifá coins in Shopify to enable them. */
+export const COIN_CONFIGURABLE_TAGS = ["moneda-personalizable"];
+
+export function isCoinConfigurable(product?: {
+  tags?: readonly string[];
+}): boolean {
+  const tags = (product?.tags ?? []).map((t) => t.toLowerCase().trim());
+  return COIN_CONFIGURABLE_TAGS.some((t) => tags.includes(t));
+}
+
 /** Internal control tags that steer behaviour but must NEVER be shown to shoppers
  *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
 /**
@@ -287,21 +305,26 @@ export function whatsappRingConfigUrl(
 }
 
 /**
- * WhatsApp link for a FREE-FORM ring design (the /configurador editor): lists the
- * symbols placed on each face. `faces` is already resolved to display names, so
- * this stays free of the symbol/Odù data model. Same brand-number + prefill
- * pattern as the other builders.
+ * WhatsApp link for a FREE-FORM design made in an editor (/configurador for
+ * rings, /configurador-monedas for the Ifá coin): lists the symbols placed on
+ * each face. `faces` is already resolved to display names, so this stays free of
+ * the symbol/Odù data model. Same brand-number + prefill pattern as the other
+ * builders. `piece` only changes the wording.
  */
 export function whatsappRingDesignUrl(
   faces: { label: string; items: string[] }[],
-  opts?: { productTitle?: string; shareUrl?: string },
+  opts?: { productTitle?: string; shareUrl?: string; piece?: "anillo" | "moneda" },
 ): string {
+  const piece = opts?.piece ?? "anillo";
   const lines: string[] = [
-    "Hola 👋 Diseñé un *anillo personalizado* en la web de Pedro Yoruba Jewelry.",
+    `Hola 👋 Diseñé ${piece === "moneda" ? "una *moneda de Ifá personalizada*" : "un *anillo personalizado*"} en la web de Pedro Yoruba Jewelry.`,
     "",
   ];
   if (opts?.productTitle?.trim()) {
-    lines.push(`Anillo: ${opts.productTitle.trim()}`, "");
+    lines.push(
+      `${piece === "moneda" ? "Moneda" : "Anillo"}: ${opts.productTitle.trim()}`,
+      "",
+    );
   }
   lines.push("Mi diseño:");
   for (const f of faces) {

@@ -21,13 +21,17 @@ export default function SymbolPalette({
   onPick,
   towerMode = "both",
   onTowerMode,
+  piece = "anillo",
 }: {
   onPick: (ref: string) => void;
   towerMode?: TowerMode;
   onTowerMode?: (m: TowerMode) => void;
+  /** Only changes the wording — the tray itself is the same for every piece. */
+  piece?: "anillo" | "moneda";
 }) {
   const [group, setGroup] = useState<Placeable["group"]>(PLACEABLE_GROUPS[0]);
   const isTowers = group === "Torres de Ifá";
+  const pieza = piece === "moneda" ? "la moneda" : "el anillo";
 
   return (
     <div className="pyj-palette2">
@@ -49,7 +53,7 @@ export default function SymbolPalette({
       <p className="pyj-palette2_hint">
         {isTowers
           ? "Tus signos de Ifá — la base del diseño."
-          : "Opcionales — un detalle extra para tu anillo."}
+          : `Opcionales — un detalle extra para ${pieza}.`}
       </p>
 
       {isTowers && onTowerMode && (
@@ -81,7 +85,7 @@ export default function SymbolPalette({
                 e.dataTransfer.effectAllowed = "copy";
               }}
               onClick={() => onPick(p.id)}
-              aria-label={`${p.name}. Arrástralo al anillo o tócalo para agregarlo`}
+              aria-label={`${p.name}. Arrástralo a ${pieza} o tócalo para agregarlo`}
               title={p.name}
             >
               <PlaceableGlyph

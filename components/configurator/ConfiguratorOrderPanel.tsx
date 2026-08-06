@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { RingSlotId } from "@/lib/odu";
 import { getPlaceable, type PlacedItem } from "@/lib/symbols";
 import { whatsappRingDesignUrl } from "@/lib/commerce";
 import { useCart } from "@/lib/cart-context";
@@ -11,7 +10,12 @@ import { encodeDesign } from "@/lib/design-code";
 import { getOrisha } from "@/lib/orisha-colors";
 import { SITE_URL } from "@/lib/site";
 
-export type RingDesign = Record<RingSlotId, PlacedItem[]>;
+// Keyed by face id — the ring's left/front/right, the coin's anverso/reverso.
+export type RingDesign = Record<string, PlacedItem[]>;
+
+/** What kind of piece is being designed. Drives the wording and the mockup
+ *  layout; everything else (variants, cart, WhatsApp) is identical. */
+export type ConfiguratorPiece = "anillo" | "moneda";
 
 export interface ConfiguratorVariant {
   id: string;
@@ -27,7 +31,9 @@ export interface ConfiguratorProduct {
   variants: ConfiguratorVariant[];
 }
 
-const FACE_ORDER: { id: RingSlotId; label: string }[] = [
+// Default faces = the ring's three. A configurator for another piece (the coin)
+// passes its own list, so this panel never needs to know the shapes involved.
+const RING_FACE_ORDER: { id: string; label: string }[] = [
   { id: "front", label: "Frente" },
   { id: "right", label: "Lateral derecho" },
   { id: "left", label: "Lateral izquierdo" },
@@ -43,18 +49,22 @@ export default function ConfiguratorOrderPanel({
   product,
   orisha,
   onReset,
+  piece = "anillo",
+  faceOrder = RING_FACE_ORDER,
 }: {
   design: RingDesign;
   product?: ConfiguratorProduct;
   orisha?: string;
   onReset: () => void;
+  piece?: ConfiguratorPiece;
+  faceOrder?: { id: string; label: string }[];
 }) {
   const santo = orisha ? getOrisha(orisha) : undefined;
   const { addLine, setCartOpen } = useCart();
   const [variantId, setVariantId] = useState(product?.variants[0]?.id ?? "");
   const [added, setAdded] = useState(false);
 
-  const faces = FACE_ORDER.map((f) => ({
+  const faces = faceOrder.map((f) => ({
     ...f,
     names: (design[f.id] ?? [])
       .map((it) => getPlaceable(it.ref)?.name)
@@ -74,6 +84,7 @@ export default function ConfiguratorOrderPanel({
     // one link that carries the WHOLE design → a printable sheet (mockup + spec)
     const designUrl = `${SITE_URL}/diseno?d=${encodeDesign({
       design,
+      piece,
       ring: { handle: product.handle, title: product.title, variant: metal, santo: santoLabel },
     })}`;
     const properties = [
@@ -99,7 +110,7 @@ export default function ConfiguratorOrderPanel({
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `${chosen.id}-${total}-${faces[0].names.length}`;
-    const preview = designToPreviewDataUrl(design);
+    const preview = designToPreviewDataUrl(design, piece);
 
     addLine(
       {
@@ -107,7 +118,7 @@ export default function ConfiguratorOrderPanel({
         merchandiseId: chosen.id,
         productHandle: product.handle,
         title: `${product.title} — diseño de Ifá${chosen.title && chosen.title !== "Default Title" ? ` (${chosen.title})` : ""}`,
-        // main cart thumbnail = the real ring photo; the design mockup shows beside
+        // main cart thumbnail = the real piece photo; the design mockup shows beside
         // it (customization.preview) so the customer sees the piece AND their design.
         image: product.image || preview || "",
         price: Number(chosen.amount),
@@ -123,7 +134,7 @@ export default function ConfiguratorOrderPanel({
 
   const whatsappHref = whatsappRingDesignUrl(
     faces.map((f) => ({ label: f.label, items: f.names })),
-    product ? { productTitle: product.title } : undefined,
+    { piece, ...(product ? { productTitle: product.title } : {}) },
   );
 
   return (
