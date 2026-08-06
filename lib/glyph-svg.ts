@@ -184,7 +184,10 @@ export function designToPreviewDataUrl(
     body +
     `</svg>`;
 
-  // btoa is fine here (the SVG is pure ASCII). Runs client- and server-side.
-  if (typeof btoa === "undefined") return undefined;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  // NO usar btoa: las etiquetas llevan acentos y el separador "·" (U+00B7), y
+  // btoa serializa en Latin-1 — el byte suelto 0xB7 no es UTF-8 válido y el
+  // navegador se niega a pintar la imagen (miniatura rota en el carrito y en la
+  // hoja del taller). encodeURIComponent sí produce UTF-8 correcto, y además
+  // funciona en el servidor, donde btoa no existe.
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

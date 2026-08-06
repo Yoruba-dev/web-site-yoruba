@@ -6680,16 +6680,56 @@ button[type="submit"],
   color: #24211c;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6));
 }
-/* the selected ring is gold on the ring editor's dark field; on bright silver it
-   needs a dark halo to stay visible */
-.pyj-face--coin .pyj-item.is-selected {
-  box-shadow:
-    0 0 0 2px rgba(60, 48, 24, 0.75),
-    0 0 12px 2px rgba(227, 178, 60, 0.55);
+/* Sin recuadro de selección en la moneda: lo que se ve tiene que parecerse al
+   grabado terminado, no a un editor. La barra de herramientas de abajo ya dice
+   cuál está seleccionado. */
+.pyj-cfg2--sin-marco .pyj-item.is-selected {
+  box-shadow: none;
+  border-radius: 0 !important;
+}
+/* En la moneda el signo se mide contra el CAMPO GRABABLE, no en píxeles fijos:
+   el lienzo ya está recortado al campo, así que un 78% lo llena como lo llenará
+   el grabado. En el anillo el tamaño base sigue siendo el de siempre. */
+.pyj-face--coin .pyj-item {
+  width: 78%;
+  height: 78%;
 }
 .pyj-face--coin .pyj-face_empty {
   color: rgba(40, 36, 30, 0.75);
   font-weight: 600;
+  /* deja sitio a la cruz del centro */
+  align-items: end;
+  padding-bottom: 8%;
+}
+/* La cruz del centro: marca dónde cae el grabado mientras el campo está vacío.
+   Desaparece en cuanto se coloca el signo (React solo la pinta si no hay nada). */
+.pyj-coin_cross {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 17%;
+  height: 17%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  color: rgba(40, 36, 30, 0.42);
+}
+.pyj-coin_cross::before,
+.pyj-coin_cross::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: currentColor;
+  border-radius: 2px !important;
+  transform: translate(-50%, -50%);
+}
+.pyj-coin_cross::before {
+  width: 12%;
+  height: 100%;
+}
+.pyj-coin_cross::after {
+  width: 100%;
+  height: 12%;
 }
 .pyj-coin_hint {
   max-width: 46ch;

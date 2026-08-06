@@ -22,21 +22,30 @@ export default function SymbolPalette({
   towerMode = "both",
   onTowerMode,
   piece = "anillo",
+  groups,
 }: {
   onPick: (ref: string) => void;
   towerMode?: TowerMode;
   onTowerMode?: (m: TowerMode) => void;
   /** Only changes the wording — the tray itself is the same for every piece. */
   piece?: "anillo" | "moneda";
+  /** Which groups this piece accepts. Undefined = all of them. The coin takes
+   *  only Odù signs: the workshop engraves it, it doesn't set motifs on it. */
+  groups?: readonly Placeable["group"][];
 }) {
-  const [group, setGroup] = useState<Placeable["group"]>(PLACEABLE_GROUPS[0]);
+  const shown = groups?.length ? PLACEABLE_GROUPS.filter((g) => groups.includes(g)) : PLACEABLE_GROUPS;
+  const [group, setGroup] = useState<Placeable["group"]>(shown[0]);
   const isTowers = group === "Torres de Ifá";
-  const pieza = piece === "moneda" ? "la moneda" : "el anillo";
+  // Frase completa por pieza: concatenar `a ${pieza}` producia "a el anillo".
+  const aLaPieza = piece === "moneda" ? "a la moneda" : "al anillo";
+  const paraLaPieza = piece === "moneda" ? "para tu moneda" : "para tu anillo";
 
   return (
     <div className="pyj-palette2">
+      {/* Un solo grupo no necesita pestañas para elegir entre uno. */}
+      {shown.length > 1 && (
       <div className="pyj-palette2_tabs" role="tablist" aria-label="Categorías de símbolos">
-        {PLACEABLE_GROUPS.map((g) => (
+        {shown.map((g) => (
           <button
             key={g}
             type="button"
@@ -49,11 +58,12 @@ export default function SymbolPalette({
           </button>
         ))}
       </div>
+      )}
 
       <p className="pyj-palette2_hint">
         {isTowers
           ? "Tus signos de Ifá — la base del diseño."
-          : `Opcionales — un detalle extra para ${pieza}.`}
+          : `Opcionales — un detalle extra ${paraLaPieza}.`}
       </p>
 
       {isTowers && onTowerMode && (
@@ -85,7 +95,7 @@ export default function SymbolPalette({
                 e.dataTransfer.effectAllowed = "copy";
               }}
               onClick={() => onPick(p.id)}
-              aria-label={`${p.name}. Arrástralo a ${pieza} o tócalo para agregarlo`}
+              aria-label={`${p.name}. Arrástralo ${aLaPieza} o tócalo para agregarlo`}
               title={p.name}
             >
               <PlaceableGlyph

@@ -151,6 +151,7 @@ const CONTROL_TAGS = new Set([
   ...MADE_TO_ORDER_TAGS,
   ...PERSONALIZATION_FIELDS.map((f) => f.tag),
   ...CONFIGURABLE_TAGS,
+  ...COIN_CONFIGURABLE_TAGS,
 ]);
 
 /** A product's tags with internal control tags stripped — safe to display. */

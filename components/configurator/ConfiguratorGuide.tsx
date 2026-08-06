@@ -3,7 +3,13 @@
 // respect the tradition — it names the system and how the signs are WRITTEN, but
 // never invents meanings (those belong to the babaláwo / the itá). Server component.
 
-const STEPS = [
+// La guia sirve a las dos piezas. Lo que cambia entre ellas va aqui, por pieza,
+// no repartido en condicionales por el JSX: el anillo tiene tres caras y metal a
+// elegir; la moneda es una sola cara de plata 925 y el anverso viene acunado.
+type Pieza = "anillo" | "moneda";
+
+const STEPS: Record<Pieza, { n: number; title: string; body: string }[]> = {
+  anillo: [
   {
     n: 1,
     title: "Elige la cara",
@@ -24,7 +30,30 @@ const STEPS = [
     title: "Págalo en la web",
     body: "Si abriste el diseñador desde un anillo, elige el metal y agrégalo al carrito: la orden llega con el esquema exacto de tu diseño y lo hacemos a mano. Si no, lo pides por WhatsApp.",
   },
-];
+  ],
+  moneda: [
+    {
+      n: 1,
+      title: "El anverso ya viene acuñado",
+      body: "La moneda se acuña con los 16 Odù Meji alrededor del borde. Esa cara no se toca: lo que eliges es el signo que se graba en el reverso, sobre el campo liso.",
+    },
+    {
+      n: 2,
+      title: "Coloca tu signo",
+      body: "Arrastra un Odù desde la paleta hasta el campo, o tócalo para agregarlo. Luego muévelo, agrándalo o gíralo con la barra de herramientas.",
+    },
+    {
+      n: 3,
+      title: "Elige la torre",
+      body: "Cada Odù se escribe con dos torres (columnas). Con el selector Ambas · Izquierda · Derecha decides cuál grabar — las torres se leen de izquierda a derecha.",
+    },
+    {
+      n: 4,
+      title: "Págala en la web",
+      body: "Si abriste el diseñador desde una moneda, agrégala al carrito: la orden llega con el esquema exacto de tu grabado y lo hacemos a mano. Si no, la pides por WhatsApp.",
+    },
+  ],
+};
 
 // A single vs. double mark — the two strokes that build every Odù.
 function MarkLegend() {
@@ -47,7 +76,8 @@ function MarkLegend() {
   );
 }
 
-export default function ConfiguratorGuide() {
+export default function ConfiguratorGuide({ piece = "anillo" }: { piece?: Pieza }) {
+  const esMoneda = piece === "moneda";
   return (
     <section className="pyj-cfg-guide" aria-label="Guía del diseño">
       <div className="container">
@@ -77,15 +107,18 @@ export default function ConfiguratorGuide() {
           </summary>
 
           <p className="pyj-cfg-guide_lead">
-            Aquí honras tu signo de Ifá como identidad e historia, grabado en oro.
-            Así funciona el diseño y así se escriben los signos.
+            Aquí honras tu signo de Ifá como identidad e historia,{" "}
+            {esMoneda ? "grabado en plata 925" : "grabado en oro"}. Así funciona
+            el diseño y así se escriben los signos.
           </p>
 
           <div className="pyj-cfg-guide_grid">
           <article className="pyj-cfg-guide_card">
-            <h3 className="pyj-cfg-guide_ctitle">Cómo diseñar tu anillo</h3>
+            <h3 className="pyj-cfg-guide_ctitle">
+              Cómo diseñar tu {esMoneda ? "moneda" : "anillo"}
+            </h3>
             <ol className="pyj-guide_steps">
-              {STEPS.map((s) => (
+              {STEPS[piece].map((s) => (
                 <li key={s.n} className="pyj-guide_step">
                   <span className="pyj-guide_num">{s.n}</span>
                   <div>
@@ -125,8 +158,9 @@ export default function ConfiguratorGuide() {
             </p>
             <p className="pyj-guide_p pyj-guide_note">
               El significado de cada Odù, sus rezos (ese Ifá) y su guía pertenecen a
-              la tradición y se revelan en consulta con tu babaláwo. Tu anillo es una
-              joya de autor que honra tu signo, no un objeto consagrado.
+              la tradición y se revelan en consulta con tu babaláwo. Tu{" "}
+              {esMoneda ? "moneda" : "anillo"} es una joya de autor que honra tu
+              signo, no un objeto consagrado.
             </p>
           </article>
           </div>

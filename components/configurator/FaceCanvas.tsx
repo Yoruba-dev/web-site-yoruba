@@ -62,13 +62,11 @@ export default function FaceCanvas({
   const drag = useRef<string | null>(null);
 
   const selected = items.find((i) => i.uid === selectedUid);
-  // The half-sign toggle only makes sense on a ring, where the two towers sit on
-  // different faces. A struck coin always carries the WHOLE Odù, so the button
-  // would do nothing — don't show it.
-  const selectedIsTower =
-    shape !== "coin" && selected
-      ? getPlaceable(selected.ref)?.kind === "tower"
-      : false;
+  // Torre izquierda / derecha / ambas, en TODAS las piezas. No es una decisión
+  // del editor: el taller graba la torre que pida quien encarga la pieza.
+  const selectedIsTower = selected
+    ? getPlaceable(selected.ref)?.kind === "tower"
+    : false;
 
   function toFraction(clientX: number, clientY: number) {
     const el = canvasRef.current;
@@ -161,12 +159,16 @@ export default function FaceCanvas({
         })}
 
         {items.length === 0 && (
-          <span className="pyj-face_empty">
-            {emptyHint ??
-              (shape === "shoulder"
-                ? "Coloca aquí tu torre"
-                : "Arrastra aquí tus símbolos, o toca uno de la paleta")}
-          </span>
+          <>
+            {/* La cruz marca el centro del campo grabable mientras está vacío. */}
+            {shape === "coin" && <span className="pyj-coin_cross" aria-hidden="true" />}
+            <span className="pyj-face_empty">
+              {emptyHint ??
+                (shape === "shoulder"
+                  ? "Coloca aquí tu torre"
+                  : "Arrastra aquí tus símbolos, o toca uno de la paleta")}
+            </span>
+          </>
         )}
       </div>
       {shape === "coin" && coinFace && (

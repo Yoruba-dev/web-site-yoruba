@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
-import CoinConfigurator from "@/components/configurator/CoinConfigurator";
+import PieceConfigurator from "@/components/configurator/PieceConfigurator";
+import { COIN_PIECE } from "@/lib/pieces";
 import ConfiguratorGuide from "@/components/configurator/ConfiguratorGuide";
 import { breadcrumbSchema } from "@/lib/schema";
 import { OG_IMAGE } from "@/lib/site";
@@ -89,11 +90,11 @@ export default async function ConfiguradorMonedasPage({
             </p>
           </div>
 
-          <CoinConfigurator product={product} />
+          <PieceConfigurator piece={COIN_PIECE} product={product} />
         </div>
       </section>
 
-      <ConfiguratorGuide />
+      <ConfiguratorGuide piece="moneda" />
 
       <JsonLd data={breadcrumbLd} />
     </>

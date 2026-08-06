@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
-import RingConfigurator from "@/components/configurator/RingConfigurator";
+import PieceConfigurator from "@/components/configurator/PieceConfigurator";
+import { RING_PIECE } from "@/lib/pieces";
 import ConfiguratorGuide from "@/components/configurator/ConfiguratorGuide";
 import { breadcrumbSchema } from "@/lib/schema";
 import { OG_IMAGE } from "@/lib/site";
@@ -87,7 +88,7 @@ export default async function ConfiguradorPage({
             </p>
           </div>
 
-          <RingConfigurator product={product} />
+          <PieceConfigurator piece={RING_PIECE} product={product} />
         </div>
       </section>
 
