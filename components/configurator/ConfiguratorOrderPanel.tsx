@@ -10,7 +10,7 @@ import { encodeDesign } from "@/lib/design-code";
 import { getOrisha } from "@/lib/orisha-colors";
 import { SITE_URL } from "@/lib/site";
 
-// Keyed by face id — the ring's left/front/right, the coin's anverso/reverso.
+// Keyed by face id — the ring's left/front/right, the coin's reverso.
 export type RingDesign = Record<string, PlacedItem[]>;
 
 /** What kind of piece is being designed. Drives the wording and the mockup

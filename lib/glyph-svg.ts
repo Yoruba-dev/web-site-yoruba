@@ -146,7 +146,7 @@ function coinPanel(
   cy: number,
   captionY: number,
 ): string {
-  const r = 84;
+  const r = 150;
   const inner = r * field;
   const out =
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1d160d" stroke="${GOLD}" stroke-width="3"/>` +
@@ -164,17 +164,16 @@ export function designToPreviewDataUrl(
   design: Record<string, PlacedItem[]>,
   layout: "anillo" | "moneda" = "anillo",
 ): string | undefined {
-  const faces =
-    layout === "moneda" ? ["anverso", "reverso"] : ["front", "right", "left"];
+  // The coin has ONE engravable face (the anverso comes struck) — see lib/coin.ts.
+  const faces = layout === "moneda" ? ["reverso"] : ["front", "right", "left"];
   if (!faces.some((f) => (design[f] ?? []).length)) return undefined;
 
   const W = 420;
-  const H = layout === "moneda" ? 250 : 400;
+  const H = layout === "moneda" ? 420 : 400;
   const body =
     layout === "moneda"
-      ? // COIN_FACES[].field — anverso 0.45, reverso 0.70
-        coinPanel(design.anverso ?? [], "Anverso", 0.45, 110, 108, 226) +
-        coinPanel(design.reverso ?? [], "Reverso", 0.7, 310, 108, 226)
+      ? // COIN_FACES[0].field = 0.70
+        coinPanel(design.reverso ?? [], "Reverso · tu grabado", 0.7, 210, 190, 386)
       : facePanel(design.front ?? [], "Frente", "round", 210, 118, 214) +
         facePanel(design.left ?? [], "Izquierdo", "shoulder", 112, 290, 388) +
         facePanel(design.right ?? [], "Derecho", "shoulder", 308, 290, 388);

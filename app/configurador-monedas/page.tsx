@@ -12,7 +12,7 @@ import type { ConfiguratorProduct } from "@/components/configurator/Configurator
 export const metadata: Metadata = {
   title: "Diseña tu moneda de Ifá — configurador",
   description:
-    "Personaliza tu moneda de Ifá en plata 925: los 16 Odù Meji vienen acuñados en el borde y tú eliges el signo grabado en el centro. Configurador de Pedro Yoruba Jewelry, joyería Yoruba en Miami.",
+    "Personaliza tu moneda de Ifá en plata 925: el anverso viene acuñado con los 16 Odù Meji y tú eliges el signo que se graba en el reverso. Configurador de Pedro Yoruba Jewelry, joyería Yoruba en Miami.",
   keywords: [
     "moneda de ifa personalizada",
     "moneda de ifa 16 meyis",
@@ -72,18 +72,18 @@ export default async function ConfiguradorMonedasPage({
             <p className="pyj-cfg-intro_lead">
               {product ? (
                 <>
-                  Personaliza tu <strong>{product.title}</strong>: los{" "}
-                  <strong>16 Odù Meji</strong> ya vienen acuñados en el borde, y
-                  tú eliges el <strong>signo grabado en el centro</strong>.
-                  Después agrégala al carrito.
+                  Personaliza tu <strong>{product.title}</strong>: el anverso ya
+                  viene acuñado con los <strong>16 Odù Meji</strong>, y tú
+                  eliges el <strong>signo grabado en el reverso</strong>. Después
+                  agrégala al carrito.
                 </>
               ) : (
                 <>
                   Diseña tu moneda de Ifá en{" "}
                   <strong>{COIN_SPECS.metal.toLowerCase()}</strong> de{" "}
-                  {COIN_SPECS.diameterMm} mm. Los <strong>16 Odù Meji</strong>{" "}
-                  vienen acuñados alrededor del borde; tú eliges el{" "}
-                  <strong>signo del centro</strong> y lo que lleva el reverso.
+                  {COIN_SPECS.diameterMm} mm. El anverso viene acuñado con los{" "}
+                  <strong>16 Odù Meji</strong>; tú eliges el{" "}
+                  <strong>signo que se graba en el reverso</strong>.
                 </>
               )}
             </p>

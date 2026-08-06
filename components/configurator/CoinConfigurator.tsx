@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { COIN_FACES, COIN_SPECS, type CoinFaceId } from "@/lib/coin";
+import { COIN_FACES, COIN_SPECS } from "@/lib/coin";
 import {
   getPlaceable,
   ITEM_DEFAULTS,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/symbols";
 import { ORISHAS, getOrishaGems } from "@/lib/orisha-colors";
 import FaceCanvas from "./FaceCanvas";
-import SymbolPalette, { type TowerMode } from "./SymbolPalette";
+import SymbolPalette from "./SymbolPalette";
 import ConfiguratorOrderPanel, {
   type RingDesign,
   type ConfiguratorProduct,
@@ -19,65 +19,50 @@ import ConfiguratorOrderPanel, {
 
 // The coin editor. Same machinery as the ring (FaceCanvas + SymbolPalette +
 // ConfiguratorOrderPanel), but the canvas sits on a PHOTO of the real 36.5 mm
-// piece and there are two faces instead of three.
+// piece — and there is only ONE face to design.
 //
-// One real difference from the ring: a coin is STRUCK, and the anverso already
-// carries all 16 Odù Meji around its rim. What the customer chooses is the sign
-// engraved in the central field — so the palette is locked to whole Odù
-// ("ambas torres"), never a half sign, which on a coin would read as a mistake.
+// Two real differences from the ring, both coming from the piece itself:
+//   • A coin is STRUCK. The anverso already carries the 16 Odù Meji and "IFA",
+//     so it is not editable at all — no stepper, no second canvas.
+//   • The sign is always the WHOLE Odù. A half sign on a coin reads as a
+//     mistake, so the palette is locked to "ambas torres".
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-// A sign engraved in the anverso's small central field fills it; the reverso is
-// a wider open field, so a symbol starts at its natural size there.
-const FIELD_SCALE: Record<CoinFaceId, number> = { anverso: 1.5, reverso: 1.2 };
-
-function StepIcon({ done }: { done: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">
-      {done ? (
-        <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      ) : (
-        <circle cx="12" cy="12" r="4" fill="currentColor" />
-      )}
-    </svg>
-  );
-}
+const FACE = COIN_FACES[0];
+// The reverso is a wide open field, so a symbol starts a little above its
+// natural size — it should read as an engraving, not as a speck.
+const FIELD_SCALE = 1.2;
 
 export default function CoinConfigurator({
   product,
 }: {
   product?: ConfiguratorProduct;
 }) {
-  const [design, setDesign] = useState<RingDesign>({ anverso: [], reverso: [] });
-  const [stepIdx, setStepIdx] = useState(0);
+  const [design, setDesign] = useState<RingDesign>({ [FACE.id]: [] });
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [orisha, setOrisha] = useState("");
   const uid = useRef(0);
 
   const gems = getOrishaGems(orisha);
-  const face = COIN_FACES[stepIdx];
-  const items = design[face.id] ?? [];
+  const items = design[FACE.id] ?? [];
 
-  const patch = (id: string, next: PlacedItem[]) =>
-    setDesign((d) => ({ ...d, [id]: next }));
-  const mapFace = (fn: (it: PlacedItem) => PlacedItem) =>
-    patch(face.id, (design[face.id] ?? []).map(fn));
+  const patch = (next: PlacedItem[]) => setDesign({ [FACE.id]: next });
+  const mapFace = (fn: (it: PlacedItem) => PlacedItem) => patch(items.map(fn));
 
   function addItem(ref: string, x: number, y: number) {
     const p = getPlaceable(ref);
     if (!p) return;
     const id = `it${++uid.current}`;
-    patch(face.id, [
-      ...(design[face.id] ?? []),
+    patch([
+      ...items,
       {
         uid: id,
         ref,
         x,
         y,
-        scale: FIELD_SCALE[face.id] * ITEM_DEFAULTS.scale,
+        scale: FIELD_SCALE * ITEM_DEFAULTS.scale,
         rotation: ITEM_DEFAULTS.rotation,
-        // Always the WHOLE Odù on a coin — see the note at the top.
         tower: p.kind === "tower" ? "both" : undefined,
       },
     ]);
@@ -96,40 +81,12 @@ export default function CoinConfigurator({
     mapFace((it) => (it.uid === u ? { ...it, rotation: (it.rotation + delta) % 360 } : it));
   }
   function removeItem(u: string) {
-    patch(face.id, (design[face.id] ?? []).filter((it) => it.uid !== u));
-    setSelectedUid(null);
-  }
-
-  function goTo(idx: number) {
-    setStepIdx(clamp(idx, 0, COIN_FACES.length - 1));
+    patch(items.filter((it) => it.uid !== u));
     setSelectedUid(null);
   }
 
   return (
     <div className="pyj-cfg2">
-      <ol className="pyj-steps" aria-label="Caras de la moneda">
-        {COIN_FACES.map((f, i) => {
-          const state = i === stepIdx ? "is-active" : i < stepIdx ? "is-done" : "";
-          const count = (design[f.id] ?? []).length;
-          return (
-            <li key={f.id} className={`pyj-step ${state}`}>
-              <button
-                type="button"
-                className="pyj-step_btn"
-                aria-current={i === stepIdx ? "step" : undefined}
-                onClick={() => goTo(i)}
-              >
-                <span className="pyj-step_mark">
-                  <StepIcon done={i < stepIdx} />
-                </span>
-                <span className="pyj-step_label">{f.short}</span>
-                {count > 0 && <span className="pyj-step_count">{count}</span>}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-
       <div className="pyj-orisha">
         <label className="pyj-orisha_label" htmlFor="pyj-orisha-moneda">
           Gemas según tu santo / ángel de la guarda
@@ -160,19 +117,15 @@ export default function CoinConfigurator({
 
       <div className="pyj-cfg2_main">
         <div className="pyj-cfg2_stage">
-          <p className="pyj-coin_hint">{face.hint}</p>
+          <p className="pyj-coin_hint">{FACE.hint}</p>
 
           <FaceCanvas
             shape="coin"
-            coinFace={face}
+            coinFace={FACE}
             items={items}
             selectedUid={selectedUid}
             gems={gems}
-            emptyHint={
-              face.id === "anverso"
-                ? "Coloca aquí tu signo"
-                : "Coloca aquí un signo o un símbolo"
-            }
+            emptyHint="Coloca aquí tu signo"
             onAdd={addItem}
             onMove={moveItem}
             onSelect={setSelectedUid}
@@ -181,30 +134,6 @@ export default function CoinConfigurator({
             onRotate={rotateItem}
             onFlipTower={() => {}}
           />
-
-          <div className="pyj-cfg2_nav">
-            <button
-              type="button"
-              className="pyj-cfg2_navbtn"
-              onClick={() => goTo(stepIdx - 1)}
-              disabled={stepIdx === 0}
-            >
-              ← Anterior
-            </button>
-            {/* `short`, not `label`: "Anverso · tu signo · paso 1 de 2" wraps to
-                three lines on a phone and squeezes the Siguiente button. */}
-            <span className="pyj-cfg2_navlabel">
-              {face.short} · paso {stepIdx + 1} de {COIN_FACES.length}
-            </span>
-            <button
-              type="button"
-              className="pyj-cfg2_navbtn pyj-cfg2_navbtn--next"
-              onClick={() => goTo(stepIdx + 1)}
-              disabled={stepIdx === COIN_FACES.length - 1}
-            >
-              Siguiente →
-            </button>
-          </div>
 
           <p className="pyj-coin_specs">
             Moneda real: {COIN_SPECS.metal} · {COIN_SPECS.diameterMm} mm de
@@ -231,7 +160,7 @@ export default function CoinConfigurator({
               piece="moneda"
               faceOrder={COIN_FACES.map((f) => ({ id: f.id, label: f.label }))}
               onReset={() => {
-                setDesign({ anverso: [], reverso: [] });
+                patch([]);
                 setSelectedUid(null);
               }}
             />

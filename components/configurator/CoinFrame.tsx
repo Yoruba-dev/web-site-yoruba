@@ -1,9 +1,8 @@
 // The base of the coin editor: a PHOTO of the real minted piece, cut out on
-// transparency, not an illustration. Both faces come from the workshop's own
-// render of the struck coin (design-assets/moneda-originales/), so what the
-// customer composes on is the actual 36.5 mm piece they will receive — the 16
-// Odù Meji already in the rim of the anverso, the polished field and the "PYJ"
-// mark on the reverso.
+// transparency, not an illustration. It comes from the workshop's own render of
+// the struck coin (design-assets/moneda-originales/), so what the customer
+// composes on is the actual 36.5 mm piece they will receive — the polished
+// field and the "PYJ" mark of the reverso, the only engravable face.
 //
 // On top of the photo we draw only the engraving guide: a dashed ring at the
 // edge of the field the graver can reach (COIN_FACES[].field, measured off that

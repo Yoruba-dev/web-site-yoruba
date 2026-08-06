@@ -7,7 +7,7 @@ import type { PlacedItem } from "./symbols";
 
 export interface DesignPayload {
   // Keyed by face id — the ring's left/front/right or the coin's
-  // anverso/reverso. Kept as a plain string map so one encoder serves every
+  // reverso. Kept as a plain string map so one encoder serves every
   // configurator; the reader labels the faces from its own data.
   design: Record<string, PlacedItem[]>;
   /** Which kind of piece this design is for. Absent = ring (older links). */

@@ -6,25 +6,25 @@
 // editor is a true scale model of the coin, not an illustration:
 //
 //   • 36.5 mm across, 2.9 mm thick, plata 925.
-//   • ANVERSO — the 16 Odù Meji are already struck in wedges around the rim;
-//     the round central field is where the wearer's own signo is engraved.
-//   • REVERSO — a plain polished field ringed by drops and beads, with the
-//     workshop's "PYJ" mark at the bottom; free to engrave.
+//   • The ANVERSO comes STRUCK — the 16 Odù Meji in wedges around the rim and
+//     "IFA" in the central field. Nothing can be added to it, so it is not an
+//     editable face and deliberately does not appear below.
+//   • The REVERSO is the engraving side: a plain polished field ringed by drops
+//     and beads, with the workshop's "PYJ" mark at the bottom.
 //
-// The two `field` radii below were measured off that render (radial variance
-// scan), expressed as a fraction of the coin's RADIUS: the engraving area of
-// the anverso ends at 0.45, the reverso's polished field at 0.70. The canvas
-// uses them so a symbol dropped in the editor lands where the graver can
-// actually cut it.
+// The `field` radius was measured off that render (radial variance scan) and is
+// expressed as a fraction of the coin's RADIUS: the polished field ends at 0.70.
+// The canvas uses it so a symbol dropped in the editor lands where the graver
+// can actually cut it.
 // ---------------------------------------------------------------------------
 
-export type CoinFaceId = "anverso" | "reverso";
+export type CoinFaceId = "reverso";
 
 export interface CoinFace {
   id: CoinFaceId;
-  /** Full accessible label. */
+  /** Full accessible label — also the key the workshop reads on the order. */
   label: string;
-  /** Compact label for the step chips. */
+  /** Compact label. */
   short: string;
   /** Photo of that face of the real coin, cut out on transparency. */
   image: string;
@@ -36,24 +36,18 @@ export interface CoinFace {
   hint: string;
 }
 
+// One entry, on purpose: only the reverso is engravable. Kept as a list (not a
+// single object) because FaceCanvas, the order panel and the design sheet are
+// shared with the ring editor, which has three faces.
 export const COIN_FACES: readonly CoinFace[] = [
   {
-    id: "anverso",
-    label: "Anverso · tu signo",
-    short: "Anverso",
-    image: "/assets/images/configurador/moneda-anverso.webp",
-    alt: "Anverso de la moneda de Ifá: los 16 Odù Meji acuñados en cuñas alrededor del borde, con el campo central libre",
-    field: 0.45,
-    hint: "Los 16 Meyis ya vienen acuñados en el borde. Coloca aquí, en el centro, el signo que quieres grabado.",
-  },
-  {
     id: "reverso",
-    label: "Reverso · libre",
+    label: "Reverso · tu grabado",
     short: "Reverso",
     image: "/assets/images/configurador/moneda-reverso.webp",
     alt: "Reverso de la moneda de Ifá: campo liso pulido, rodeado de gotas y perlas, con el sello PYJ del taller",
     field: 0.7,
-    hint: "El campo liso del reverso queda a tu gusto: otro signo, un símbolo o déjalo en blanco.",
+    hint: "El anverso ya viene acuñado con los 16 Odù Meji. Esta es la cara que se graba: coloca aquí tu signo.",
   },
 ] as const;
 
@@ -63,8 +57,3 @@ export const COIN_SPECS = {
   thicknessMm: 2.9,
   metal: "Plata 925",
 } as const;
-
-/** A coin design: which symbols sit on each face. */
-export type CoinDesign = Record<CoinFaceId, unknown[]>;
-
-export const EMPTY_COIN_DESIGN = { anverso: [], reverso: [] };

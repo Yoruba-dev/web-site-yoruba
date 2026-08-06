@@ -106,7 +106,7 @@ export default async function DisenoPage({
             src={mockup}
             alt={
               isCoin
-                ? "Mockup del diseño en las dos caras de la moneda"
+                ? "Mockup del grabado en el reverso de la moneda"
                 : "Mockup del diseño en las tres caras del anillo"
             }
           />
