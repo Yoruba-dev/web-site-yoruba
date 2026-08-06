@@ -198,5 +198,152 @@ export const SITE = {
       ctaTop: "70%",
       ctaX: "6.7%",
     },
+    {
+      banner: "anillo-caja",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Presentación de lujo"],
+      artAlt: "Moneda de plata dentro del estuche verde de Pedro Yoruba Jewelry",
+      title: "Cada pieza en su estuche",
+      text: "Presentación de lujo Pedro Yoruba Jewelry",
+      cta: "Ver la colección",
+      href: "/shop-left-sidebar",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "74%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "anillo-mason",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["oro macizo"],
+      artAlt: "Anillo masón en oro con la escuadra y el compás rodeados de piedras",
+      title: "Anillo Masón Personalizado",
+      text: "Tradición y hermandad, hecho en oro macizo",
+      cta: "Ver el anillo",
+      href: "/products/anillo-mason",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "78%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "eleggua-dije",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Camino y protección"],
+      artAlt: "Dije de Elegguá en oro macizo cubierto de circonias negras y rojas",
+      title: "Dije de Elegguá",
+      // Verificado contra el catalogo: los dijes de Elegguá (10k y 14k) si
+      // llevan circonias — Shopify las escribe "zirconia".
+      text: "Camino y protección — oro macizo con circonias",
+      cta: "Ver los dijes",
+      href: "/collections/dijes",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "79%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "eleggua-huevo",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Ábrenos el camino"],
+      artAlt: "Dije de Elegguá en oro con piedras negras y rojas sobre base grabada",
+      // "Elegguá" con la grafia que ya usa el resto del sitio; titulo
+      // distinto del otro banner de Elegguá para no repetirlo en el carrusel.
+      title: "Elegguá en Oro",
+      text: "Ábrenos el camino — oro macizo con piedras",
+      cta: "Ver los dijes",
+      href: "/collections/dijes",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "74%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "esclava-cuentas",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["hecha en oro"],
+      artAlt: "Esclava de Orula en oro con cuentas verdes y amarillas",
+      title: "Esclava de Orula",
+      text: "Fuerza y tradición Yoruba, hecha en oro",
+      cta: "Ver pulsos y esclavas",
+      href: "/collections/pulsos-y-pulseras",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "82%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "mancuerna-dije",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["Oro sólido"],
+      artAlt: "Dije de pesa de gimnasio en oro sólido",
+      title: "Dije de Pesa",
+      text: "Oro sólido — para tu disciplina y fuerza",
+      cta: "Ver el dije",
+      href: "/products/dije-de-pesa-oro-10k-14k-solido",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "68%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "orula-dije",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["en oro macizo"],
+      artAlt: "Dije de Orula en oro macizo con detalles en piedras negras y rojas",
+      title: "Dije de Orula",
+      text: "Sabiduría del oráculo, en oro macizo",
+      cta: "Ver los dijes",
+      href: "/collections/dijes",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "68%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "pulsera-de-lujo",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      // Sin nombrar piedra ni quilate: el arte es un render y la coleccion
+      // no tiene ninguna pulsera de esmeraldas en 14k que respalde el titular.
+      oro: ["hechos a mano"],
+      artAlt: "Pulsera de oro con piedras verdes talla baguette y piedras blancas",
+      title: "Pulsera de Lujo",
+      text: "Brillo y detalle — pulsos hechos a mano",
+      cta: "Ver pulsos y pulseras",
+      href: "/collections/pulsos-y-pulseras",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "82%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "pulsos-oro",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      oro: ["cada ocasión"],
+      artAlt: "Juego de pulsos finos en oro 10k apilados",
+      title: "Pulsos en Oro 10k",
+      text: "El clásico dorado — para cada ocasión",
+      cta: "Ver pulsos y pulseras",
+      href: "/collections/pulsos-y-pulseras",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "79%",
+      ctaX: "6.0%",
+    },
+    {
+      banner: "rana-oro",
+      // frases que el arte original pinta en oro dentro del subtitulo
+      // El Dije de Rana real se describe con "piedra", nunca con esmeralda.
+      oro: ["Prosperidad"],
+      artAlt: "Rana en oro cubierta de piedras verdes y blancas",
+      title: "Rana de la Abundancia",
+      text: "Prosperidad y detalle, en oro macizo",
+      cta: "Ver el dije",
+      href: "/products/dije-de-rana",
+      align: "left",
+      // CTA anclado bajo la regla que el arte deja libre
+      ctaTop: "78%",
+      ctaX: "6.0%",
+    },
   ],
 } as const;
