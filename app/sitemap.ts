@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/shop-left-sidebar", priority: 0.9 },
     { path: "/configurador", priority: 0.8 },
     { path: "/configurador-monedas", priority: 0.8 },
+    { path: "/servicios", priority: 0.8 },
     { path: "/mayoreo", priority: 0.8 },
     { path: "/joyeria-en-miami", priority: 0.8 },
     { path: "/garantia-y-devoluciones", priority: 0.6 },

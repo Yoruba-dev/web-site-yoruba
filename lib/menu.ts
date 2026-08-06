@@ -38,6 +38,7 @@ export interface MenuCollection {
 
 // Curated informational/landing pages shown in the "Páginas" mega menu.
 const GUIDE_LINKS: MenuLink[] = [
+  { label: "Servicios del taller", href: "/servicios" },
   { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Diseña tu moneda de Ifá", href: "/configurador-monedas" },
   { label: "Joyería en Miami", href: "/joyeria-en-miami" },

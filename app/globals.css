@@ -4414,6 +4414,34 @@ body.template-color-1 {
   padding: 5px 13px;
   border-radius: 999px;
 }
+/* Los enlaces DENTRO de las bandas editoriales oscuras heredaban `a{color:#595959}`
+   de public/assets/css/style.css (que carga DESPUÉS de este archivo): gris sobre
+   casi negro, ~2.6:1, por debajo del mínimo de contraste. El blog ya tenía su
+   propia regla (.pyj-article-body a); esto la extiende a las demás bandas.
+   Los botones se excluyen: tienen su propio color sobre fondo dorado. */
+.pyj-may_grid a:not(.pyj-btn-gold),
+.pyj-may_points a:not(.pyj-btn-gold),
+.pyj-guide_qa a:not(.pyj-btn-gold),
+.pyj-guide_note a:not(.pyj-btn-gold),
+.pyj-entity a:not(.pyj-btn-gold) {
+  color: var(--pyj-gold, #cda557);
+  border-bottom: 1px solid rgba(205, 165, 87, 0.4);
+}
+.pyj-may_grid a:not(.pyj-btn-gold):hover,
+.pyj-may_points a:not(.pyj-btn-gold):hover,
+.pyj-guide_qa a:not(.pyj-btn-gold):hover,
+.pyj-guide_note a:not(.pyj-btn-gold):hover,
+.pyj-entity a:not(.pyj-btn-gold):hover {
+  color: var(--pyj-gold-light, #e4c89d);
+}
+
+/* Secciones con ancla (/servicios#diseno …): el header es sticky, así que sin
+   esto el título de la sección queda tapado al saltar. Mismo desplazamiento que
+   usa .pyj-policy_body h2. */
+.pyj-may_intro[id] {
+  scroll-margin-top: 90px;
+}
+
 .pyj-may_intro {
   padding: 26px 0 8px;
 }

@@ -74,15 +74,41 @@ export default function StructuredData() {
         closes: "16:00",
       },
     ],
-    makesOffer: {
-      "@type": "Offer",
-      itemOffered: {
-        "@type": "Service",
-        name: "Joyería por encargo para los Orishas",
-        description:
-          "Piezas únicas hechas a mano en oro 10k, 14k y 18k: Idde, elekes, herramientas y atributos de cada Oricha, a la medida.",
+    // The services the workshop offers, declared on the brand entity itself so
+    // every page ties the mark to them (each has its full section on
+    // /servicios). alternateName carries the English service name — matches
+    // English-language search and the wording of trademark service classes.
+    makesOffer: [
+      {
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: "Joyería por encargo para los Orishas",
+          description:
+            "Piezas únicas hechas a mano en oro 10k, 14k y 18k: Idde, elekes, herramientas y atributos de cada Oricha, a la medida.",
+        },
       },
-    },
+      {
+        "@type": "Offer",
+        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios#diseno` },
+      },
+      {
+        "@type": "Offer",
+        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios#grabado` },
+      },
+      {
+        "@type": "Offer",
+        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios#autenticacion` },
+      },
+      {
+        "@type": "Offer",
+        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios#consultoria` },
+      },
+    ],
   };
 
   const website = {

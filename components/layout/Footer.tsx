@@ -45,6 +45,9 @@ export default function Footer() {
                         <li>
                           <Link href="/joyeria-en-miami">Joyería en Miami</Link>
                         </li>
+                        <li>
+                          <Link href="/servicios">Servicios del taller</Link>
+                        </li>
                         <li><Link href="/shop-left-sidebar">New products</Link></li>
                         <li><Link href="/shop-left-sidebar">Best sales</Link></li>
                         <li><Link href="/contact">Contact us</Link></li>

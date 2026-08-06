@@ -156,6 +156,46 @@ export default async function HomePage() {
         </Fragment>
       ))}
 
+      {/* Servicios del taller — los cuatro servicios declarados en /servicios,
+          también aquí en el home para que la marca quede asociada a ellos desde
+          la portada (SEO local + respaldo del registro de marca). */}
+      <section className="pyj-may_intro">
+        <div className="container">
+          <div className="pyj-may_grid">
+            <div>
+              <h2>Servicios del taller</h2>
+              <p>
+                Además de vender joyería, la diseñamos, la grabamos y la
+                verificamos en nuestro propio taller. Si tienes una idea, una
+                pieza que quieres grabar o dudas antes de invertir en oro,{" "}
+                <a href="/servicios">este es tu punto de partida</a>.
+              </p>
+            </div>
+            <ul className="pyj-may_points">
+              <li>
+                <strong><a href="/servicios#diseno">Diseño de joyas</a></strong>
+                Piezas personalizadas hechas a mano en oro 10k, 14k y 18k, plata
+                925 o acero.
+              </li>
+              <li>
+                <strong><a href="/servicios#grabado">Grabado</a></strong>
+                Los signos de Ifá y otros motivos, con el esquema exacto de tu
+                diseño.
+              </li>
+              <li>
+                <strong><a href="/servicios#autenticacion">Autenticación</a></strong>
+                Verificación del quilataje del oro y la ley de la plata en el
+                taller.
+              </li>
+              <li>
+                <strong><a href="/servicios#consultoria">Consultoría de diseño</a></strong>
+                Metal, medidas y las piedras de tu santo — antes de encargar.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Entity block — the ONE citable paragraph on the home that says who we
           are and where (search + AI engines had nothing to quote here before). */}
       <section className="pyj-entity">
@@ -168,7 +208,7 @@ export default async function HomePage() {
             Yoruba / Lucumí — Idde de Orula, elekes, herramientas de santo,
             coronas, anillos y esclavas — en oro de 10k, 14k y 18k, plata y
             acero inoxidable, con garantía de por vida. Atendemos en tienda de
-            lunes a sábado, hacemos piezas por encargo a la medida de tu santo,
+            lunes a sábado, diseñamos y grabamos piezas por encargo a la medida de tu santo, verificamos metales,
             enviamos a todo Estados Unidos y surtimos al por mayor a botánicas.
           </p>
           <p>
