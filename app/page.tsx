@@ -179,8 +179,8 @@ export default async function HomePage() {
               </li>
               <li>
                 <strong><a href="/servicios#grabado">Grabado</a></strong>
-                Los signos de Ifá y otros motivos, con el esquema exacto de tu
-                diseño.
+                Nombres, iniciales, fechas y signos de Ifá, con el esquema
+                exacto de tu diseño.
               </li>
               <li>
                 <strong><a href="/servicios#autenticacion">Autenticación</a></strong>

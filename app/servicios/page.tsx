@@ -21,14 +21,18 @@ import BackLink from "@/components/ui/BackLink";
 export const metadata: Metadata = {
   title: "Diseño de joyas, grabado y autenticación — servicios del taller",
   description:
-    "Servicios de joyería en Miami: diseño de piezas personalizadas en oro 10k, 14k y 18k, grabado de signos de Ifá, verificación de metales y consultoría de diseño. Taller propio en el oeste de Miami — escríbenos por WhatsApp.",
+    "Servicios del taller en Miami: diseño de piezas en oro 10k, 14k y 18k, grabado de nombres, iniciales y signos de Ifá, y verificación de metales.",
   keywords: [
     "diseño de joyas miami",
     "joyería personalizada miami",
     "jewelry design miami",
     "custom jewelry design",
     "grabado de joyas",
+    "grabado de nombres en joyas",
+    "grabar nombre en anillo",
+    "grabado de iniciales",
     "jewelry engraving miami",
+    "jewelry name engraving",
     "autenticación de joyas",
     "jewelry authentication",
     "consultoría de diseño de joyas",
@@ -66,7 +70,7 @@ const SERVICES = [
     en: "Jewelry engraving",
     type: "Grabado de joyería",
     summary:
-      "Los signos de Ifá y otros motivos, grabados sobre anillos y monedas del taller — con el esquema exacto de tu diseño.",
+      "Nombres, iniciales, fechas, signos de Ifá y otros motivos, grabados sobre las piezas que salen del taller — con el esquema exacto de tu diseño.",
   },
   {
     id: "autenticacion",
@@ -98,6 +102,10 @@ const FAQS = [
   {
     q: "¿Puedo diseñar mi pieza yo mismo desde la web?",
     a: "Sí. El configurador de anillos de Ifá y el de monedas te dejan colocar tu signo sobre la pieza real y pagar en la web; la orden llega al taller con la hoja de diseño exacta de lo que armaste.",
+  },
+  {
+    q: "¿Graban nombres, iniciales o fechas en una joya?",
+    a: "Sí. Grabamos nombres, iniciales y fechas —por dentro del aro de un anillo, en la cara de un anillo de sello o en el reverso de un dije—, además de los signos de Ifá y otros motivos. Nos dices el texto exacto, te confirmamos cómo queda y eso es lo que va al metal. Sobre piezas hechas en nuestro taller va coordinado con el encargo; si la joya no salió de aquí, escríbenos con una foto y lo evaluamos caso a caso.",
   },
   {
     q: "¿Qué incluye la autenticación y qué no?",
@@ -150,8 +158,9 @@ export default function ServiciosPage() {
               <p className="pyj-may_lede">
                 Además de la joyería que ves en la tienda, en{" "}
                 <strong>{SITE.name}</strong> trabajamos por encargo: diseñamos
-                piezas nuevas, grabamos signos y motivos, verificamos metales y
-                te asesoramos antes de que encargues una joya. Todo se hace a
+                piezas nuevas, grabamos nombres, iniciales y signos de Ifá,
+                verificamos metales y te asesoramos antes de que encargues una
+                joya. Todo se hace a
                 mano en nuestro taller del oeste de Miami.
               </p>
               <div className="pyj-may_cta">
@@ -276,9 +285,10 @@ export default function ServiciosPage() {
               <span className="pyj-kicker">Jewelry engraving</span>
               <h2>Grabado de joyas</h2>
               <p>
-                Grabamos los signos de Ifá —los 16 Odù Meji, con sus torres
-                izquierda y derecha tal como se escriben— y otros motivos,
-                sobre el oro y la plata que salen del taller. No
+                Grabamos <strong>nombres, iniciales y fechas</strong> sobre el
+                oro y la plata que salen del taller. También los{" "}
+                <strong>signos de Ifá</strong> —los 16 Odù Meji, con sus torres
+                izquierda y derecha tal como se escriben— y otros motivos. No
                 trabajamos de memoria: ningún grabado se talla sin que apruebes
                 antes el esquema exacto. Los pedidos hechos en los
                 configuradores de la web llegan al taller con esa hoja de
@@ -299,6 +309,11 @@ export default function ServiciosPage() {
               </p>
             </div>
             <ul className="pyj-may_points">
+              <li>
+                <strong>Nombres, iniciales y fechas</strong>
+                Un nombre por dentro del aro, unas iniciales en la cara de un
+                anillo de sello o la fecha que quieras recordar.
+              </li>
               <li>
                 <strong>Signos de Ifá</strong>
                 El Odù completo o una torre, en el frente y los laterales de un
@@ -507,8 +522,8 @@ export default function ServiciosPage() {
                 <p className="pyj-guide_stepbody">
                   Es la parte que no hace una máquina. Se lima, se pule hasta el
                   brillo final, se montan las piedras una a una y se graba lo
-                  que lleve grabado —tu signo de Ifá, el motivo, la inicial— con
-                  el esquema que aprobaste como plano.
+                  que lleve grabado —un nombre, unas iniciales, tu signo de Ifá o el
+                  motivo que pediste— con el esquema que aprobaste como plano.
                 </p>
               </div>
             </li>

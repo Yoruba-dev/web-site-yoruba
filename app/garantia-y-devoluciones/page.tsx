@@ -190,8 +190,9 @@ export default function GarantiaDevolucionesPage() {
           <p>
             Tenemos taller propio y reparamos tanto lo nuestro como piezas de
             otras joyerías: cambio de medida (resize), soldadura de cadenas,
-            reengaste de piedras, pulido, baño de rodio, limpieza profesional y
-            restauración. El flujo es simple: nos escribes o traes la pieza, la
+            reengaste de piedras, pulido, baño de rodio, limpieza profesional,
+            restauración y grabado de nombres, iniciales y fechas. El flujo es
+            simple: nos escribes o traes la pieza, la
             diagnosticamos, te damos un{" "}
             <strong>presupuesto por escrito antes de trabajar</strong> y, con tu
             aprobación, la reparamos. Lo que es defecto de fabricación va sin

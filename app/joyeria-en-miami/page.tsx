@@ -59,6 +59,10 @@ const GUIDE_FAQS = [
     a: "Sí. La mayoría de las piezas religiosas (Idde, coronas, herramientas en oro, piezas de fundamento) se hacen por encargo, a la medida del cliente y de su santo. Un encargo típico tarda alrededor de un mes; se coordina por WhatsApp antes de cualquier pago.",
   },
   {
+    q: "¿Graban nombres o iniciales en las joyas en Miami?",
+    a: "Sí. El taller graba nombres, iniciales y fechas —por dentro del aro de un anillo, en la cara de un anillo de sello o en el reverso de un dije—, además de los signos de Ifá. En las piezas hechas aquí el grabado se coordina con el encargo; si traes una pieza de otra joyería se evalúa caso a caso, según el metal y el estado de la pieza. En los dos casos apruebas el esquema exacto antes de que se grabe nada.",
+  },
+  {
     q: "¿Reparan joyas en Miami?",
     a: "Sí, el taller ofrece reparación de joyas: puedes llevar tu pieza a la tienda o escribir por WhatsApp con fotos para recibir un estimado antes de decidir.",
   },
@@ -91,7 +95,7 @@ export default async function JoyeriaEnMiamiPage() {
       "Guía local para comprar joyería de oro en Miami: quilates, precios reales, piezas por encargo y qué diferencia a un taller artesanal de una vitrina.",
     inLanguage: "es",
     datePublished: "2026-07-15",
-    dateModified: "2026-07-15",
+    dateModified: "2026-08-06",
     author: { "@type": "Organization", name: SITE.name, url: siteUrl },
     publisher: { "@id": `${siteUrl}/#store` },
     mainEntityOfPage: `${siteUrl}/joyeria-en-miami`,
@@ -226,7 +230,12 @@ export default async function JoyeriaEnMiamiPage() {
                 , <Link href="/blog/herramientas-de-santo-que-son">
                 herramientas de santo</Link>, coronas y piezas de fundamento para
                 Ocha e Ifá — todas por encargo, a la medida del cliente y de su
-                santo. También surtimos{" "}
+                santo. Sobre esas piezas grabamos lo que pidas —{" "}
+                <Link href="/servicios#grabado">
+                  nombres, iniciales, fechas y los signos de Ifá
+                </Link>
+                —, siempre con el esquema aprobado antes de grabar. También
+                surtimos{" "}
                 <Link href="/mayoreo">al por mayor a botánicas</Link> de todo el
                 país.
               </p>
@@ -317,7 +326,7 @@ export default async function JoyeriaEnMiamiPage() {
             </div>
           ))}
           <p className="pyj-guide_meta">
-            Escrito por el taller de {SITE.name} · Actualizado: 15 de julio de
+            Escrito por el taller de {SITE.name} · Actualizado: 6 de agosto de
             2026 · <Link href="/faq">Más preguntas frecuentes</Link> ·{" "}
             <Link href="/contact">Contacto y mapa</Link>
           </p>

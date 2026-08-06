@@ -27,6 +27,12 @@ export const FAQS = [
       "Sí. La mayoría de nuestras piezas —Idde, herramientas, anillos, esclavas y más— se hacen por encargo, a tu medida y a la de tu santo. Cuéntanos lo que buscas y lo diseñamos para ti.",
   },
   {
+    id: "Grabado",
+    question: "¿Graban nombres, iniciales o fechas en las joyas?",
+    answer:
+      "Sí. En nuestro taller grabamos nombres, iniciales y fechas —por dentro del aro de un anillo, en la cara de un anillo de sello o en el reverso de un dije—, además de los signos de Ifá y otros motivos. Nos dices el texto exacto, te confirmamos cómo queda y solo entonces se graba. Sobre piezas hechas aquí va coordinado con el encargo; si la joya no salió de nuestro taller, se evalúa caso a caso según el metal y su estado. Ver más en Servicios del taller.",
+  },
+  {
     id: "Five",
     question: "¿Con qué quilates de oro trabajan?",
     answer:
@@ -42,7 +48,7 @@ export const FAQS = [
     id: "Seven",
     question: "¿Ofrecen reparación de joyas?",
     answer:
-      "Sí, tenemos taller propio: cambio de medida, soldadura de cadenas, reengaste de piedras, pulido, baño de rodio y limpieza. Tráenos tu pieza o escríbenos por WhatsApp; te damos un presupuesto por escrito antes de trabajar. Ver más en Garantía y devoluciones.",
+      "Sí, tenemos taller propio: cambio de medida, soldadura de cadenas, reengaste de piedras, pulido, baño de rodio y limpieza; también grabamos nombres, iniciales y fechas. Tráenos tu pieza o escríbenos por WhatsApp; te damos un presupuesto por escrito antes de trabajar. Ver más en Garantía y devoluciones.",
   },
   {
     id: "Return",

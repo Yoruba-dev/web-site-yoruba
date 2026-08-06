@@ -22,7 +22,7 @@ export default function StructuredData() {
     paymentAccepted: "Visa, MasterCard, American Express, Discover, Debit, NFC",
     knowsLanguage: ["es", "en"],
     keywords:
-      "joyería yoruba, santería, orishas, idde de orula, elekes, herramientas de santo, oro 10k 14k 18k, joyería miami",
+      "joyería yoruba, santería, orishas, idde de orula, elekes, herramientas de santo, oro 10k 14k 18k, joyería miami, diseño de joyas personalizadas, grabado de joyas, grabado de nombres, autenticación de joyas, consultoría de diseño",
     address: {
       "@type": "PostalAddress",
       streetAddress: "11865 SW 26th St. c-41",
