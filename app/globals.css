@@ -1650,14 +1650,28 @@ body.template-color-1 {
   font-weight: 700 !important;
 }
 
-/* ---- Product cards: lift, gold glow, slow image zoom ---- */
+/* ---- Product cards: el hover se queda DENTRO de su sitio ----
+   Antes la tarjeta saltaba 6px, la foto crecía a 1.07 y encima caía una sombra
+   negra de 44px de desenfoque. Tres problemas: sobre un fondo casi negro una
+   sombra negra no da profundidad, solo ensucia; la tarjeta era `position:
+   static`, así que al levantarse podía quedar por debajo de la vecina; y dos
+   movimientos a la vez (salto + zoom) hacen que la tarjeta parezca despegarse
+   de la rejilla. Ahora: se eleva la mitad, se queda por encima mientras dura,
+   el brillo es dorado —que sí se ve sobre el fondo oscuro— y el zoom de la foto
+   es apenas perceptible. */
 .single_product {
-  transition: transform 0.35s ease, box-shadow 0.35s ease,
-    border-color 0.35s ease !important;
+  position: relative;
+  z-index: 0;
+  transition: transform 0.28s ease, box-shadow 0.28s ease,
+    border-color 0.28s ease !important;
 }
 .single_product:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6) !important;
+  transform: translateY(-3px);
+  /* z-index por encima de las vecinas: la tarjeta levantada nunca queda debajo */
+  z-index: 3;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(227, 178, 60, 0.35) !important;
   border-color: var(--pyj-gold) !important;
 }
 .single_product .product-img {
@@ -1667,7 +1681,7 @@ body.template-color-1 {
   transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) !important;
 }
 .single_product:hover .product-img img {
-  transform: scale(1.07);
+  transform: scale(1.03);
 }
 
 /* A hair of depth under the header bar. */
@@ -4178,6 +4192,61 @@ body.template-color-1 {
   color: var(--pyj-gold, #cda557);
 }
 
+/* ---- Barra principal: siete entradas en UNA sola línea ----
+   Al añadir "Servicios" la barra pasó a necesitar 670px en un hueco de 660 y
+   "Contacto" se caía a una segunda fila. El separador de 30px por entrada
+   —210px solo de huecos— se ajusta por tramo para que quepan siempre en línea,
+   sin apretarlas.
+
+   El selector lleva `.template-color-1 .header-bottom_area` a propósito: la
+   plantilla fija los 30px con `.header-bottom_area .main-menu_area > nav > ul >
+   li` y su hoja carga DESPUÉS de este archivo, así que con la MISMA
+   especificidad gana ella por orden. Un nivel más de especificidad lo resuelve
+   sin necesidad de !important. */
+@media (min-width: 1400px) {
+  .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
+    padding-right: 20px;
+  }
+}
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
+    padding-right: 12px;
+  }
+  .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li > a {
+    font-size: 15px;
+  }
+}
+/* En este tramo la plantilla usa un selector de CUATRO clases
+   (`.header-bottom_area.header-bottom_area-2 .container-fliud .main-menu_area >
+   nav > ul > li`), así que hay que igualarlo o no gana. Y con 7 entradas no
+   caben ni a separación cero: aquí baja también el cuerpo de letra. */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .template-color-1
+    .header-bottom_area.header-bottom_area-2
+    .container-fliud
+    .main-menu_area
+    > nav
+    > ul
+    > li,
+  .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
+    padding-right: 6px;
+  }
+  .template-color-1
+    .header-bottom_area.header-bottom_area-2
+    .container-fliud
+    .main-menu_area
+    > nav
+    > ul
+    > li
+    > a,
+  .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li > a {
+    font-size: 13px;
+  }
+}
+.template-color-1 .header-bottom_area .main-menu_area > nav > ul > li:last-child {
+  padding-right: 0;
+}
+
 /* Nav "Mayoreo" gold highlight (desktop + mobile + footer). Selectors are made
    specific enough to beat the template's own !important nav-colour rules. */
 .pyj-nav-mayoreo,
@@ -4190,6 +4259,30 @@ body.template-color-1 {
 .main-menu_area > nav > ul > li > a.pyj-nav-mayoreo:hover,
 .footer-widgets ul li a.pyj-nav-mayoreo:hover {
   color: var(--pyj-gold-light, #f2d896) !important;
+}
+
+/* ---- Pie: bloque de suscripción, ahora bajo la marca ----
+   El boletín ocupaba una de las columnas de enlaces y las dejaba desiguales
+   (193 / 321 / 257 px). Movido junto al logo, las tres columnas de enlaces
+   quedan iguales; aquí solo se le da el aire que antes le daba la rejilla. */
+.pyj-foot-news {
+  margin-top: 26px;
+}
+.pyj-foot-news .footer-widgets_title {
+  margin-bottom: 10px;
+}
+.pyj-foot-news .widget-short_desc p {
+  margin-bottom: 14px;
+}
+
+/* Las tres columnas del pie arrancan a la misma altura y con el mismo aire,
+   vengan de .footer-widgets_title suelto o envuelto en .footer-widgets_info. */
+.footer-widgets_area > .row > [class*="col-"] > .footer-widgets_title,
+.footer-widgets_area > .row > [class*="col-"] > .footer-widgets_info > .footer-widgets_title {
+  margin-bottom: 18px;
+}
+.footer-widgets ul li + li {
+  margin-top: 9px;
 }
 
 /* Home wholesale banner card. */

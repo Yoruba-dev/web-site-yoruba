@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { SERVICE_LINKS } from "@/lib/menu";
 import ElekeBar from "./ElekeBar";
 import SocialLinks from "./SocialLinks";
 import NewsletterInline from "./NewsletterInline";
@@ -26,35 +27,73 @@ export default function Footer() {
                   <p>{SITE.tagline}</p>
                 </div>
                 <SocialLinks />
+                <div className="pyj-foot-news">
+                  <div className="footer-widgets_title">
+                    <h6>Suscríbete</h6>
+                  </div>
+                  <div className="widget-short_desc">
+                    <p>
+                      Recibe novedades y ofertas — y el aviso si dejas tu pieza
+                      en el carrito.
+                    </p>
+                  </div>
+                  <NewsletterInline />
+                </div>
               </div>
             </div>
             <div className="col-lg-8">
               <div className="footer-widgets_area">
                 <div className="row">
-                  <div className="col-lg-3">
+                  <div className="col-lg-4">
                     <div className="footer-widgets_title">
-                      <h6>Product</h6>
+                      <h6>Tienda</h6>
                     </div>
                     <div className="footer-widgets">
                       <ul>
                         <li>
-                          <Link href="/mayoreo" className="pyj-nav-mayoreo">
-                            Mayorista · Botánicas
+                          <Link href="/shop-left-sidebar">Colección completa</Link>
+                        </li>
+                        <li><Link href="/collections/idde">Idde de Orula</Link></li>
+                        <li>
+                          <Link href="/collections/herramientas">
+                            Herramientas de santo
                           </Link>
+                        </li>
+                        <li>
+                          <Link href="/collections/monedas">Monedas de Ifá</Link>
                         </li>
                         <li>
                           <Link href="/joyeria-en-miami">Joyería en Miami</Link>
                         </li>
                         <li>
-                          <Link href="/servicios">Servicios del taller</Link>
+                          <Link href="/mayoreo" className="pyj-nav-mayoreo">
+                            Mayorista · Botánicas
+                          </Link>
                         </li>
-                        <li><Link href="/shop-left-sidebar">New products</Link></li>
-                        <li><Link href="/shop-left-sidebar">Best sales</Link></li>
-                        <li><Link href="/contact">Contact us</Link></li>
                       </ul>
                     </div>
                   </div>
-                  <div className="col-lg-5">
+                  {/* Los cuatro servicios, visibles y con enlace directo a su
+                      sección. Mismos datos que el desplegable de la barra
+                      (lib/menu.ts → SERVICE_LINKS), para que no diverjan. */}
+                  <div className="col-lg-4">
+                    <div className="footer-widgets_title">
+                      <h6>Servicios</h6>
+                    </div>
+                    <div className="footer-widgets">
+                      <ul>
+                        <li>
+                          <Link href="/servicios">Servicios del taller</Link>
+                        </li>
+                        {SERVICE_LINKS.map((l) => (
+                          <li key={l.href}>
+                            <Link href={l.href}>{l.label}</Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="col-lg-4">
                     <div className="footer-widgets_info">
                       <div className="footer-widgets_title">
                         <h6>Contacto</h6>
@@ -88,20 +127,6 @@ export default function Footer() {
                       </div>
                     </div>
                   </div>
-                  <div className="col-lg-4">
-                    <div className="instagram-container footer-widgets_area">
-                      <div className="footer-widgets_title">
-                        <h6>Suscríbete</h6>
-                      </div>
-                      <div className="widget-short_desc">
-                        <p>
-                          Recibe novedades y ofertas — y el aviso si dejas tu
-                          pieza en el carrito.
-                        </p>
-                      </div>
-                      <NewsletterInline />
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -114,18 +139,19 @@ export default function Footer() {
             <div className="row">
               <div className="col-lg-12">
                 <div className="footer-links">
+                  {/* Un enlace por destino y todos en español. Antes eran 11
+                      etiquetas en inglés que llevaban a solo 7 sitios
+                      (/shop-left-sidebar salía tres veces). */}
                   <ul>
-                    <li><Link href="/shop-left-sidebar">Online Shopping</Link></li>
+                    <li><Link href="/shop-left-sidebar">Tienda</Link></li>
+                    <li><Link href="/servicios">Servicios</Link></li>
                     <li><Link href="/mayoreo">Mayorista</Link></li>
-                    <li><Link href="/my-account">My Orders</Link></li>
-                    <li><Link href="/faq">Help</Link></li>
-                    <li><Link href="/contact">Customer Service</Link></li>
-                    <li><Link href="/shop-left-sidebar">New Arrivals</Link></li>
-                    <li><Link href="/shop-left-sidebar">Special Products</Link></li>
-                    <li><Link href="/contact">Our Stores</Link></li>
-                    <li><Link href="/faq">Shipping</Link></li>
+                    <li><Link href="/blog">Diario</Link></li>
+                    <li><Link href="/about-us">Nosotros</Link></li>
+                    <li><Link href="/faq">Preguntas frecuentes</Link></li>
                     <li><Link href="/garantia-y-devoluciones">Garantía y devoluciones</Link></li>
-                    <li><Link href="/checkout">Payments</Link></li>
+                    <li><Link href="/my-account">Mi cuenta</Link></li>
+                    <li><Link href="/contact">Contacto</Link></li>
                   </ul>
                 </div>
               </div>

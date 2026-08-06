@@ -36,11 +36,23 @@ export interface MenuCollection {
   image?: string;
 }
 
-// Curated informational/landing pages shown in the "Páginas" mega menu.
-const GUIDE_LINKS: MenuLink[] = [
-  { label: "Servicios del taller", href: "/servicios" },
+// Los cuatro servicios del taller. Fuente única: la usan el desplegable de
+// "Servicios" en la barra principal Y la columna del pie, así que los enlaces
+// no pueden divergir entre menú y footer. Cada uno apunta a su ancla en
+// /servicios, donde está la sección completa.
+export const SERVICE_LINKS: MenuLink[] = [
+  { label: "Diseño de joyas", href: "/servicios#diseno" },
+  { label: "Grabado de joyas", href: "/servicios#grabado" },
+  { label: "Autenticación de joyas", href: "/servicios#autenticacion" },
+  { label: "Consultoría de diseño", href: "/servicios#consultoria" },
+  { label: "Cómo trabajamos", href: "/servicios#proceso" },
   { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Diseña tu moneda de Ifá", href: "/configurador-monedas" },
+];
+
+// Curated informational/landing pages shown in the "Páginas" mega menu.
+// Los servicios ya no viven aquí: tienen su propia entrada en la barra.
+const GUIDE_LINKS: MenuLink[] = [
   { label: "Joyería en Miami", href: "/joyeria-en-miami" },
   { label: "Mayorista · Botánicas", href: "/mayoreo" },
   { label: "Garantía y devoluciones", href: "/garantia-y-devoluciones" },
@@ -81,6 +93,9 @@ export function buildMainMenu(collections: MenuCollection[] = []): MenuItem[] {
   return [
     { label: "Inicio", href: "/" },
     { label: "Tienda", href: "/shop-left-sidebar" },
+    // Entrada propia en la barra, no escondida dentro de "Páginas": el taller
+    // vende servicios además de producto, y tienen que verse.
+    { label: "Servicios", href: "/servicios", dropdown: SERVICE_LINKS },
     { label: "Páginas", href: "/faq", megaColumns: paginasColumns },
     { label: "Diario", href: "/blog" },
     { label: "Nosotros", href: "/about-us" },
