@@ -6,6 +6,7 @@ import { SITE, OG_IMAGE } from "@/lib/site";
 import { sizedImageUrl } from "@/lib/utils";
 import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
 import BackLink from "@/components/ui/BackLink";
+import WorkGallery, { type WorkPhoto } from "@/components/servicios/WorkGallery";
 
 // -----------------------------------------------------------------------------
 // /servicios — la página que declara los servicios del taller: diseño de joyas,
@@ -114,6 +115,95 @@ const FAQS = [
   {
     q: "¿Cómo empiezo un encargo o una consulta?",
     a: `Escríbenos por WhatsApp al ${SITE.contact.phone} o visítanos en ${SITE.contact.address}, de lunes a sábado. La primera conversación no cuesta nada: nos cuentas la idea y te decimos qué se puede hacer y en qué rango de precio.`,
+  },
+];
+
+const CDN = "https://cdn.shopify.com/s/files/1/0667/9475/0174";
+
+// Fotos de trabajos REALES del taller. Cada una es una pieza del catálogo y
+// lleva su handle, de modo que quien revise la página pueda abrir la ficha y
+// comprobar que existe. Nada de bancos de imágenes.
+const FOTOS_DISENO: WorkPhoto[] = [
+  {
+    src: `${CDN}/files/20240527-160144.jpg?v=1716840430`,
+    caption: "Corona en oro 10k, hecha a mano",
+    alt: "Corona de oro 10k con piedras rojas, hecha a mano en el taller de Pedro Yoruba Jewelry",
+    handle: "corona-👑10k",
+  },
+  {
+    src: `${CDN}/files/20240527-161307.jpg?v=1716841013`,
+    caption: "Corona de Oshún — Caridad del Cobre",
+    alt: "Corona de oro calada para Oshún, Caridad del Cobre, hecha a mano",
+    handle: "corona-👑-oshun-caridad-cobre",
+  },
+  {
+    src: `${CDN}/files/Screenshot-20230908_174001_Shopify.jpg?v=1694209377`,
+    caption: "Iddé personalizado, a la medida",
+    alt: "Iddé de oro personalizado con medallones, hecho a la medida del cliente",
+    handle: "sin-nombre-8sept_17-41",
+  },
+];
+
+const FOTOS_GRABADO: WorkPhoto[] = [
+  {
+    src: `${CDN}/files/20231019-155325.jpg?v=1697745909`,
+    caption: "Remos de Oshún con el nombre grabado en el oro",
+    alt: "Par de remos de Oshún en oro 10k con la palabra OSHUN grabada en la pala",
+    handle: "remos-de-oshun-10k-juego-de-2",
+  },
+  {
+    src: `${CDN}/files/099FC8A8-41AD-46DA-B25B-8146B5C417F8.jpg?v=1757362983`,
+    caption: "Anillo de Ifá con los signos grabados",
+    alt: "Anillo de Ifá en oro 10k con los signos grabados alrededor y piedras verdes",
+    handle: "anillo-ifa-10k",
+  },
+  {
+    src: `${CDN}/files/20231102-121534.jpg?v=1698942265`,
+    caption: "Herramienta de Oshún — aldanes",
+    alt: "Herramienta de Oshún en oro, aldanes, con inscripción grabada",
+    handle: "herramientas-de-oshun",
+  },
+];
+
+const FOTOS_AUTENTICACION: WorkPhoto[] = [
+  {
+    src: `${CDN}/files/20240205-113906.jpg?v=1707151625`,
+    caption: "Anillo de Orula 10k",
+    alt: "Anillo de Orula en oro de 10k con piedras, visto de cerca",
+    handle: "anillo-de-orula-10k",
+  },
+  {
+    src: `${CDN}/files/20231010-172942.jpg?v=1696975382`,
+    caption: "Iddé de Orula de lujo",
+    alt: "Iddé de Orula de lujo en oro con cuentas verdes y amarillas",
+    handle: "idde-de-orula-de-lujo-18",
+  },
+];
+
+const FOTOS_TALLER: WorkPhoto[] = [
+  {
+    src: `${CDN}/products/20230125_135111.jpg?v=1674672889`,
+    caption: "Muletas de San Lázaro",
+    alt: "Muletas de San Lázaro en oro, hechas a mano",
+    handle: "muletas-de-san-lazaro",
+  },
+  {
+    src: `${CDN}/files/20230912-174229.jpg?v=1694555190`,
+    caption: "Iddé de Oshún de lujo, 14k",
+    alt: "Iddé de Oshún de lujo en oro de 14k",
+    handle: "sin-nombre-12sept_17-44",
+  },
+  {
+    src: `${CDN}/files/20240205-112051.jpg?v=1707150334`,
+    caption: "Anillo de Obbatalá 10k",
+    alt: "Anillo de Obbatalá en oro de 10k",
+    handle: "anillo-de-obbatala-10k",
+  },
+  {
+    src: `${CDN}/files/20231012-174843.jpg?v=1697147674`,
+    caption: "Iddé de Shangó 10k",
+    alt: "Iddé de Shangó en oro de 10k con cuentas rojas y blancas",
+    handle: "idde-de-shango-10k",
   },
 ];
 
@@ -273,6 +363,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <WorkGallery photos={FOTOS_DISENO} columns={3} priority />
           <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
@@ -331,6 +422,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <WorkGallery photos={FOTOS_GRABADO} columns={3} />
           <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
@@ -379,6 +471,7 @@ export default function ServiciosPage() {
               </li>
             </ul>
           </div>
+          <WorkGallery photos={FOTOS_AUTENTICACION} columns={2} />
           <BackLink href="#servicios-indice" label="Volver a los servicios" />
         </div>
       </section>
@@ -555,6 +648,15 @@ export default function ServiciosPage() {
               </div>
             </li>
           </ol>
+
+          <div className="pyj-work_intro">
+            <h3>Más trabajos salidos de este taller</h3>
+            <p>
+              Todas estas piezas se diseñaron y se hicieron aquí, y están en el
+              catálogo — toca cualquiera para ver su ficha.
+            </p>
+          </div>
+          <WorkGallery photos={FOTOS_TALLER} columns={4} />
 
           <div className="pyj-may_grid" style={{ marginTop: 34 }}>
             <div>
