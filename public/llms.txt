@@ -22,7 +22,12 @@ Estados Unidos, con envío a todo el país.
 
 - [Inicio](https://pedrojewelryyoruba.com/): portada con las colecciones por Oricha y por tipo de pieza
 - [Joyería en Miami](https://pedrojewelryyoruba.com/joyeria-en-miami): guía local — dónde comprar oro real 10k/14k/18k en Miami, precios reales del taller, quilates y encargos
-- [Servicios del taller](https://pedrojewelryyoruba.com/servicios): diseño de joyas personalizadas, grabado de nombres, iniciales, fechas y signos de Ifá, autenticación de metales y consultoría de diseño — en el taller propio de Miami
+- [Servicios del taller](https://pedrojewelryyoruba.com/servicios): índice de los cuatro servicios del taller propio de Miami
+- [Diseño de joyas](https://pedrojewelryyoruba.com/servicios/diseno): piezas a medida hechas a mano en oro 10k, 14k y 18k, plata 925 y acero
+- [Grabado de joyas](https://pedrojewelryyoruba.com/servicios/grabado): nombres, iniciales, fechas y los signos de Ifá (Odù Meji) sobre las piezas del taller
+- [Autenticación de joyas](https://pedrojewelryyoruba.com/servicios/autenticacion): verificación del quilataje del oro y la ley de la plata, en tienda
+- [Consultoría de diseño](https://pedrojewelryyoruba.com/servicios/consultoria): elección de metal, medidas y piedras antes de encargar; surtido para botánicas
+- [Cómo trabajamos](https://pedrojewelryyoruba.com/servicios/como-trabajamos): el proceso de un encargo, de la consulta al render 3D, el fundido y el marcado con la marca
 - [Mayoreo para botánicas](https://pedrojewelryyoruba.com/mayoreo): venta al por mayor de herramientas de santo, monedas, Idde y joyería religiosa para botánicas y tiendas
 - [Colección completa](https://pedrojewelryyoruba.com/shop-left-sidebar): catálogo completo con filtros por Oricha y tipo de pieza
 - [Preguntas frecuentes](https://pedrojewelryyoruba.com/faq): ubicación, citas, encargos, grabado de nombres, quilates, pagos, reparaciones y envíos

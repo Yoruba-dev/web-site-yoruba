@@ -231,7 +231,7 @@ export default async function JoyeriaEnMiamiPage() {
                 herramientas de santo</Link>, coronas y piezas de fundamento para
                 Ocha e Ifá — todas por encargo, a la medida del cliente y de su
                 santo. Sobre esas piezas grabamos lo que pidas —{" "}
-                <Link href="/servicios#grabado">
+                <Link href="/servicios/grabado">
                   nombres, iniciales, fechas y los signos de Ifá
                 </Link>
                 —, siempre con el esquema aprobado antes de grabar. También

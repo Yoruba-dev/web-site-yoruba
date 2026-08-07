@@ -173,22 +173,22 @@ export default async function HomePage() {
             </div>
             <ul className="pyj-may_points">
               <li>
-                <strong><a href="/servicios#diseno">Diseño de joyas</a></strong>
+                <strong><a href="/servicios/diseno">Diseño de joyas</a></strong>
                 Piezas personalizadas hechas a mano en oro 10k, 14k y 18k, plata
                 925 o acero.
               </li>
               <li>
-                <strong><a href="/servicios#grabado">Grabado</a></strong>
+                <strong><a href="/servicios/grabado">Grabado</a></strong>
                 Nombres, iniciales, fechas y signos de Ifá, con el esquema
                 exacto de tu diseño.
               </li>
               <li>
-                <strong><a href="/servicios#autenticacion">Autenticación</a></strong>
+                <strong><a href="/servicios/autenticacion">Autenticación</a></strong>
                 Verificación del quilataje del oro y la ley de la plata en el
                 taller.
               </li>
               <li>
-                <strong><a href="/servicios#consultoria">Consultoría de diseño</a></strong>
+                <strong><a href="/servicios/consultoria">Consultoría de diseño</a></strong>
                 Metal, medidas y las piedras de tu santo — antes de encargar.
               </li>
             </ul>

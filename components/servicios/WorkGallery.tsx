@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { sizedImageUrl } from "@/lib/utils";
+import type { WorkPhoto } from "@/lib/services";
 
 // Tira de fotos de trabajos REALES del taller, usada en cada servicio de
 // /servicios y en la galería del final.
@@ -9,17 +10,8 @@ import { sizedImageUrl } from "@/lib/utils";
 // se enseña tiene que ser trabajo propio y verificable. Por eso cada foto lleva
 // pie con el nombre de la pieza y, cuando existe, enlace a su ficha — quien
 // revise puede comprobar que la pieza es real.
-
-export interface WorkPhoto {
-  /** URL del CDN de Shopify (la foto del producto). */
-  src: string;
-  /** Qué es la pieza — sale como pie de foto. */
-  caption: string;
-  /** Alt descriptivo. */
-  alt: string;
-  /** Handle del producto, si se puede enlazar su ficha. */
-  handle?: string;
-}
+//
+// El tipo WorkPhoto vive en lib/services.ts, junto a los datos.
 
 export default function WorkGallery({
   photos,

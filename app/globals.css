@@ -4528,11 +4528,176 @@ body.template-color-1 {
   color: var(--pyj-gold-light, #e4c89d);
 }
 
-/* Secciones con ancla (/servicios#diseno …): el header es sticky, así que sin
+/* Secciones con ancla: el header es sticky, así que sin
    esto el título de la sección queda tapado al saltar. Mismo desplazamiento que
    usa .pyj-policy_body h2. */
 .pyj-may_intro[id] {
   scroll-margin-top: 90px;
+}
+
+/* ---- Índice de servicios: las cuatro tarjetas ----
+   Cada una entra a su propia página (/servicios/diseno, …). El enlace envuelve
+   toda la tarjeta, así que el área de clic es la tarjeta entera y no solo el
+   texto. Mismo criterio de hover que las tarjetas de producto: se eleva poco,
+   se pone por encima y el brillo es dorado — sobre fondo casi negro una sombra
+   negra no da profundidad. */
+.pyj-serv_cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pyj-serv_card {
+  margin: 0;
+  display: flex;
+}
+.pyj-serv_cardlink {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid rgba(205, 165, 87, 0.22);
+  border-radius: 4px !important;
+  overflow: hidden;
+  background: var(--dk-raised, #1a140d);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.28s ease, box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+.pyj-serv_cardlink:hover,
+.pyj-serv_cardlink:focus-visible {
+  transform: translateY(-3px);
+  z-index: 3;
+  border-color: var(--pyj-gold, #cda557);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(227, 178, 60, 0.35);
+}
+.pyj-serv_cardimg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #14100a;
+}
+.pyj-serv_cardimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pyj-serv_cardlink:hover .pyj-serv_cardimg img {
+  transform: scale(1.04);
+}
+.pyj-serv_cardbody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 18px 18px 20px;
+}
+.pyj-serv_carden {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(205, 165, 87, 0.72);
+}
+.pyj-serv_cardname {
+  margin-top: 6px;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--dk-head, #f3ead8);
+}
+.pyj-serv_cardsum {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(201, 191, 168, 0.8);
+}
+/* `auto` lo empuja abajo: el "Ver el servicio" queda alineado en las cuatro
+   tarjetas aunque los resúmenes tengan distinto largo. */
+.pyj-serv_cardmore {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  color: var(--pyj-gold, #cda557);
+}
+
+/* Titular de la página de un servicio: mismo tamaño que un h2 de sección, pero
+   es el h1 real de su página. */
+.pyj-serv_h1 {
+  margin-bottom: 18px;
+}
+.pyj-serv_cta {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 34px;
+}
+
+/* Navegación entre servicios (anterior · todos · siguiente). */
+.pyj-serv_nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 6px;
+}
+.pyj-serv_navlink {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 18px;
+  border: 1px solid rgba(205, 165, 87, 0.22);
+  border-radius: 4px !important;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+.pyj-serv_navlink:hover,
+.pyj-serv_navlink:focus-visible {
+  border-color: var(--pyj-gold, #cda557);
+  background: rgba(205, 165, 87, 0.06);
+}
+.pyj-serv_navlink--next {
+  text-align: right;
+}
+.pyj-serv_navlink--index {
+  text-align: center;
+}
+.pyj-serv_navdir {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(205, 165, 87, 0.72);
+}
+.pyj-serv_navname {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 15.5px;
+  color: var(--dk-head, #f3ead8);
+}
+@media (max-width: 991px) {
+  .pyj-serv_cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 575px) {
+  .pyj-serv_cards {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .pyj-serv_nav {
+    grid-template-columns: 1fr;
+  }
+  .pyj-serv_navlink--next,
+  .pyj-serv_navlink--index {
+    text-align: left;
+  }
 }
 
 /* ---- Tira de trabajos del taller (/servicios) ----

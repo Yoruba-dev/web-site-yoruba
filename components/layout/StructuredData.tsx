@@ -90,23 +90,23 @@ export default function StructuredData() {
       },
       {
         "@type": "Offer",
-        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
-        itemOffered: { "@id": `${siteUrl}/servicios#diseno` },
+        // Referencia al nodo que declara la página del servicio — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios/diseno` },
       },
       {
         "@type": "Offer",
-        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
-        itemOffered: { "@id": `${siteUrl}/servicios#grabado` },
+        // Referencia al nodo que declara la página del servicio — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios/grabado` },
       },
       {
         "@type": "Offer",
-        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
-        itemOffered: { "@id": `${siteUrl}/servicios#autenticacion` },
+        // Referencia al nodo que declara la página del servicio — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios/autenticacion` },
       },
       {
         "@type": "Offer",
-        // Referencia al nodo que declara /servicios — mismo @id, no un duplicado.
-        itemOffered: { "@id": `${siteUrl}/servicios#consultoria` },
+        // Referencia al nodo que declara la página del servicio — mismo @id, no un duplicado.
+        itemOffered: { "@id": `${siteUrl}/servicios/consultoria` },
       },
     ],
   };

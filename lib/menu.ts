@@ -38,14 +38,15 @@ export interface MenuCollection {
 
 // Los cuatro servicios del taller. Fuente única: la usan el desplegable de
 // "Servicios" en la barra principal Y la columna del pie, así que los enlaces
-// no pueden divergir entre menú y footer. Cada uno apunta a su ancla en
-// /servicios, donde está la sección completa.
+// no pueden divergir entre menú y footer. Cada uno apunta a SU PROPIA PÁGINA
+// (/servicios/diseno, …), no a un ancla: así la navegación es real y el botón
+// de volver del navegador devuelve a donde estabas.
 export const SERVICE_LINKS: MenuLink[] = [
-  { label: "Diseño de joyas", href: "/servicios#diseno" },
-  { label: "Grabado de joyas", href: "/servicios#grabado" },
-  { label: "Autenticación de joyas", href: "/servicios#autenticacion" },
-  { label: "Consultoría de diseño", href: "/servicios#consultoria" },
-  { label: "Cómo trabajamos", href: "/servicios#proceso" },
+  { label: "Diseño de joyas", href: "/servicios/diseno" },
+  { label: "Grabado de joyas", href: "/servicios/grabado" },
+  { label: "Autenticación de joyas", href: "/servicios/autenticacion" },
+  { label: "Consultoría de diseño", href: "/servicios/consultoria" },
+  { label: "Cómo trabajamos", href: "/servicios/como-trabajamos" },
   { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Diseña tu moneda de Ifá", href: "/configurador-monedas" },
 ];
