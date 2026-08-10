@@ -4214,9 +4214,9 @@ body.template-color-1 {
   color: var(--pyj-gold, #cda557);
 }
 
-/* ---- Barra principal: siete entradas en UNA sola línea ----
-   Al añadir "Servicios" la barra pasó a necesitar 670px en un hueco de 660 y
-   "Contacto" se caía a una segunda fila. El separador de 30px por entrada
+/* ---- Barra principal: OCHO entradas en UNA sola línea ----
+   Cada vez que entra una sección nueva (Servicios, luego Niños) la barra se
+   pasa del hueco de 660px y la última entrada cae a una segunda fila. El separador de 30px por entrada
    —210px solo de huecos— se ajusta por tramo para que quepan siempre en línea,
    sin apretarlas.
 
@@ -4227,15 +4227,15 @@ body.template-color-1 {
    sin necesidad de !important. */
 @media (min-width: 1400px) {
   .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
-    padding-right: 20px;
+    padding-right: 14px;
   }
 }
 @media (min-width: 1200px) and (max-width: 1399px) {
   .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
-    padding-right: 12px;
+    padding-right: 10px;
   }
   .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li > a {
-    font-size: 15px;
+    font-size: 14.5px;
   }
 }
 /* En este tramo la plantilla usa un selector de CUATRO clases
@@ -4251,7 +4251,7 @@ body.template-color-1 {
     > ul
     > li,
   .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li {
-    padding-right: 6px;
+    padding-right: 4px;
   }
   .template-color-1
     .header-bottom_area.header-bottom_area-2
@@ -4262,7 +4262,7 @@ body.template-color-1 {
     > li
     > a,
   .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li > a {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 .template-color-1 .header-bottom_area .main-menu_area > nav > ul > li:last-child {

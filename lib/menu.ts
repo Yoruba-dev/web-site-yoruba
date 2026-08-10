@@ -97,6 +97,7 @@ export function buildMainMenu(collections: MenuCollection[] = []): MenuItem[] {
     // Entrada propia en la barra, no escondida dentro de "Páginas": el taller
     // vende servicios además de producto, y tienen que verse.
     { label: "Servicios", href: "/servicios", dropdown: SERVICE_LINKS },
+    { label: "Niños", href: "/ninos" },
     { label: "Páginas", href: "/faq", megaColumns: paginasColumns },
     { label: "Diario", href: "/blog" },
     { label: "Nosotros", href: "/about-us" },

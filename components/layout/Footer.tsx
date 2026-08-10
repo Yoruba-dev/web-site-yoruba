@@ -62,6 +62,7 @@ export default function Footer() {
                         <li>
                           <Link href="/collections/monedas">Monedas de Ifá</Link>
                         </li>
+                        <li><Link href="/ninos">Niños</Link></li>
                         <li>
                           <Link href="/joyeria-en-miami">Joyería en Miami</Link>
                         </li>
@@ -145,6 +146,7 @@ export default function Footer() {
                   <ul>
                     <li><Link href="/shop-left-sidebar">Tienda</Link></li>
                     <li><Link href="/servicios">Servicios</Link></li>
+                    <li><Link href="/ninos">Niños</Link></li>
                     <li><Link href="/mayoreo">Mayorista</Link></li>
                     <li><Link href="/blog">Diario</Link></li>
                     <li><Link href="/about-us">Nosotros</Link></li>

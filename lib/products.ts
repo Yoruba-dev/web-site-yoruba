@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isKidsProduct } from "./kids";
 import type { Product } from "./types";
 import { MOCK_PRODUCTS } from "./mock-data";
 import {
@@ -94,6 +95,14 @@ export const getCollections = cache(async (): Promise<CategoryCollection[]> => {
     console.error("[shopify] getCollections failed:", err);
     return [];
   }
+});
+
+/** Las piezas de la sección de Niños: las que llevan la etiqueta `ninos` en
+ *  Shopify. Reutiliza `getProducts`, que ya está cacheado, así que la página de
+ *  Niños no dispara una consulta extra al catálogo. Ver lib/kids.ts. */
+export const getKidsProducts = cache(async (): Promise<Product[]> => {
+  const all = await getProducts(250);
+  return all.filter(isKidsProduct);
 });
 
 /** A single collection's title/description + its products, for /collections/[handle]. */
