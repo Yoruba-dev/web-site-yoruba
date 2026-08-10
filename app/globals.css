@@ -571,37 +571,72 @@ body.template-color-1 {
   font-size: 13px;
   letter-spacing: 0.02em;
 }
-.sp-area .sp-nav .sp-content .rating-box {
-  padding: 14px 0 0 !important;
+/* UN SOLO mecanismo para el ritmo de la columna: `gap` de flex.
+   Antes cada bloque llevaba su propio padding-top suelto y los huecos reales
+   salían 1, 22, 0, 7, 0, 16, 16, 18 y 28 px — sin ritmo, y con el selector de
+   cantidad PEGADO al botón de comprar (0 px). Con el gap, el ritmo es el mismo
+   para todos los bloques y añadir uno nuevo no obliga a inventarle un padding.
+   Los dos filetes siguen marcando las tres zonas: identidad → precio y ficha →
+   acciones y meta. */
+.sp-area .sp-nav .sp-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
-.sp-area .sp-nav .sp-content .price-box {
-  margin-top: 22px;
-  padding: 22px 0 0 !important;
+/* La referencia pertenece al título: van juntas, no separadas por el ritmo. */
+.sp-area .sp-nav .sp-content .sp-heading > h5 {
+  padding-bottom: 0 !important;
+}
+.sp-area .sp-nav .sp-content .reference {
+  margin-top: -12px;
+}
+.sp-area .sp-nav .sp-content .rating-box {
+  padding: 0 !important;
+}
+/* Arranque de zona: un respiro extra sobre el filete. */
+.sp-area .sp-nav .sp-content .price-box,
+.sp-area .sp-nav .sp-content .hiraola-tag-line {
+  margin-top: 6px;
+  padding-top: 24px !important;
   border-top: 1px solid var(--dk-border);
 }
 .sp-area .sp-nav .sp-content .price-box .new-price {
   font-size: 26px !important;
 }
-.sp-area .sp-nav .sp-content .sp-essential_stuff {
-  padding-top: 20px !important;
+/* Estos ya no ponen su propia separación — la pone el gap. */
+.sp-area .sp-nav .sp-content .sp-essential_stuff,
+.sp-area .sp-nav .sp-content .quantity,
+.sp-area .sp-nav .sp-content .qty-btn_area,
+.sp-area .sp-nav .sp-content .hiraola-social_link,
+.sp-area .sp-nav .sp-content .pyj-buynow_area {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
 }
 .sp-area .sp-nav .sp-content .sp-essential_stuff > ul > li {
   padding: 7px 0 !important;
   line-height: 1.5;
 }
+/* La ficha de datos y la cantidad son la antesala de la compra: se agrupan un
+   poco más cerca entre sí que el resto. */
 .sp-area .sp-nav .sp-content .quantity {
-  padding-top: 26px !important;
+  margin-top: -4px !important;
 }
-.sp-area .sp-nav .sp-content .qty-btn_area {
-  padding-top: 24px !important;
+/* Los avisos del final (encargo, garantía) traían su propio margen y con el gap
+   sumaban 36-38 px, rompiendo el ritmo justo donde la columna debe cerrar
+   tranquila. El gap ya los separa. El `> div` sin clase es el aviso de garantía
+   que pinta ProductBuyBox. */
+.sp-area .sp-nav .sp-content > .pyj-custom-note,
+.sp-area .sp-nav .sp-content > div:not([class]) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
-.sp-area .sp-nav .sp-content .hiraola-tag-line {
-  margin-top: 28px;
-  padding-top: 24px !important;
-  border-top: 1px solid var(--dk-border);
-}
-.sp-area .sp-nav .sp-content .hiraola-social_link {
-  padding-top: 18px !important;
+/* El selector de talla/quilate traía 6 px arriba y 24 abajo: con el gap dejaba
+   40 px justo antes de la cantidad, el hueco más grande de toda la columna y
+   encima entre dos bloques que van juntos. */
+.sp-area .sp-nav .sp-content > .pyj-variant-select {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 /* ===== Mobile horizontal breathing room =====
    The template's .container sits only 12px from the screen edge on phones, so text

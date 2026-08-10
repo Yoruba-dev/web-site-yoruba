@@ -52,6 +52,11 @@ export interface Product {
   isNew?: boolean;
   availableForSale: boolean;
   tags: string[];
+  /** Tipo de producto de Shopify ("Idde", "Dijes y Medallas"…). Es lo que se
+   *  enseña como Categoría en la ficha: la primera etiqueta no sirve, porque en
+   *  la taxonomía nueva son facetas ("mujer", "greca") y salía una categoría sin
+   *  sentido. */
+  productType?: string;
   /** Handles of the Shopify collections this piece belongs to. Only populated by
    *  the single-product query (`shopifyGetProductByHandle`); undefined on cards. */
   collections?: string[];

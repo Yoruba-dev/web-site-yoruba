@@ -162,9 +162,15 @@ export default function ProductBuyBox({
           <li>
             Marca: <a href="#">{SITE.name}</a>
           </li>
-          {publicTags(product.tags)[0] && (
+          {/* El tipo de producto de Shopify ("Idde", "Dijes y Medallas"…) es la
+              categoría de verdad. La primera etiqueta solo vale de respaldo para
+              las fichas antiguas: en la taxonomía nueva las etiquetas son
+              facetas ordenadas alfabéticamente, así que salían cosas como
+              "Categoría: greca" o "Categoría: mujer". */}
+          {(product.productType || publicTags(product.tags)[0]) && (
             <li>
-              Categoría: <a href="#">{publicTags(product.tags)[0]}</a>
+              Categoría:{" "}
+              <a href="#">{product.productType || publicTags(product.tags)[0]}</a>
             </li>
           )}
           <li>

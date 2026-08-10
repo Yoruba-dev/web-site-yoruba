@@ -76,6 +76,7 @@ const PRODUCT_FRAGMENT = /* GraphQL */ `
     title
     description
     tags
+    productType
     availableForSale
     createdAt
     priceRange {
@@ -126,6 +127,7 @@ interface ShopifyProduct {
   title: string;
   description: string;
   tags: string[];
+  productType?: string | null;
   availableForSale: boolean;
   createdAt?: string | null;
   priceRange: { minVariantPrice: ShopifyMoney };
@@ -211,6 +213,7 @@ function reshape(p: ShopifyProduct): Product {
     // Merge any real Shopify tags with type/Orisha tags derived from the title,
     // so the shop filters + "Comprar por Orisha" work even when products are untagged.
     tags: Array.from(new Set([...p.tags, ...deriveTags(p.title)])),
+    productType: p.productType || undefined,
     collections: p.collections?.nodes.map((n) => n.handle),
     variants: p.variants.edges.map((e) => ({
       id: e.node.id,
