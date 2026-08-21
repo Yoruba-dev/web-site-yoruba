@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductCard from "@/components/product/ProductCard";
+import SectionTitle from "@/components/ui/SectionTitle";
 import ArticleBody from "@/components/blog/ArticleBody";
 import JsonLd from "@/components/seo/JsonLd";
 import { getCollectionProducts, getCollections } from "@/lib/products";
@@ -106,30 +107,32 @@ export default async function CollectionPage({ params }: { params: Params }) {
       <JsonLd data={itemListLd} />
       {faqLd && <JsonLd data={faqLd} />}
 
-      <div className="hiraola-product_area" style={{ paddingTop: 30 }}>
+      {/* `section-space_add` en vez de un paddingTop a mano: son los 75/80 px
+          del sistema, los mismos que usa cualquier otra sección de productos. */}
+      <section className="hiraola-product_area section-space_add">
         <div className="container">
-          {/* The <h1> for this page is the Breadcrumb title (col.title) above. */}
+          {/* El <h1> de esta página es el título del Breadcrumb (col.title). */}
           {content?.intro && (
-            <div style={{ maxWidth: 720, marginBottom: 18 }}>
+            <div className="pyj-collection_intro">
               <ArticleBody blocks={content.intro} />
             </div>
           )}
 
           {col.description && (
-            <p
-              className="short_desc"
-              style={{ maxWidth: 720, marginBottom: 26, color: "var(--dk-text)" }}
-            >
-              {col.description}
-            </p>
+            <p className="short_desc pyj-collection_desc">{col.description}</p>
+          )}
+
+          {products.length > 0 && (
+            <SectionTitle
+              title={col.title}
+              subtitle={`${products.length} ${products.length === 1 ? "pieza" : "piezas"}`}
+            />
           )}
 
           {products.length === 0 ? (
-            <p style={{ color: "var(--dk-text)" }}>
-              Pronto habrá piezas en esta categoría.
-            </p>
+            <p className="pyj-guide_note">Pronto habrá piezas en esta categoría.</p>
           ) : (
-            <div className="shop-product-wrap grid row">
+            <div className="shop-product-wrap grid gridview-3 row">
               {products.map((product) => (
                 <div className="col-6 col-lg-4" key={product.id}>
                   <div className="slide-item">
@@ -140,7 +143,7 @@ export default async function CollectionPage({ params }: { params: Params }) {
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       {content?.faqs && (
         <section className="pyj-may_intro">

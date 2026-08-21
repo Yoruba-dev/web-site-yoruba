@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductSlider from "@/components/product/ProductSlider";
+import SectionTitle from "@/components/ui/SectionTitle";
 import JsonLd from "@/components/seo/JsonLd";
 import { getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
@@ -234,25 +235,11 @@ export default async function MayoreoPage() {
           <div className="container">
             <div className="row">
               <div className="col-lg-12">
-                <div
-                  className="hiraola-section_title"
-                  style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
-                >
-                  <div>
-                    <h4 style={{ margin: 0 }}>Las herramientas que revenderás</h4>
-                    <p style={{ margin: "6px 0 0", fontSize: 14, color: "#a99d83" }}>
-                      Una muestra de la línea. En acero desde $60 — y en oro por encargo.
-                    </p>
-                  </div>
-                  <a
-                    href={wa}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "var(--pyj-gold)", fontSize: 14, fontWeight: 500, whiteSpace: "nowrap" }}
-                  >
-                    Pedir catálogo →
-                  </a>
-                </div>
+                <SectionTitle
+                  title="Las herramientas que revenderás"
+                  subtitle="Una muestra de la línea. En acero desde $60 — y en oro por encargo."
+                  action={{ label: "Pedir catálogo", href: wa, external: true }}
+                />
               </div>
               <div className="col-lg-12">
                 <ProductSlider products={herramientasFeatured} />
@@ -265,9 +252,7 @@ export default async function MayoreoPage() {
       {/* Cómo pedir — a real 3-step sequence, so the numbering is meaningful. */}
       <section className="pyj-may_steps-sec">
         <div className="container">
-          <div className="hiraola-section_title" style={{ marginBottom: 24 }}>
-            <h4>Cómo pedir al por mayor</h4>
-          </div>
+          <SectionTitle title="Cómo pedir al por mayor" />
           <div className="pyj-steps">
             {STEPS.map((s) => (
               <div className="pyj-step" key={s.num}>

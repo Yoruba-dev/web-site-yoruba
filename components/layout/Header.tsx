@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { buildMainMenu, type MenuItem, type MenuCollection } from "@/lib/menu";
+import type { PromoVM } from "@/lib/promo";
 import { SITE } from "@/lib/site";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -60,13 +61,28 @@ function DesktopMenuItem({ item }: { item: MenuItem }) {
 // Header "Two" — single-row header from index-2.html, wired to the cart.
 export default function Header({
   collections = [],
+  promo,
 }: {
   collections?: MenuCollection[];
+  promo?: PromoVM | null;
 }) {
   const menu = buildMainMenu(collections);
   const { lines, count, subtotal, currencyCode, removeItem, cartOpen, setCartOpen } =
     useCart();
   const { count: wishCount } = useWishlist();
+
+  // La oferta cruzada, también en el minicarrito. Misma regla que en el carrito
+  // y en el checkout: solo se descuenta cuando están LAS DOS piezas, que es
+  // cuando Shopify lo aplica. Si aquí dijera otra cosa, la clienta vería tres
+  // totales distintos en tres pantallas.
+  const ahorroPromo =
+    promo &&
+    lines.some((l) => promo.gatilloHandles.includes(l.productHandle)) &&
+    lines.some(
+      (l) => l.merchandiseId === promo.regalo.variantId || l.id === promo.regalo.variantId,
+    )
+      ? promo.regalo.precio - Number(promo.ahora.replace(/[^0-9.]/g, ""))
+      : 0;
   const { count: compareCount } = useCompare();
   const [panel, setPanel] = useState<"menu" | "search" | null>(null);
 
@@ -265,10 +281,18 @@ export default function Header({
               </ul>
             )}
           </div>
+          {ahorroPromo > 0 && (
+            <div className="minicart-item_total pyj-minicart_oferta">
+              <span>Oferta del mes</span>
+              <span className="ammount">
+                −{formatMoney({ amount: String(ahorroPromo), currencyCode })}
+              </span>
+            </div>
+          )}
           <div className="minicart-item_total">
-            <span>Subtotal</span>
+            <span>{ahorroPromo > 0 ? "Total" : "Subtotal"}</span>
             <span className="ammount">
-              {formatMoney({ amount: String(subtotal), currencyCode })}
+              {formatMoney({ amount: String(subtotal - ahorroPromo), currencyCode })}
             </span>
           </div>
           <div className="minicart-btn_area">

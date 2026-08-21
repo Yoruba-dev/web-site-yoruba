@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { getNewArrivals, getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
-import { ORISHA_NAMES } from "@/lib/orishas";
+import { buildDepartamentos } from "@/lib/taxonomy";
 import type { Product } from "@/lib/types";
 import HeroSlider from "@/components/home/HeroSlider";
 import ProductSlider from "@/components/product/ProductSlider";
@@ -19,20 +19,18 @@ const SHIPPING = [
   { icon: "4.png", title: "Garantía de por vida", text: "En todas nuestras piezas" },
 ];
 
-// Top piece-type categories (by product count) for the strategic home rows —
-// biggest categories lead. Orisha tags are excluded (they have their own showcase).
+// Los tipos de pieza con más piezas, para las filas de la portada.
+//
+// Antes esto contaba TODAS las etiquetas y se quedaba con las más frecuentes.
+// Como las etiquetas del taller (`unisex`, `por-orden`, `pulsera`) son más
+// numerosas que algunos tipos de verdad, la portada llegó a tener secciones
+// tituladas "unisex" y "por-orden" — banderas internas presentadas a la
+// clienta como si fueran categorías de joyería. Ahora sale de `productType`.
 function topCategories(products: Product[], limit: number): string[] {
-  const counts = new Map<string, number>();
-  products.forEach((p) =>
-    p.tags.forEach((t) => {
-      if (!ORISHA_NAMES.includes(t)) counts.set(t, (counts.get(t) ?? 0) + 1);
-    }),
-  );
-  return [...counts.entries()]
-    .filter(([, n]) => n >= 3)
-    .sort((a, b) => b[1] - a[1])
+  return buildDepartamentos(products)
+    .filter((d) => d.products.length >= 3)
     .slice(0, limit)
-    .map(([name]) => name);
+    .map((d) => d.tipo);
 }
 
 // Home Two layout: hero → shipping → Orishas → Novedades → banner → category
@@ -52,7 +50,7 @@ export default async function HomePage() {
   const newArrivals = [...recent, ...bestValued].slice(0, 20);
   // "Herramientas de Santo" gets its own featured, religion-framed row up top, so
   // keep it out of the generic category rows below (avoid showing it twice).
-  const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
+  const herramientas = all.filter((p) => p.productType === "Herramientas");
   const cats = topCategories(all, 7)
     .filter((c) => c !== "Herramientas")
     .slice(0, 6);
@@ -146,7 +144,7 @@ export default async function HomePage() {
         <Fragment key={cat}>
           <CategorySection
             title={cat}
-            products={all.filter((p) => p.tags.includes(cat)).slice(0, 12)}
+            products={all.filter((p) => p.productType === cat).slice(0, 12)}
             href={`/shop-left-sidebar?cat=${encodeURIComponent(cat)}`}
           />
           {i === 1 && <BannerGrid images={["1_5.jpg", "1_6.jpg"]} colClass="col-lg-6" />}

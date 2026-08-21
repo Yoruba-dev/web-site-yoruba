@@ -18,7 +18,10 @@
 // can actually cut it.
 // ---------------------------------------------------------------------------
 
-export type CoinFaceId = "reverso";
+// "reverso" es la cara grabable de la moneda; "frente" el sello del anillo.
+// Este tipo describe cualquier cara que se monte SOBRE FOTO REAL de la pieza,
+// no solo monedas — ver lib/ring.ts.
+export type CoinFaceId = "reverso" | "frente";
 
 export interface CoinFace {
   id: CoinFaceId;

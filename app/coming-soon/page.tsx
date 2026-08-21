@@ -4,14 +4,14 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 import Countdown from "@/components/coming-soon/Countdown";
 
 export const metadata: Metadata = {
-  title: "Coming Soon",
+  title: "Próximamente",
   robots: { index: false, follow: true },
 };
 
 export default function ComingSoonPage() {
   return (
     <>
-      <Breadcrumb title="Coming Soon" crumbs={[{ label: "Coming Soon" }]} />
+      <Breadcrumb title="Próximamente" crumbs={[{ label: "Próximamente" }]} />
       {/* Begin Hiraola's Coming Soon Area */}
       <div
         className="comming-soon-area bg-img overlay rel-area"

@@ -25,11 +25,11 @@ export default function ShopLeftSidebarPage() {
           jewellery photo behind the SHOP title (the page is static, so no per-
           category image here; the category shows as a filter chip instead). */}
       <Breadcrumb
-        title="Shop"
+        title="Tienda"
         crumbs={[{ label: "Colección" }]}
         bgImage={BREADCRUMB_IMAGE}
       />
-      <ShopContent sidebar="left" view="grid" columns={3} />
+      <ShopContent sidebar="left" columns={3} />
     </>
   );
 }

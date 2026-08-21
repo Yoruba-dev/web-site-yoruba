@@ -8,7 +8,6 @@ import ShopBrowser from "./ShopBrowser";
 // drives all 7 shop routes via props.
 export interface ShopContentProps {
   sidebar?: "left" | "right";
-  view?: "grid" | "list";
   columns?: 3 | 4;
 }
 
@@ -23,7 +22,15 @@ export default async function ShopContent(props: ShopContentProps) {
   ]);
   return (
     <>
-      <CategoryRail collections={collections} counts={counts} />
+      <CategoryRail
+        title="Compra por categoría"
+        items={collections.map((c) => ({
+          href: `/collections/${c.handle}`,
+          label: c.title,
+          image: c.image,
+          count: counts[c.handle] ?? 0,
+        }))}
+      />
       <ShopBrowser products={products} {...props} />
     </>
   );

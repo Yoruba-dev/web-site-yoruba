@@ -6,6 +6,7 @@ import ElekeBar from "@/components/layout/ElekeBar";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MobileTabBar from "@/components/layout/MobileTabBar";
+import CampaignCode from "@/components/layout/CampaignCode";
 import NewsletterPopup from "@/components/layout/NewsletterPopup";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import StructuredData from "@/components/layout/StructuredData";
@@ -17,6 +18,8 @@ import { WishlistProvider } from "@/lib/wishlist-context";
 import { AccountProvider } from "@/lib/account-context";
 import { getCollections } from "@/lib/products";
 import { getFeaturedOffer } from "@/lib/featured-offer";
+import { getPromo } from "@/lib/promo";
+import PromoPopup from "@/components/promo/PromoPopup";
 import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -100,6 +103,10 @@ export default async function RootLayout({
   // variant. null when there's no active offer, so the popup falls back to the
   // newsletter signup.
   const offer = await getFeaturedOffer();
+  // La oferta cruzada (anillo + moneda). Manda sobre el resto: es la campaña
+  // viva y la que más deja. Si está, el popup del boletín no sale — dos ventanas
+  // encima de la misma persona no es una promoción, es un estorbo.
+  const promo = await getPromo();
 
   return (
     <html lang="es">
@@ -115,12 +122,18 @@ export default async function RootLayout({
             <AnnouncementBar />
             <ElekeBar />
             <div className="main-wrapper">
-              <NewsletterPopup offer={offer} />
-              <Header collections={collections} />
+              {promo ? (
+                <PromoPopup promo={promo} />
+              ) : (
+                <NewsletterPopup offer={offer} />
+              )}
+              <Header collections={collections} promo={promo} />
               {children}
               <Footer />
             </div>
             <MobileTabBar />
+            {/* Guarda el ?codigo= de un enlace de campaña y avisa a la clienta. */}
+            <CampaignCode />
             <ScrollToTop />
           </CompareProvider>
           </WishlistProvider>

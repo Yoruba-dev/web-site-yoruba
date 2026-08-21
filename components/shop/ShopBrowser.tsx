@@ -3,17 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
-import SafeImage from "@/components/ui/SafeImage";
-import PurchaseButton from "@/components/product/PurchaseButton";
-import CompareButton from "@/components/product/CompareButton";
-import WishlistButton from "@/components/product/WishlistButton";
 import Pagination from "@/components/ui/Pagination";
 import { formatMoney } from "@/lib/utils";
-import { isPlaceholderPriced, CONSULT_PRICE_LABEL } from "@/lib/commerce";
-import { ORISHA_NAMES } from "@/lib/orishas";
+import {
+  buildDepartamentos,
+  buildFacetas,
+  coincideFaceta,
+} from "@/lib/taxonomy";
 import type { Product } from "@/lib/types";
-
-type ShopView = "grid" | "list";
 
 // Products per page. A multiple of both 3 and 4 (this shop's grid column
 // counts) so every page ends on a full row in either layout.
@@ -31,94 +28,23 @@ function priceNum(p: Product) {
   return Number(p.price.amount);
 }
 
-/** The piece's type category (first non-Orisha tag) — used to group the default
- *  catalogue view so all rings / tools / pendants sit together, not scattered. */
-function primaryType(p: Product): string {
-  return p.tags.find((t) => !ORISHA_NAMES.includes(t)) ?? "￿";
-}
-
-function ListProductItem({ product }: { product: Product }) {
-  const href = `/products/${product.handle}`;
-  const [primary, secondary] = product.images;
-  return (
-    <div className="col-lg-4">
-      <div className="list-slide_item">
-        <div className="single_product">
-          <div className="product-img">
-            <Link href={href}>
-              <SafeImage
-                className="primary-img"
-                src={primary?.url}
-                width={600}
-                alt={product.title}
-              />
-              <SafeImage
-                className="secondary-img"
-                src={secondary?.url ?? primary?.url}
-                width={600}
-                alt={product.title}
-              />
-            </Link>
-            {product.badge && <span className="sticker">{product.badge}</span>}
-          </div>
-          <div className="hiraola-product_content">
-            <div className="product-desc_info">
-              <h6>
-                <Link className="product-name" href={href}>
-                  {product.title}
-                </Link>
-              </h6>
-              <div className="price-box">
-                {isPlaceholderPriced(product.price) ? (
-                  <span className="new-price pyj-price-consult">
-                    {CONSULT_PRICE_LABEL}
-                  </span>
-                ) : (
-                  <>
-                    <span className="new-price">{formatMoney(product.price)}</span>
-                    {product.compareAtPrice && (
-                      <span className="old-price">
-                        {formatMoney(product.compareAtPrice)}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-              <div className="product-short_desc">
-                <p>{product.description}</p>
-              </div>
-            </div>
-            <div className="add-actions">
-              <ul>
-                <li>
-                  <PurchaseButton className="hiraola-add_cart" product={product}>
-                    Añadir al carrito
-                  </PurchaseButton>
-                </li>
-                <li>
-                  <CompareButton className="hiraola-add_compare" product={product} />
-                </li>
-                <li>
-                  <WishlistButton className="hiraola-add_compare" product={product} />
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+/** El tipo de pieza, para agrupar la vista por defecto.
+ *
+ *  Antes esto era "la primera etiqueta que no sea un Orisha", y por eso la
+ *  tienda abría agrupada por `acero-inoxidable` o `por-orden`: son etiquetas de
+ *  gestión del taller, no tipos. Ahora sale de `productType`, que Shopify trae
+ *  puesto en todo el catálogo. Las piezas sin tipo se van al final. */
+function tipoDe(p: Product): string {
+  return p.productType?.trim() || "￿";
 }
 
 export default function ShopBrowser({
   products,
   sidebar,
-  view = "grid",
   columns = 3,
 }: {
   products: Product[];
   sidebar?: "left" | "right";
-  view?: ShopView;
   columns?: 3 | 4;
 }) {
   const maxPrice = Math.max(1, Math.ceil(Math.max(...products.map(priceNum))));
@@ -143,28 +69,50 @@ export default function ShopBrowser({
     if (q) setQuery(q);
   }, []);
 
-  // Categories are derived from the products' own tags. Split into piece-types and
-  // Orishas so the sidebar shows two clean filter groups.
-  const { typeCats, orishaCats } = useMemo(() => {
-    const counts = new Map<string, number>();
-    products.forEach((p) =>
-      p.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)),
-    );
-    const all = [...counts.entries()].map(([name, count]) => ({ name, count }));
-    return {
-      typeCats: all
-        .filter((c) => !ORISHA_NAMES.includes(c.name))
-        .sort((a, b) => b.count - a.count),
-      orishaCats: all
-        .filter((c) => ORISHA_NAMES.includes(c.name))
-        .sort((a, b) => ORISHA_NAMES.indexOf(a.name) - ORISHA_NAMES.indexOf(b.name)),
-    };
-  }, [products]);
+  // Los tipos de pieza salen de `productType` (una decena de valores limpios),
+  // y el resto de etiquetas se reparten por facetas. Antes todo esto era una
+  // sola lista de ~50 fichas mezclando tipo, material, público, precio y
+  // banderas internas bajo el rótulo "Tipo de pieza".
+  const tipos = useMemo(
+    () =>
+      buildDepartamentos(products).map((d) => ({
+        name: d.tipo,
+        count: d.products.length,
+      })),
+    [products],
+  );
+  const facetas = useMemo(() => buildFacetas(products), [products]);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => priceNum(p) <= priceMax);
     if (selectedCats.length) {
-      list = list.filter((p) => p.tags.some((t) => selectedCats.includes(t)));
+      // O dentro de un grupo, Y entre grupos.
+      //
+      // Marcar "Anillos" y "Pulsos" enseña los dos tipos (O). Pero marcar
+      // "Anillos" y "Oro 10k" enseña los anillos QUE ADEMÁS son de oro 10k (Y).
+      // Antes todo se combinaba con O, así que añadir un segundo filtro AMPLIABA
+      // el resultado en vez de acotarlo — lo contrario de lo que espera quien
+      // está buscando algo. Pasó al reorganizar la tienda de 2 grupos a 5.
+      //
+      // El grupo de cada selección se deduce de los mismos datos que pintan las
+      // fichas, así que no hay ninguna lista que mantener aparte.
+      const porGrupo = new Map<string, string[]>();
+      for (const sel of selectedCats) {
+        const grupo = tipos.some((t) => t.name === sel)
+          ? "tipo"
+          : (facetas.find((g) => g.valores.some((v) => v.label === sel))?.faceta ??
+            "otro");
+        const previo = porGrupo.get(grupo);
+        if (previo) previo.push(sel);
+        else porGrupo.set(grupo, [sel]);
+      }
+      list = list.filter((p) =>
+        [...porGrupo.entries()].every(([grupo, sels]) =>
+          grupo === "tipo"
+            ? sels.includes(tipoDe(p))
+            : sels.some((c) => coincideFaceta(p, c)),
+        ),
+      );
     }
     if (query.trim().length > 1) {
       // Accent-insensitive text search over title + tags (matches /api/search).
@@ -182,9 +130,9 @@ export default function ShopBrowser({
     const sorted = [...list];
     switch (sort) {
       case "relevance":
-        // Group by piece type (stable) so same-type pieces cluster together
-        // and, within a type, the best-selling order from Shopify is kept.
-        sorted.sort((a, b) => primaryType(a).localeCompare(primaryType(b)));
+        // Agrupa por tipo de pieza (orden estable), y dentro de cada tipo se
+        // conserva el orden de más vendido que ya trae Shopify.
+        sorted.sort((a, b) => tipoDe(a).localeCompare(tipoDe(b)));
         break;
       case "name-asc":
         sorted.sort((a, b) => a.title.localeCompare(b.title));
@@ -200,7 +148,7 @@ export default function ShopBrowser({
         break;
     }
     return sorted;
-  }, [products, selectedCats, priceMax, sort, query]);
+  }, [products, selectedCats, priceMax, sort, query, tipos, facetas]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
@@ -268,10 +216,7 @@ export default function ShopBrowser({
   // 2 per row on phones (col-6) → tighter, premium catalogue; 3-4 on desktop.
   const colClass =
     !sidebar && columns === 4 ? "col-6 col-lg-3" : "col-6 col-lg-4";
-  const wrapClass =
-    view === "list"
-      ? "shop-product-wrap grid listview row"
-      : `shop-product-wrap grid ${gridModifier} row`;
+  const wrapClass = `shop-product-wrap grid ${gridModifier} row`;
 
   // The filter controls (price + type + Orisha). Reused in the desktop sidebar
   // AND the mobile "Filtrar" panel, so on phones the filters sit at the TOP
@@ -303,23 +248,27 @@ export default function ShopBrowser({
         </div>
       </div>
 
-      {/* Piece-type filter */}
+      {/* Tipo de pieza — de `productType`, el eje real del catálogo */}
       <div className="hiraola-sidebar_categories">
         <div className="hiraola-categories_title">
           <h5>Tipo de pieza</h5>
         </div>
-        <div className="pyj-chips">{typeCats.map(catChip)}</div>
+        <div className="pyj-chips">{tipos.map(catChip)}</div>
       </div>
 
-      {/* Orisha filter */}
-      {orishaCats.length > 0 && (
-        <div className="hiraola-sidebar_categories">
+      {/* Las demás facetas (Orisha, material, para quién, disponibilidad).
+          Cada una se pinta sola si el catálogo la tiene poblada, y desaparece
+          si solo tuviera un valor: un filtro que no divide nada estorba. */}
+      {facetas.map((g) => (
+        <div className="hiraola-sidebar_categories" key={g.faceta}>
           <div className="hiraola-categories_title">
-            <h5>Por Orisha</h5>
+            <h5>{g.titulo}</h5>
           </div>
-          <div className="pyj-chips">{orishaCats.map(catChip)}</div>
+          <div className="pyj-chips">
+            {g.valores.map((v) => catChip({ name: v.label, count: v.count }))}
+          </div>
         </div>
-      )}
+      ))}
 
       {selectedCats.length > 0 && (
         <button
@@ -427,17 +376,13 @@ export default function ShopBrowser({
             ) : (
               <>
                 <div className={wrapClass}>
-                  {view === "list"
-                    ? pageItems.map((product) => (
-                        <ListProductItem key={product.id} product={product} />
-                      ))
-                    : pageItems.map((product) => (
-                        <div className={colClass} key={product.id}>
-                          <div className="slide-item">
-                            <ProductCard product={product} />
-                          </div>
-                        </div>
-                      ))}
+                  {pageItems.map((product) => (
+                    <div className={colClass} key={product.id}>
+                      <div className="slide-item">
+                        <ProductCard product={product} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <Pagination page={page} pageCount={pageCount} onChange={goToPage} />
               </>

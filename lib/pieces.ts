@@ -12,6 +12,7 @@
 // componente.
 // ---------------------------------------------------------------------------
 import { COIN_FACES, COIN_SPECS, type CoinFace } from "./coin";
+import { RING_FRONT_FACE, RING_SPECS } from "./ring";
 import { ITEM_MAX_SCALE, ITEM_MIN_SCALE, type Placeable } from "./symbols";
 
 /** Cómo aterriza un símbolo al soltarlo o tocarlo en esta cara. */
@@ -68,6 +69,7 @@ export const RING_PIECE: ConfigurablePiece = {
   id: "anillo",
   paletteTitle: "Arrastra tus símbolos",
   stepsLabel: "Pasos del diseño",
+  specs: `Sello real: ${RING_SPECS.metal} · ${RING_SPECS.diameterMm} mm de diámetro`,
   orishaGems: true,
   selectionOutline: true,
   minScale: ITEM_MIN_SCALE,
@@ -77,10 +79,16 @@ export const RING_PIECE: ConfigurablePiece = {
       id: "front",
       label: "Frente",
       short: "Frente",
-      shape: "round",
-      placement: "centro",
-      // El Odù grabado en el frente llena el campo rojo central.
-      itemScale: 2.3,
+      // "coin" no quiere decir moneda: quiere decir CARA SOBRE FOTO REAL de la
+      // pieza, con su campo grabable medido. El frente del anillo pasó a serlo
+      // en cuanto hubo render — antes se dibujaba a mano (RingFrame).
+      shape: "coin",
+      placement: "libre",
+      // 1 = el tamaño base del CSS, que ya entra llenando el campo grabable.
+      itemScale: 1,
+      coin: RING_FRONT_FACE,
+      hint: RING_FRONT_FACE.hint,
+      emptyHint: "Coloca aquí tu signo",
     },
     {
       id: "right",

@@ -3,6 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import StoreMap from "@/components/layout/StoreMap";
 import SocialLinks from "@/components/layout/SocialLinks";
+import SectionTitle from "@/components/ui/SectionTitle";
 import { SITE, OG_IMAGE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -133,9 +134,7 @@ export default function AboutUsPage() {
       {/* Visítanos */}
       <div className="about-us-area" style={{ paddingTop: 0 }}>
         <div className="container">
-          <div className="hiraola-section_title" style={{ marginBottom: 24 }}>
-            <h4>Visítanos</h4>
-          </div>
+          <SectionTitle title="Visítanos" />
           <div className="row align-items-center">
             <div className="col-lg-5">
               <div className="overview-content">

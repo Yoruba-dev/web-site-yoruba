@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CartLine } from "@/lib/cart-context";
 import { createShopifyCheckout, isShopifyCartEnabled } from "@/lib/shopify-cart";
+import { leerCodigoGuardado } from "@/lib/discount";
 
 /**
  * "Comprar ahora" — straight to Shopify's checkout, skipping the cart.
@@ -44,7 +45,11 @@ export default function BuyNowButton({
     setBusy(true);
     setFailed(false);
     try {
-      const url = await createShopifyCheckout([line]);
+      // El código de campaña también vale por aquí. "Comprar ahora" se salta el
+      // carrito, así que si no se pasa a mano, quien llegó por un enlace con
+      // descuento pagaba el precio entero — justo después de leer "tu descuento
+      // está guardado".
+      const url = await createShopifyCheckout([line], leerCodigoGuardado());
       window.location.href = url;
     } catch {
       // Never strand the shopper on a spinner. Add-to-cart still works, so say so.

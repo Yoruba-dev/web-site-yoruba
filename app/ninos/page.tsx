@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
 import ProductCard from "@/components/product/ProductCard";
-import SafeImage from "@/components/ui/SafeImage";
+import SectionTitle from "@/components/ui/SectionTitle";
+import CategoryRail from "@/components/shop/CategoryRail";
 import { getKidsProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
 import { groupKidsByType, typeSlug } from "@/lib/kids";
@@ -135,69 +135,41 @@ export default async function NinosPage({
         </div>
       </section>
 
-      {/* Subcategorías — salen del tipo de cada pieza, no de una lista fija. */}
+      {/* Subcategorías — salen del tipo de cada pieza, no de una lista fija, y
+          se pintan con el MISMO componente que la fila de la tienda. Antes esto
+          era ese markup copiado a mano, con el estado activo roto de paso. */}
       {grupos.length > 1 && (
-        <nav className="pyj-catrail container" aria-label="Categorías de niños">
-          <h2 className="pyj-catrail_title">Por tipo de pieza</h2>
-          <ul className="pyj-catrail_list">
-            <li className="pyj-catrail_item">
-              <Link
-                className={`pyj-catrail_link${activo ? "" : " is-on"}`}
-                href="/ninos"
-              >
-                <span className="pyj-catrail_thumb">
-                  {todos.find((p) => p.images[0]?.url)?.images[0] && (
-                    <SafeImage
-                      src={todos.find((p) => p.images[0]?.url)!.images[0].url}
-                      alt=""
-                      width={220}
-                    />
-                  )}
-                </span>
-                <span className="pyj-catrail_name">Todo</span>
-                <span className="pyj-catrail_count">{todos.length}</span>
-              </Link>
-            </li>
-            {grupos.map((g) => {
-              const slug = typeSlug(g.type);
-              return (
-                <li key={g.type} className="pyj-catrail_item">
-                  <Link
-                    className={`pyj-catrail_link${activo?.type === g.type ? " is-on" : ""}`}
-                    href={`/ninos?tipo=${slug}`}
-                  >
-                    <span className="pyj-catrail_thumb">
-                      {g.image && <SafeImage src={g.image} alt="" width={220} />}
-                    </span>
-                    <span className="pyj-catrail_name">{g.type}</span>
-                    <span className="pyj-catrail_count">{g.products.length}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        <CategoryRail
+          title="Por tipo de pieza"
+          countStyle="short"
+          items={[
+            {
+              href: "/ninos",
+              label: "Todo",
+              image: todos.find((p) => p.images[0]?.url)?.images[0]?.url,
+              count: todos.length,
+              active: !activo,
+            },
+            ...grupos.map((g) => ({
+              href: `/ninos?tipo=${typeSlug(g.type)}`,
+              label: g.type,
+              image: g.image,
+              count: g.products.length,
+              active: activo?.type === g.type,
+            })),
+          ]}
+        />
       )}
 
-      <section className="hiraola-product_area">
+      <section className="hiraola-product_area section-space_add">
         <div className="container">
           <div className="row">
             <div className="col-lg-12">
-              <div className="hiraola-section_title">
-                <h4 style={{ margin: 0 }}>
-                  {activo ? activo.type : "Todas las piezas para niños"}
-                </h4>
-                <p style={{ margin: "6px 0 0", fontSize: 14, color: "#a99d83" }}>
-                  {visibles.length}{" "}
-                  {visibles.length === 1 ? "pieza" : "piezas"}
-                  {activo && (
-                    <>
-                      {" · "}
-                      <Link href="/ninos">ver todas</Link>
-                    </>
-                  )}
-                </p>
-              </div>
+              <SectionTitle
+                title={activo ? activo.type : "Todas las piezas para niños"}
+                subtitle={`${visibles.length} ${visibles.length === 1 ? "pieza" : "piezas"}`}
+                action={activo ? { label: "Ver todas", href: "/ninos" } : undefined}
+              />
             </div>
           </div>
 
@@ -210,10 +182,16 @@ export default async function NinosPage({
               y te decimos qué tenemos para el niño.
             </p>
           ) : (
-            <div className="row">
+            // Las clases del sistema, no un `row` pelado: `shop-product-wrap
+            // grid gridview-3` y el `.slide-item` de cada tarjeta son las que
+            // traen la separación entre filas. Sin ellas el hueco vertical era
+            // literalmente 0 px y las filas se tocaban.
+            <div className="shop-product-wrap grid gridview-3 row">
               {visibles.map((p) => (
-                <div className="col-lg-3 col-md-4 col-sm-6" key={p.id}>
-                  <ProductCard product={p} />
+                <div className="col-6 col-lg-4" key={p.id}>
+                  <div className="slide-item">
+                    <ProductCard product={p} />
+                  </div>
                 </div>
               ))}
             </div>

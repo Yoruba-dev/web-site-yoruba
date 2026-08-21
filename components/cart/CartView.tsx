@@ -2,11 +2,26 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import type { PromoVM } from "@/lib/promo";
 import { formatMoney } from "@/lib/utils";
 import SafeImage from "@/components/ui/SafeImage";
 
-export default function CartView() {
+export default function CartView({ promo }: { promo?: PromoVM | null }) {
   const { lines, subtotal, currencyCode, removeItem, updateQty } = useCart();
+
+  // La oferta cruzada, reflejada en el resumen. Se enseña el ahorro solo cuando
+  // están LAS DOS piezas, que es cuando Shopify lo aplica de verdad: prometer
+  // un descuento que luego no aparece al pagar es peor que no prometer nada.
+  const llevaAnillo = !!promo && lines.some((l) =>
+    promo.gatilloHandles.includes(l.productHandle),
+  );
+  const llevaMoneda = !!promo && lines.some(
+    (l) => l.merchandiseId === promo.regalo.variantId || l.id === promo.regalo.variantId,
+  );
+  const ofertaActiva = llevaAnillo && llevaMoneda;
+  const ahorroNum = ofertaActiva
+    ? promo.regalo.precio - Number(promo.ahora.replace(/[^0-9.]/g, ""))
+    : 0;
   const fmt = (n: number) => formatMoney({ amount: String(n), currencyCode });
 
   if (lines.length === 0) {
@@ -100,13 +115,25 @@ export default function CartView() {
               <span>Subtotal</span>
               <span>{fmt(subtotal)}</span>
             </div>
+            {ofertaActiva && promo && (
+              <div className="pyj-sum-row pyj-sum-oferta">
+                <span>Oferta del mes · moneda</span>
+                <span>−{fmt(ahorroNum)}</span>
+              </div>
+            )}
+            {llevaAnillo && !llevaMoneda && promo && (
+              <p className="pyj-sum-aviso">
+                Añade la <strong>{promo.regalo.title}</strong> y te sale a{" "}
+                <strong>{promo.ahora}</strong> en vez de {promo.antes}.
+              </p>
+            )}
             <div className="pyj-sum-row muted">
               <span>Envío</span>
               <span>Se calcula al finalizar</span>
             </div>
             <div className="pyj-sum-row total">
               <span>Total</span>
-              <span>{fmt(subtotal)}</span>
+              <span>{fmt(subtotal - ahorroNum)}</span>
             </div>
             <Link href="/checkout" className="pyj-btn-gold pyj-cart-checkout">
               Finalizar compra

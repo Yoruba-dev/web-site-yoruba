@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/lib/cart-context";
+import { useCart, type CartLine } from "@/lib/cart-context";
 import { formatMoney } from "@/lib/utils";
 import { isShopifyCartEnabled, createShopifyCheckout } from "@/lib/shopify-cart";
+import DiscountBox from "./DiscountBox";
+import type { DescuentoAplicado } from "@/lib/discount";
+import type { PromoVM } from "@/lib/promo";
+import PromoRecordatorio from "@/components/promo/PromoRecordatorio";
 
 const FIELDS: { name: string; label: string; type?: string; half?: boolean }[] = [
   { name: "firstName", label: "Nombre", half: true },
@@ -18,12 +22,28 @@ const FIELDS: { name: string; label: string; type?: string; half?: boolean }[] =
   { name: "phone", label: "Teléfono" },
 ];
 
-export default function CheckoutView() {
+export default function CheckoutView({ promo }: { promo?: PromoVM | null }) {
   const { lines, subtotal, currencyCode, clear } = useCart();
+  // El recordatorio de la moneda: se interpone UNA vez y solo si de verdad
+  // falta. Si la clienta dice que no, `yaPreguntado` cierra el tema para
+  // siempre en esta visita — insistir dos veces es un peaje, no una ayuda.
+  const [recordatorio, setRecordatorio] = useState(false);
+  const [yaPreguntado, setYaPreguntado] = useState(false);
+
+  const llevaGatillo = !!promo && lines.some((l) =>
+    promo.gatilloHandles.includes(l.productHandle),
+  );
+  const llevaRegalo = !!promo && lines.some(
+    (l) => l.merchandiseId === promo.regalo.variantId || l.id === promo.regalo.variantId,
+  );
+  const faltaLaMoneda = llevaGatillo && !llevaRegalo && !yaPreguntado;
   const [placed, setPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [descuento, setDescuento] = useState<DescuentoAplicado | null>(null);
   const fmt = (n: number) => formatMoney({ amount: String(n), currencyCode });
+  // El total nunca baja de 0 aunque el descuento supere al subtotal.
+  const total = Math.max(0, subtotal - (descuento?.ahorro ?? 0));
   const shopify = isShopifyCartEnabled();
 
   // Demo-only confirmation screen.
@@ -103,26 +123,44 @@ export default function CheckoutView() {
               <span className="amount">{fmt(subtotal)}</span>
             </td>
           </tr>
+          {descuento && (
+            <tr className="cart-subtotal pyj-fila-descuento">
+              <th>Descuento · {descuento.code}</th>
+              <td>
+                <span className="amount">−{fmt(descuento.ahorro)}</span>
+              </td>
+            </tr>
+          )}
           <tr className="order-total">
             <th>Total del pedido</th>
             <td>
               <strong>
-                <span className="amount">{fmt(subtotal)}</span>
+                <span className="amount">{fmt(total)}</span>
               </strong>
             </td>
           </tr>
         </tfoot>
       </table>
+      <DiscountBox onChange={setDescuento} />
     </div>
   );
 
   // --- Live mode: Shopify handles address + payment on its hosted checkout. ---
   if (shopify) {
-    async function goToShopifyCheckout() {
+    // `extra` viene del recordatorio: la moneda recién añadida, que todavía no
+    // está en `lines` porque React no ha repintado. Sin esto se pagaría sin ella.
+    async function goToShopifyCheckout(extra?: CartLine) {
+      if (!extra && faltaLaMoneda) {
+        setRecordatorio(true);
+        return;
+      }
       setError(null);
       setLoading(true);
       try {
-        const url = await createShopifyCheckout(lines);
+        const url = await createShopifyCheckout(
+          extra ? [...lines, extra] : lines,
+          descuento?.code ?? null,
+        );
         window.location.href = url; // Shopify hosted, PCI-secure checkout
       } catch {
         setError(
@@ -134,6 +172,21 @@ export default function CheckoutView() {
 
     return (
       <div className="checkout-area">
+        {recordatorio && promo && (
+          <PromoRecordatorio
+            promo={promo}
+            onAnadirYSeguir={(linea) => {
+              setRecordatorio(false);
+              setYaPreguntado(true);
+              void goToShopifyCheckout(linea);
+            }}
+            onSeguirSinElla={() => {
+              setRecordatorio(false);
+              setYaPreguntado(true);
+              void goToShopifyCheckout();
+            }}
+          />
+        )}
         <div className="container">
           <div className="row">
             <div className="col-lg-6 col-12">
@@ -158,7 +211,7 @@ export default function CheckoutView() {
                     <button
                       type="button"
                       className="hiraola-btn hiraola-btn_fullwidth"
-                      onClick={goToShopifyCheckout}
+                      onClick={() => void goToShopifyCheckout()}
                       disabled={loading}
                     >
                       {loading ? "Redirigiendo…" : "Proceder al pago seguro"}

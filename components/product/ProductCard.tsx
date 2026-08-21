@@ -25,12 +25,18 @@ export default function ProductCard({ product }: { product: Product }) {
             width={500}
             alt={primary?.altText ?? product.title}
           />
-          <SafeImage
-            className="secondary-img"
-            src={secondary?.url ?? primary?.url}
-            width={500}
-            alt={secondary?.altText ?? product.title}
-          />
+          {/* La segunda foto solo se pinta si EXISTE. Antes, cuando la pieza
+              tenía una sola imagen, se repetía la misma y el "cambio" al pasar
+              el ratón no hacía nada — solo pesaba y, si el CSS de superposición
+              no llegaba, se veía la foto duplicada. */}
+          {secondary?.url && (
+            <SafeImage
+              className="secondary-img"
+              src={secondary.url}
+              width={500}
+              alt={secondary.altText ?? product.title}
+            />
+          )}
         </Link>
         {product.isNew && <span className="pyj-new-badge">Nuevo</span>}
         {product.badge && (

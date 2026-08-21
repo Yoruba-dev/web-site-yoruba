@@ -1,9 +1,11 @@
-import Link from "next/link";
+import SectionTitle from "@/components/ui/SectionTitle";
 import ProductSlider from "@/components/product/ProductSlider";
 import type { Product } from "@/lib/types";
 
-// A homepage category row: title + "Ver todo" link on the same line, then a
-// 5-up product slider of that category. Reuses the site's section-title styling.
+// Fila de categoría de la portada: cabecera con "Ver todo" y, debajo, el
+// carrusel de piezas. La cabecera la pone SectionTitle — antes iba escrita a
+// mano aquí, y al envolver el <h4> en un <div> se perdía la raya dorada de la
+// plantilla (`.hiraola-section_title > h4:before` pide hijo directo).
 export default function CategorySection({
   title,
   products,
@@ -21,36 +23,11 @@ export default function CategorySection({
       <div className="container">
         <div className="row">
           <div className="col-lg-12">
-            <div
-              className="hiraola-section_title"
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 10,
-              }}
-            >
-              <div>
-                <h4 style={{ margin: 0 }}>{title}</h4>
-                {subtitle && (
-                  <p style={{ margin: "6px 0 0", fontSize: 14, color: "#a99d83", maxWidth: 640 }}>
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-              <Link
-                href={href}
-                style={{
-                  color: "var(--pyj-gold)",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Ver todo →
-              </Link>
-            </div>
+            <SectionTitle
+              title={title}
+              subtitle={subtitle}
+              action={{ label: "Ver todo", href }}
+            />
           </div>
           <div className="col-lg-12">
             <ProductSlider products={products} />

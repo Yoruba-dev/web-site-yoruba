@@ -1,56 +1,75 @@
 import Link from "next/link";
 import SafeImage from "@/components/ui/SafeImage";
-import type { CategoryCollection } from "@/lib/products";
 
 /**
- * "Compra por categoría" — the real Shopify collections, at the top of the shop.
+ * Fila de categorías con foto redonda: la forma de ENTRAR al catálogo.
  *
- * Why this exists: the shop's sidebar filters by TAGS, which is a refinement
- * ("Oshún", "oro 10k"), not a way in. The catalogue's actual structure lives in
- * the collections (Idde, Anillos, Herramientas, Monedas…), and those already
- * have their own pages with real copy and schema — but nothing on the shop page
- * pointed at them, so a shopper landing on 160 mixed pieces had to guess.
- * This gives the primary axis first and leaves the tag filters as the secondary
- * refinement they should be.
+ * Por qué existe: los filtros de la tienda son un refinamiento ("Oshún",
+ * "oro 10k"), no una puerta de entrada. La estructura real del catálogo son las
+ * categorías, y cada una tiene ya su página con texto propio — pero nada
+ * apuntaba a ellas, así que quien caía en 171 piezas mezcladas tenía que
+ * adivinar. Esto pone el eje principal primero.
  *
- * Each tile carries the piece count, because "Collares (2)" and "Idde (61)" ask
- * for very different expectations and it is kinder to say so before the click.
+ * Cada azulejo lleva su cuenta, porque "Collares (2)" e "Idde (70)" prometen
+ * cosas muy distintas y es más honesto decirlo antes del clic.
+ *
+ * Recibe `items` ya construidos en vez de colecciones de Shopify: así lo usan
+ * tanto la tienda (colecciones) como /ninos (subcategorías por tipo), que antes
+ * tenía este mismo markup copiado a mano — y con el estado activo roto, porque
+ * la copia ponía la clase `is-on` que nadie había definido en el CSS.
  */
+export interface RailItem {
+  href: string;
+  label: string;
+  image?: string | null;
+  count?: number;
+  /** Marca el azulejo de la categoría que se está viendo. */
+  active?: boolean;
+}
+
 export default function CategoryRail({
-  collections,
-  counts,
+  items,
+  title,
+  ariaLabel,
+  countStyle = "long",
 }: {
-  collections: CategoryCollection[];
-  counts: Record<string, number>;
+  items: RailItem[];
+  title: string;
+  ariaLabel?: string;
+  /** "long" → "12 piezas" · "short" → "12" (para filas con muchos azulejos). */
+  countStyle?: "long" | "short";
 }) {
-  if (collections.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
-    // `.container` is the template's own width/gutter wrapper — without it the
-    // rail runs edge to edge and stops lining up with the product grid below.
-    <nav className="pyj-catrail container" aria-label="Compra por categoría">
-      <h2 className="pyj-catrail_title">Compra por categoría</h2>
+    // `.container` es el envoltorio de ancho de la plantilla — sin él la fila se
+    // va de lado a lado y deja de alinearse con la rejilla de productos.
+    <nav className="pyj-catrail container" aria-label={ariaLabel ?? title}>
+      <h2 className="pyj-catrail_title">{title}</h2>
       <ul className="pyj-catrail_list">
-        {collections.map((c) => {
-          const n = counts[c.handle] ?? 0;
-          return (
-            <li key={c.handle} className="pyj-catrail_item">
-              <Link className="pyj-catrail_link" href={`/collections/${c.handle}`}>
-                <span className="pyj-catrail_thumb">
-                  {c.image && (
-                    <SafeImage src={c.image} width={220} alt="" aria-hidden="true" />
-                  )}
-                </span>
-                <span className="pyj-catrail_name">{c.title}</span>
-                {n > 0 && (
-                  <span className="pyj-catrail_count">
-                    {n} {n === 1 ? "pieza" : "piezas"}
-                  </span>
+        {items.map((item) => (
+          <li key={item.href} className="pyj-catrail_item">
+            <Link
+              className={`pyj-catrail_link${item.active ? " is-on" : ""}`}
+              href={item.href}
+              aria-current={item.active ? "page" : undefined}
+            >
+              <span className="pyj-catrail_thumb">
+                {item.image && (
+                  <SafeImage src={item.image} width={220} alt="" aria-hidden="true" />
                 )}
-              </Link>
-            </li>
-          );
-        })}
+              </span>
+              <span className="pyj-catrail_name">{item.label}</span>
+              {item.count != null && item.count > 0 && (
+                <span className="pyj-catrail_count">
+                  {countStyle === "short"
+                    ? item.count
+                    : `${item.count} ${item.count === 1 ? "pieza" : "piezas"}`}
+                </span>
+              )}
+            </Link>
+          </li>
+        ))}
       </ul>
     </nav>
   );

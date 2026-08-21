@@ -57,8 +57,16 @@ function orderNote(lines: CartLine[]): string {
 }
 
 /** Creates a Shopify cart from the local lines and returns the hosted checkout
- *  URL — Shopify collects shipping + payment there. Throws on failure. */
-export async function createShopifyCheckout(lines: CartLine[]): Promise<string> {
+ *  URL — Shopify collects shipping + payment there. Throws on failure.
+ *
+ *  `discountCode` viaja con el carrito para que el descuento ya esté puesto al
+ *  llegar a pagar: si la clienta lo escribió en el carrito (o venía en el
+ *  enlace de la campaña), no tiene que volver a escribirlo. Shopify lo valida
+ *  otra vez de su lado — si para entonces caducó, simplemente no se aplica. */
+export async function createShopifyCheckout(
+  lines: CartLine[],
+  discountCode?: string | null,
+): Promise<string> {
   if (!DOMAIN || !TOKEN) throw new Error("Shopify is not configured.");
 
   const cartLines = lines.map((l) => ({
@@ -71,8 +79,8 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
   const note = orderNote(lines);
 
   const query = /* GraphQL */ `
-    mutation CartCreate($lines: [CartLineInput!]!, $note: String) {
-      cartCreate(input: { lines: $lines, note: $note }) {
+    mutation CartCreate($lines: [CartLineInput!]!, $note: String, $codes: [String!]) {
+      cartCreate(input: { lines: $lines, note: $note, discountCodes: $codes }) {
         cart { id checkoutUrl }
         userErrors { field message }
       }
@@ -87,7 +95,11 @@ export async function createShopifyCheckout(lines: CartLine[]): Promise<string> 
     },
     body: JSON.stringify({
       query,
-      variables: { lines: cartLines, note: note || null },
+      variables: {
+        lines: cartLines,
+        note: note || null,
+        codes: discountCode ? [discountCode] : null,
+      },
     }),
   });
 

@@ -1698,6 +1698,32 @@ body.template-color-1 {
 }
 .single_product .product-img {
   overflow: hidden;
+  position: relative;
+}
+/* ---- La segunda foto va SUPERPUESTA, no debajo ----
+   La plantilla solo la coloca en absoluto dentro de SUS carruseles
+   (`.shop-product-wrap .slide-item`, `.hiraola-product_slider .slide-item`,
+   `.sp-slider`). En una rejilla normal —las páginas de colección y /ninos— se
+   quedaba estática y se apilaba DEBAJO de la principal: la foto se veía dos
+   veces y la tarjeta medía el doble (558 px en vez de ~280).
+
+   Se ata a `.single_product`, no al envoltorio, para que funcione en cualquier
+   rejilla que use ProductCard — incluidas las que se hagan mañana. */
+.single_product .product-img > a {
+  display: block;
+  position: relative;
+}
+.single_product .product-img .secondary-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.45s ease-in-out;
+}
+.single_product .product-img:hover .secondary-img {
+  opacity: 1;
 }
 .single_product .product-img img {
   transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) !important;
@@ -2438,7 +2464,10 @@ body.template-color-1 {
 .header-bottom_area-2 .header-right_area > ul > li > a,
 .header-bottom_area-2 .header-right_area > ul > li > .toolbar-btn,
 .hiraola-footer_area .hiraola-social_link > ul > li > a,
-.pyj-catcircle_img {
+.pyj-catcircle_img,
+/* El carril de categorías (tienda y /ninos) salía CUADRADO: su regla pedía
+   border-radius:50% pero sin !important, y este reset se la comía. */
+.pyj-catrail_thumb {
   border-radius: 50% !important;
 }
 
@@ -3735,11 +3764,18 @@ body.template-color-1 {
 }
 .pyj-article-body {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 20px;
   line-height: 1.75;
   color: var(--dk-text, #cdc1a8);
 }
-.pyj-article-body p { margin: 0 0 22px; }
+/* El tamaño va en el propio <p>, no en el contenedor: la plantilla declara
+   `p { font-size: 16px }` y una regla directa le gana siempre a la herencia,
+   así que el cuerpo de los artículos y los textos de colección se leían a 16 px
+   en vez de a los 20 px de diseño. */
+.pyj-article-body p {
+  margin: 0 0 22px;
+  font-size: 20px;
+  line-height: 1.75;
+}
 .pyj-article-body h2 {
   font-family: "Cinzel", serif;
   font-size: 23px;
@@ -3895,10 +3931,14 @@ body.template-color-1 {
    Local-SEO guide page (/joyeria-en-miami) — price table + FAQ blocks. Reuses
    the /mayoreo editorial layout (.pyj-may*); these are only the extras.
 --------------------------------------------------------------------------- */
+/* Definición ÚNICA. Antes había dos bloques `.pyj-guide_note` en este mismo
+   archivo y el resultado era una mezcla silenciosa: el margen inferior salía
+   del primero y el color y la cursiva del segundo. Estos son esos valores. */
 .pyj-guide_note {
-  color: var(--dk-muted, #a99d83);
+  margin: 4px 0 18px;
   font-size: 13.5px;
-  margin: 6px 0 18px;
+  font-style: italic;
+  color: rgba(201, 191, 168, 0.72);
 }
 .pyj-guide_tablewrap {
   overflow-x: auto;
@@ -4557,6 +4597,60 @@ body.template-color-1 {
   scroll-margin-top: 90px;
 }
 
+/* ---- Cabecera de sección (components/ui/SectionTitle.tsx) ----
+   Título + línea de apoyo + enlace a la derecha. El contador NO va dentro de
+   .hiraola-section_title: esa caja lleva la raya dorada del h4 y su propio
+   borde inferior, así que un párrafo metido dentro queda aplastado entre las
+   dos líneas — que es lo que se veía en /ninos. */
+.pyj-sechead {
+  margin-bottom: 34px;
+}
+/* !important porque public/assets/css/style.css se carga DESPUÉS que este
+   archivo y trae `.hiraola-product_area .hiraola-section_title{margin-bottom:30px}`
+   con la misma especificidad: a empate gana el que va después. */
+.pyj-sechead .hiraola-section_title {
+  margin-bottom: 0 !important;
+}
+.pyj-sechead_meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 14px;
+}
+/* Prefijo .template-color-1 a propósito: el tema pinta `.template-color-1 p`
+   con --dk-text y eso (0,1,1) le gana a `.pyj-sechead_sub` (0,1,0). Sin el
+   prefijo la línea de apoyo sale del mismo color que el texto normal y deja de
+   leerse como secundaria. */
+.template-color-1 .pyj-sechead_sub {
+  margin: 0;
+  max-width: 640px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--dk-muted);
+}
+/* margin-left:auto mantiene el enlace pegado a la derecha aunque no haya
+   línea de apoyo (entonces es el único hijo del flex). */
+.pyj-sechead_action {
+  margin-left: auto;
+  color: var(--pyj-gold);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pyj-sechead_action:hover {
+  color: var(--pyj-gold-light);
+}
+@media (max-width: 575px) {
+  .pyj-sechead {
+    margin-bottom: 26px;
+  }
+  .pyj-sechead_meta {
+    margin-top: 12px;
+  }
+}
+
 /* ---- Índice de servicios: las cuatro tarjetas ----
    Cada una entra a su propia página (/servicios/diseno, …). El enlace envuelve
    toda la tarjeta, así que el área de clic es la tarjeta entera y no solo el
@@ -4652,7 +4746,19 @@ body.template-color-1 {
 
 /* Titular de la página de un servicio: mismo tamaño que un h2 de sección, pero
    es el h1 real de su página. */
+/* El <h1> de las páginas editoriales (/ninos, /servicios/*). No tenía ni
+   tipografía ni tamaño propios, así que caía en la regla de Bootstrap
+   `h1{font-size:calc(1.375rem + 1.5vw)}` y salía en Lato a 40 px — la única
+   pieza titular de la web que no era Cinzel, y más grande que el título del
+   banner de arriba (36 px). Se queda por debajo de ese banner y por encima de
+   los títulos de sección (24 px). */
 .pyj-serv_h1 {
+  font-family: "Cinzel", serif;
+  font-size: clamp(25px, 2.4vw, 32px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0.5px;
+  color: var(--dk-head, #f1e7d2);
   margin-bottom: 18px;
 }
 .pyj-serv_cta {
@@ -6492,12 +6598,6 @@ button[type="submit"],
   color: var(--pyj-gold-light, #f0d79b);
   font-weight: 600;
 }
-.pyj-guide_note {
-  margin-top: 4px;
-  font-style: italic;
-  font-size: 13.5px;
-  color: rgba(201, 191, 168, 0.72);
-}
 .pyj-guide_steps {
   list-style: none;
   margin: 0;
@@ -7640,14 +7740,25 @@ button[type="submit"],
   scroll-snap-align: start;
   width: 116px;
 }
+/* El azulejo ocupa TODO el alto de su celda y el nombre crece para llenarlo, de
+   forma que el contador queda pegado abajo. Sin esto, un nombre de dos líneas
+   ("Azabache y Protección") empujaba su "9 piezas" más abajo que el resto y la
+   fila se veía desalineada. */
+.pyj-catrail_item {
+  display: flex;
+}
 .pyj-catrail_link {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 100%;
   text-align: center;
   text-decoration: none;
   color: inherit;
+}
+.pyj-catrail_name {
+  flex: 1 0 auto;
 }
 .pyj-catrail_thumb {
   display: block;
@@ -7674,6 +7785,20 @@ button[type="submit"],
   outline: 2px solid var(--pyj-gold, #e3b23c);
   outline-offset: 3px;
 }
+/* Categoría seleccionada. /ninos ya marcaba el enlace activo con `is-on`, pero
+   la regla no existía: la subcategoría elegida se veía igual que las demás y no
+   había forma de saber qué estabas mirando. Se distingue por el aro dorado
+   sólido más el nombre en claro — no solo por color, para que también se lea
+   sin distinguir bien los tonos. */
+.pyj-catrail_link.is-on .pyj-catrail_thumb {
+  box-shadow:
+    0 0 0 2px var(--pyj-gold, #e3b23c),
+    0 6px 18px rgba(227, 178, 60, 0.22);
+}
+.pyj-catrail_link.is-on .pyj-catrail_name {
+  color: var(--dk-head, #f1e7d2);
+  font-weight: 600;
+}
 .pyj-catrail_name {
   font-size: 13.5px;
   line-height: 1.35;
@@ -7695,4 +7820,621 @@ button[type="submit"],
   .pyj-catrail_item {
     width: auto;
   }
+}
+
+/* ============================================================================
+   Ritmo de las páginas de listado (/ninos, /collections/*)
+   ---------------------------------------------------------------------------
+   La plantilla pone `text-align: center` en TODA la sección de productos
+   (style.css: `.hiraola-product_area`). Eso está pensado para el título de
+   sección, pero arrastra también la prosa: el texto de cada colección salía
+   centrado y en párrafos largos se lee mal. Se devuelve a la izquierda solo el
+   texto corrido, sin tocar el centrado del resto.
+   ========================================================================= */
+.hiraola-product_area .pyj-guide_note,
+.hiraola-product_area .pyj-article-body,
+.hiraola-product_area .short_desc,
+.hiraola-product_area .pyj-sechead {
+  text-align: left;
+}
+
+/* Texto introductorio de una colección: ancho de lectura y aire medidos aquí,
+   no con números sueltos en el JSX de la página. */
+.pyj-collection_intro {
+  max-width: 68ch;
+  margin: 0 0 18px;
+}
+.pyj-collection_desc {
+  max-width: 68ch;
+  margin: 0 0 26px;
+}
+
+/* El <h2> de las secciones editoriales (FAQ de colecciones, etc.) cae FUERA de
+   .pyj-may_grid, así que no heredaba su tipografía y salía en Lato al tamaño
+   del navegador en cinco páginas distintas. */
+.pyj-may_intro > .container > h2 {
+  font-family: "Cinzel", serif;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: var(--dk-head, #f1e7d2);
+  margin: 0 0 16px;
+}
+
+/* Cuando esa sección cierra la página (colecciones con FAQ) dejaba 8 px hasta
+   el pie. */
+.pyj-may_intro:last-child {
+  padding-bottom: 56px;
+}
+
+/* La rejilla editorial se apilaba a 900 px, pero las columnas de Bootstrap
+   cambian a 991.98 px. Entre 901 y 991 px seguía en dos columnas de ~300 px,
+   demasiado estrechas para el texto. Se alinea con el breakpoint de la casa. */
+@media (max-width: 991px) {
+  .pyj-may_grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   Código de descuento en el carrito (components/checkout/DiscountBox.tsx)
+   ---------------------------------------------------------------------------
+   Antes el código solo se podía escribir en el checkout de Shopify, en la
+   última pantalla. Aquí se adelanta al carrito para que la clienta vea lo que
+   se ahorra antes de decidir.
+   ========================================================================= */
+.pyj-cupon {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--dk-border, rgba(227, 178, 60, 0.28));
+}
+
+.pyj-cupon_abrir {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--pyj-gold, #e3b23c);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pyj-cupon_abrir:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+
+.pyj-cupon_label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dk-muted, #a99d83);
+  margin-bottom: 8px;
+}
+
+.pyj-cupon_fila {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pyj-cupon_input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 11px 14px;
+  background: var(--dk-surface, #221a10);
+  border: 1px solid var(--dk-border, rgba(227, 178, 60, 0.28));
+  color: var(--dk-head, #f1e7d2);
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pyj-cupon_input:focus {
+  outline: none;
+  border-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-cupon_input::placeholder {
+  color: var(--dk-muted, #a99d83);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.pyj-cupon_btn {
+  flex: 0 0 auto;
+  padding: 11px 22px;
+  border: 1px solid var(--pyj-gold, #e3b23c);
+  background: transparent;
+  color: var(--pyj-gold, #e3b23c);
+  font: inherit;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.pyj-cupon_btn:hover:not(:disabled) {
+  background: var(--pyj-gold, #e3b23c);
+  color: #14100a;
+}
+.pyj-cupon_btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pyj-cupon_error {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: #e88a72;
+}
+
+/* Estado aplicado: se ve el código y lo que se ahorra, en verde para que se
+   distinga del dorado de la marca — es información, no un adorno. */
+.pyj-cupon--ok {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pyj-cupon_code {
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--pyj-gold-light, #f2d896);
+  border: 1px dashed var(--pyj-gold, #e3b23c);
+  padding: 4px 10px;
+  margin-right: 10px;
+}
+.pyj-cupon_ahorro {
+  font-size: 14px;
+  color: #86c58a;
+}
+.pyj-cupon_quitar {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--dk-muted, #a99d83);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pyj-cupon_quitar:hover {
+  color: var(--dk-head, #f1e7d2);
+}
+
+/* La línea del ahorro en el resumen, para que no se lea como un cargo más. */
+.template-color-1 .pyj-fila-descuento th,
+.template-color-1 .pyj-fila-descuento td .amount {
+  color: #86c58a;
+}
+
+/* Aviso de "tu descuento está guardado", al entrar por un enlace de campaña.
+   Va abajo para no tapar la cabecera, y por encima de la barra de pestañas del
+   móvil. Se va solo a los 7 segundos. */
+.pyj-campana {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 13px 16px;
+  background: var(--dk-raised, #2c2114);
+  border: 1px solid var(--pyj-gold, #e3b23c);
+  color: var(--dk-head, #f1e7d2);
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  animation: pyj-campana-entra 0.35s ease both;
+}
+.pyj-campana.is-saliendo {
+  animation: pyj-campana-sale 0.5s ease both;
+}
+.pyj-campana_code {
+  flex: 0 0 auto;
+  font-family: "Cinzel", serif;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  color: var(--pyj-gold-light, #f2d896);
+  border: 1px dashed var(--pyj-gold, #e3b23c);
+  padding: 3px 9px;
+}
+.pyj-campana_x {
+  flex: 0 0 auto;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: var(--dk-muted, #a99d83);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pyj-campana_x:hover {
+  color: var(--dk-head, #f1e7d2);
+}
+@keyframes pyj-campana-entra {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes pyj-campana-sale {
+  to { opacity: 0; transform: translate(-50%, 14px); }
+}
+/* En móvil sube por encima de la barra de pestañas. */
+@media (max-width: 991px) {
+  .pyj-campana { bottom: 92px; }
+}
+/* Quien pidió menos movimiento lo ve aparecer sin animación. */
+@media (prefers-reduced-motion: reduce) {
+  .pyj-campana, .pyj-campana.is-saliendo { animation: none; }
+}
+
+/* ============================================================================
+   Popup de la oferta cruzada (components/promo/PromoPopup.tsx)
+   ---------------------------------------------------------------------------
+   Recreado del handoff "Popup Oferta Anillo IFA". Los valores de color, sombra,
+   radio y animación son los del diseño; la tipografía de interfaz es la de la
+   casa (Lato) en vez de la Jost del prototipo, para no cargar otra fuente.
+   ========================================================================= */
+.pyj-promo_overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(5, 3, 1, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: pyjPromoFade 0.35s ease;
+}
+.pyj-promo_wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 1210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.pyj-promo_modal {
+  pointer-events: auto;
+  position: relative;
+  /* 780 y no los 880 del prototipo: en pantallas de portátil un modal de 880
+     comía casi todo el ancho y agobiaba. */
+  width: min(780px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 20px !important;
+  background: linear-gradient(160deg, #1c1206 0%, #0d0803 55%, #160d04 100%);
+  border: 1px solid rgba(232, 193, 90, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 40px 90px rgba(0, 0, 0, 0.75),
+    0 0 80px rgba(232, 193, 90, 0.18);
+  animation: pyjPromoPop 0.5s cubic-bezier(0.2, 1.2, 0.3, 1);
+}
+.pyj-promo_x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  /* Por encima de la foto: antes se confundía con lo que hubiera detrás. */
+  z-index: 5;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #c9b075;
+  border: 1px solid rgba(232, 193, 90, 0.4);
+  background: rgba(10, 7, 3, 0.6);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pyj-promo_x:hover {
+  color: #0d0803;
+  background: #e8c15a;
+}
+
+/* --- columna de la foto --- */
+.pyj-promo_foto {
+  position: relative;
+  min-height: 340px;
+  overflow: hidden;
+  animation: pyjPromoFloat 6s ease-in-out infinite;
+}
+.pyj-promo_foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Funde la foto con el panel de texto, como en el diseño. */
+.pyj-promo_velo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(13, 8, 3, 0) 65%, rgba(13, 8, 3, 0.95) 100%),
+    linear-gradient(0deg, rgba(13, 8, 3, 0.4) 0%, rgba(13, 8, 3, 0) 30%);
+}
+
+/* --- columna del texto --- */
+.pyj-promo_texto {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 34px 32px;
+}
+.pyj-promo_eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #a52a42;
+  font-weight: 600;
+  letter-spacing: 4px;
+  font-size: 12px;
+}
+.pyj-promo_eyebrow span {
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #a52a42);
+}
+.pyj-promo_eyebrow span:last-child {
+  background: linear-gradient(90deg, #a52a42, transparent);
+}
+.template-color-1 .pyj-promo_tit {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+  background: linear-gradient(180deg, #f9e7a8 0%, #e8c15a 45%, #a9812e 75%, #f2d685 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.template-color-1 .pyj-promo_copy {
+  margin: 0;
+  color: #d8c9a3;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.pyj-promo_copy strong {
+  color: #f2d685;
+}
+.pyj-promo_precios {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0;
+  flex-wrap: wrap;
+}
+.pyj-promo_antes {
+  color: #7d6b47;
+  font-size: 22px;
+  text-decoration: line-through;
+}
+.pyj-promo_ahora {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 42px;
+  color: #f2d685;
+  text-shadow: 0 0 24px rgba(232, 193, 90, 0.45);
+  line-height: 1;
+}
+.pyj-promo_div {
+  color: #c9b075;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+/* La condición del descuento. Va en su propia caja porque es lo que evita el
+   malentendido de creer que la moneda sola cuesta eso. */
+.template-color-1 .pyj-promo_condicion {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 2px solid rgba(232, 193, 90, 0.55);
+  background: rgba(232, 193, 90, 0.07);
+  color: #c9b075;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.pyj-promo_condicion strong {
+  color: #f2d685;
+}
+.pyj-promo_cta {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-radius: 10px !important;
+  background: linear-gradient(180deg, #f2d685 0%, #d9a93f 55%, #b8862a 100%);
+  color: #2a1a05 !important;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 2px;
+  box-shadow: 0 10px 26px rgba(217, 169, 63, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.pyj-promo_cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(217, 169, 63, 0.55);
+  color: #2a1a05 !important;
+}
+.pyj-promo_brillo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: pyjPromoShine 2.8s ease-in-out infinite;
+}
+.template-color-1 .pyj-promo_confianza {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 0;
+  color: #8a7a5c;
+  font-size: 12.5px;
+  flex-wrap: wrap;
+}
+
+/* --- burbuja para reabrir ---
+   Solo en escritorio, y discreta. En el móvil se ocultaba la barra de pestañas
+   y el botón de subir: 239 px de pastilla sobre una pantalla de 385 es el 62%
+   del ancho, encima de dos controles que la clienta sí usa. Quien cerró el
+   popup ya dijo que no; perseguirlo tapándole la navegación no gana ventas, y
+   la oferta sigue estando en la ficha, en el carrito y antes de pagar.
+   Va a la IZQUIERDA porque la derecha es del botón de subir. */
+.pyj-promo_burbuja {
+  position: fixed;
+  bottom: 22px;
+  left: 22px;
+  z-index: 1100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid rgba(232, 193, 90, 0.5);
+  border-radius: 999px !important;
+  background: rgba(20, 14, 6, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #f2d685;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  opacity: 0.82;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.pyj-promo_burbuja:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+@media (max-width: 991px) {
+  .pyj-promo_burbuja { display: none; }
+}
+
+@keyframes pyjPromoFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pyjPromoPop {
+  0% { opacity: 0; transform: scale(0.88) translateY(24px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes pyjPromoShine {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  60%, 100% { transform: translateX(220%) skewX(-20deg); }
+}
+@keyframes pyjPromoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* En móvil se apila: foto arriba, texto debajo. El prototipo era de escritorio,
+   pero aquí la mayoría entra por el teléfono. */
+@media (max-width: 767px) {
+  /* En el teléfono el modal se estrecha y se acorta: tiene que caber entero
+     sin que la clienta tenga que desplazarse dentro de él para ver el botón. */
+  .pyj-promo_wrap { padding: 16px; align-items: center; }
+  .pyj-promo_modal { grid-template-columns: 1fr; width: min(420px, 100%); }
+  .pyj-promo_foto { min-height: 26vh; animation: none; }
+  .pyj-promo_texto { padding: 20px 18px 24px; gap: 10px; }
+  .template-color-1 .pyj-promo_tit { font-size: 23px; }
+  .pyj-promo_copy { font-size: 14.5px; }
+  .pyj-promo_antes { font-size: 18px; }
+  .pyj-promo_ahora { font-size: 34px; }
+  .template-color-1 .pyj-promo_condicion { font-size: 12px; padding: 8px 10px; }
+  .pyj-promo_cta { padding: 13px 18px; font-size: 14px; letter-spacing: 1.5px; }
+  .template-color-1 .pyj-promo_confianza { font-size: 11.5px; gap: 12px; }
+  .pyj-promo_velo {
+    background: linear-gradient(0deg, rgba(13, 8, 3, 0.95) 0%, rgba(13, 8, 3, 0) 45%);
+  }
+  .pyj-promo_burbuja { bottom: 84px; right: 14px; font-size: 13px; padding: 10px 16px; }
+}
+
+/* Quien pidió menos movimiento no ve nada latir ni deslizarse. */
+@media (prefers-reduced-motion: reduce) {
+  .pyj-promo_overlay,
+  .pyj-promo_modal,
+  .pyj-promo_foto,
+  .pyj-promo_brillo {
+    animation: none !important;
+  }
+  .pyj-promo_brillo { display: none; }
+}
+
+/* Recordatorio antes de pagar — reusa el vestido del popup y solo cambia lo
+   justo: es más pequeño porque interrumpe un pago, no invita a mirar. */
+.pyj-rec_modal { width: min(720px, 100%); }
+.pyj-rec_foto { min-height: 300px; }
+.pyj-rec_no {
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: #8a7a5c;
+  font-size: 13.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pyj-rec_no:hover { color: #c9b075; }
+@media (max-width: 767px) {
+  .pyj-rec_foto { min-height: 24vh; }
+}
+
+/* La oferta reflejada en el resumen del carrito. */
+.pyj-sum-oferta span:last-child { color: #7bbf6a; font-weight: 700; }
+.template-color-1 .pyj-sum-aviso {
+  margin: 6px 0 10px;
+  padding: 9px 11px;
+  border-left: 2px solid rgba(232, 193, 90, 0.55);
+  background: rgba(232, 193, 90, 0.07);
+  color: #c9b075;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.pyj-sum-aviso strong { color: #f2d685; }
+
+/* La oferta dentro del minicarrito de la cabecera. */
+.pyj-minicart_oferta .ammount { color: #7bbf6a !important; }
+
+/* Varias ofertas en la misma banda: se apilan con aire entre ellas. La tarjeta
+   en sí no cambia — sigue siendo foto + texto en fila, y se apila sola en el
+   móvil por la media query que ya existía. */
+.pyj-offer_lista {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+/* Aclaración de a qué pieza pertenece el precio grande. Sin esto, un "$160"
+   junto a "Anillo de Ifá" se lee como el precio del anillo. */
+.template-color-1 .pyj-offer_nota {
+  margin: -4px 0 0;
+  color: var(--dk-muted, #a99d83);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+@media (max-width: 767px) {
+  .pyj-offer_lista { gap: 22px; }
 }
