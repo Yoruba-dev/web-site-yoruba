@@ -152,6 +152,7 @@ export default function Footer() {
                     <li><Link href="/about-us">Nosotros</Link></li>
                     <li><Link href="/faq">Preguntas frecuentes</Link></li>
                     <li><Link href="/garantia-y-devoluciones">Garantía y devoluciones</Link></li>
+                    <li><Link href="/privacidad">Política de privacidad</Link></li>
                     <li><Link href="/my-account">Mi cuenta</Link></li>
                     <li><Link href="/contact">Contacto</Link></li>
                   </ul>
