@@ -10,6 +10,7 @@ import FeaturedOffer from "@/components/home/FeaturedOffer";
 import CategorySection from "@/components/home/CategorySection";
 import CategoryCircles from "@/components/home/CategoryCircles";
 import WholesaleBanner from "@/components/home/WholesaleBanner";
+import KidsBanner from "@/components/home/KidsBanner";
 import { getCollections } from "@/lib/products";
 
 const SHIPPING = [
@@ -127,6 +128,9 @@ export default async function HomePage() {
 
       {/* Categorías de Productos — circular carousel served from Shopify collections */}
       <CategoryCircles collections={collections} />
+
+      {/* Niños — la sección nueva, anunciada con piezas reales de Shopify. */}
+      <KidsBanner />
 
       {/* Herramientas de Santo — featured, religion-focused (specialty of the house) */}
       <CategorySection
