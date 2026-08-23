@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 import type { PromoVM } from "@/lib/promo";
 
@@ -25,54 +24,60 @@ const CLAVE = "pyj-promo-anillo-moneda";
 export default function PromoPopup({ promo }: { promo: PromoVM }) {
   const [abierto, setAbierto] = useState(false);
   const [cerrado, setCerrado] = useState(false);
-  const pathname = usePathname();
-
   // La clave lleva el precio: si el dueño cambia la oferta, se le vuelve a
-  // enseñar a quien ya la había cerrado.
+  // enseñar a quien ya la había visto.
   const clave = `${CLAVE}:${promo.ahora}`;
 
-  // ¿Está mirando justamente una de las piezas de la oferta? Entonces el aviso
-  // llega antes: ya está interesado, no hay que esperar a que se aburra.
-  const enPiezaDeLaOferta =
-    promo.gatilloHandles.some((h) => pathname === `/products/${h}`) ||
-    pathname === `/products/${promo.regalo.handle}`;
+  const marcarVisto = useCallback(() => {
+    try {
+      localStorage.setItem(clave, "1");
+    } catch {
+      /* modo incógnito: no se puede recordar, se acepta */
+    }
+  }, [clave]);
 
+  // UN SOLO DISPARADOR: haber bajado el 20% de la página. Y UNA SOLA VEZ.
+  //
+  // Antes salía a los 5 segundos en cualquier página, y solo se recordaba si la
+  // clienta pulsaba la X. Al vivir en el layout, cada navegación rearmaba el
+  // temporizador: quien no lo cerraba lo veía en TODAS las páginas. Eso no es
+  // una promoción, es perseguir a alguien por la tienda.
+  //
+  // Ahora se marca como visto EN CUANTO SE ABRE, no al cerrarlo. Aunque se
+  // navegue sin tocarlo, no vuelve a aparecer. Para volver a verlo está la
+  // burbuja, que es una decisión de la clienta y no una interrupción.
   useEffect(() => {
     let visto = false;
     try {
       visto = localStorage.getItem(clave) === "1";
     } catch {
-      /* modo incógnito: se enseña igual */
+      /* ignore */
     }
     if (visto) {
       setCerrado(true);
       return;
     }
 
-    const abrir = () => setAbierto(true);
-    // Dos disparadores, gana el primero:
-    //  1) el tiempo — 2 s en las fichas de la oferta, 5 s en el resto
-    //  2) el scroll — al pasar dos pantallas, señal de que está mirando en serio
-    const t = setTimeout(abrir, enPiezaDeLaOferta ? 2000 : 5000);
     const onScroll = () => {
-      if (window.scrollY > window.innerHeight * 2) abrir();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      clearTimeout(t);
+      const alto = document.documentElement.scrollHeight - window.innerHeight;
+      // En una página que no se puede desplazar no hay 20% que recorrer: ahí no
+      // se enseña, y ya saltará en la siguiente que sí tenga recorrido.
+      if (alto <= 0) return;
+      if (window.scrollY / alto < 0.2) return;
       window.removeEventListener("scroll", onScroll);
+      setAbierto(true);
+      marcarVisto();
     };
-  }, [clave, enPiezaDeLaOferta]);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [clave, marcarVisto]);
 
   const cerrar = useCallback(() => {
     setAbierto(false);
     setCerrado(true);
-    try {
-      localStorage.setItem(clave, "1");
-    } catch {
-      /* ignore */
-    }
-  }, [clave]);
+    marcarVisto();
+  }, [marcarVisto]);
 
   // Escape cierra: lo pedía el handoff y es lo que espera cualquiera.
   useEffect(() => {
