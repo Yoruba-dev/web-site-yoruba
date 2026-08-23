@@ -4936,9 +4936,36 @@ body.template-color-1 {
 .pyj-back svg {
   flex: none;
 }
-/* En el breadcrumb va arriba del título, alineada con el resto del contenido. */
+/* En el breadcrumb va arriba del título, alineada con el resto del contenido.
+   Sin pastilla: sobre la foto del banner el borde dorado competía con el
+   título y ensuciaba la cabecera. Se queda la flecha y el texto, que ya se
+   entienden solos. El !important del borde inferior es para desactivar el que
+   pone .pyj-back (puesto allí para que no herede el subrayado editorial).
+   La variante CON borde sigue viva en las dos páginas de servicios. */
 .pyj-back--crumb {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
+  padding: 9px 6px 9px 0;
+  border: 0;
+  border-bottom: 0 !important;
+  background: none;
+}
+.pyj-back--crumb:hover,
+.pyj-back--crumb:focus-visible {
+  background: none;
+  border: 0;
+  border-bottom: 0 !important;
+  color: var(--pyj-gold-light, #f2d685);
+}
+/* La flecha se separa un poco al pasar por encima: es la señal de que se puede
+   pulsar, ahora que no hay pastilla que lo indique. */
+.pyj-back--crumb svg {
+  transition: transform 0.18s ease;
+}
+.pyj-back--crumb:hover svg {
+  transform: translateX(-3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pyj-back--crumb svg { transition: none; }
 }
 /* Altura mínima explícita: dejarla al padding daba 40px, por debajo del mínimo
    táctil de 44. Se fija aquí y no en una media query para que valga también en
