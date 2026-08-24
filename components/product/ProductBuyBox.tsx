@@ -45,10 +45,23 @@ export default function ProductBuyBox({
   variant?: ProductVariant;
   onSelectVariant?: (v: ProductVariant) => void;
 }) {
-  const { addLine, addItem } = useCart();
+  const { addLine, addItem, setCartOpen } = useCart();
   const variants = product.variants;
   const hasVariants = variants.length > 1;
   const [qty, setQty] = useState(1);
+
+  // Pedido de varias medidas a la vez. Guarda cuántas unidades quiere de cada
+  // variante: { "gid://...": 2 }. Vacío hasta que la clienta abre el panel.
+  //
+  // Por qué se añade en vez de sustituir al selector de arriba: lo normal en
+  // joyería es comprar UNA pieza en TU talla, y ahí una rejilla de cantidades
+  // estorba. Pero a veces se llevan dos medidas —una para regalo, o una botánica
+  // surtiendo vitrina— y antes eso obligaba a añadir, volver, cambiar la talla y
+  // añadir otra vez. El selector sigue mandando en la foto y el precio.
+  const [variasAbierto, setVariasAbierto] = useState(false);
+  const [varias, setVarias] = useState<Record<string, number>>({});
+
+  const totalVarias = Object.values(varias).reduce((s, n) => s + n, 0);
 
   // What this piece asks the shopper to specify (colour/Orisha, animal, …).
   // Declared per tag in lib/commerce.ts so adding a kind needs no change here.
@@ -75,6 +88,36 @@ export default function ProductBuyBox({
     if (!line) return;
     if (line.merchandiseId) addLine(line, qty);
     else addItem(product, qty);
+  }
+
+  /** Añade de una vez todas las medidas con cantidad. Cada una entra como su
+   *  propia línea, con su variante real de Shopify y su precio. */
+  function anadirVarias() {
+    const detailText = detail.trim();
+    if (needsDetail && !detailText) {
+      setDetailError(true);
+      return;
+    }
+    for (const v of variants) {
+      const n = varias[v.id] ?? 0;
+      if (n <= 0) continue;
+      const base = `${product.title} — ${v.title}`;
+      addLine(
+        {
+          id: needsDetail && detailText ? `${v.id}-${detailText}` : v.id,
+          merchandiseId: v.id,
+          productHandle: product.handle,
+          title: needsDetail && detailText ? `${base} · ${detailText}` : base,
+          image: v.image ?? product.images[0]?.url ?? "",
+          price: Number(v.price.amount),
+          currencyCode: v.price.currencyCode,
+        },
+        n,
+      );
+    }
+    setVarias({});
+    setVariasAbierto(false);
+    setCartOpen(true);
   }
 
   /** The one definition of "what this shopper is buying right now": selected
@@ -227,6 +270,101 @@ export default function ProductBuyBox({
               );
             })}
           </div>
+
+          {/* Pedir varias medidas de golpe. Solo cuando la pieza se puede
+              comprar: en las de encargo o a consultar no hay carrito al que
+              añadir. */}
+          {buyable && (
+            <div className="pyj-varias">
+              <button
+                type="button"
+                className="pyj-varias_toggle"
+                onClick={() => setVariasAbierto((v) => !v)}
+                aria-expanded={variasAbierto}
+              >
+                {variasAbierto ? "− " : "+ "}
+                ¿Quieres varias medidas?
+              </button>
+
+              {variasAbierto && (
+                <div className="pyj-varias_panel">
+                  <p className="pyj-varias_ayuda">
+                    Pon cuántas quieres de cada una y las añadimos todas juntas.
+                  </p>
+                  <ul className="pyj-varias_lista">
+                    {variants.map((v) => {
+                      const agotada = !v.availableForSale;
+                      const n = varias[v.id] ?? 0;
+                      return (
+                        <li key={v.id} className={agotada ? "is-agotada" : ""}>
+                          <span className="pyj-varias_nombre">
+                            {v.title}
+                            <small>
+                              {isPlaceholderPriced(v.price)
+                                ? "A consultar"
+                                : formatMoney(v.price)}
+                              {agotada && " · Agotado"}
+                            </small>
+                          </span>
+                          <span className="pyj-varias_cant">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVarias((s) => ({
+                                  ...s,
+                                  [v.id]: Math.max(0, (s[v.id] ?? 0) - 1),
+                                }))
+                              }
+                              disabled={agotada || n === 0}
+                              aria-label={`Quitar una de ${v.title}`}
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              value={n}
+                              disabled={agotada}
+                              onChange={(e) =>
+                                setVarias((s) => ({
+                                  ...s,
+                                  [v.id]: Math.max(0, Number(e.target.value) || 0),
+                                }))
+                              }
+                              aria-label={`Cantidad de ${v.title}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVarias((s) => ({
+                                  ...s,
+                                  [v.id]: (s[v.id] ?? 0) + 1,
+                                }))
+                              }
+                              disabled={agotada}
+                              aria-label={`Añadir una de ${v.title}`}
+                            >
+                              +
+                            </button>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <button
+                    type="button"
+                    className="pyj-btn-gold pyj-varias_add"
+                    onClick={anadirVarias}
+                    disabled={totalVarias === 0}
+                  >
+                    {totalVarias === 0
+                      ? "Elige cuántas quieres"
+                      : `Añadir ${totalVarias} ${totalVarias === 1 ? "pieza" : "piezas"} al carrito`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

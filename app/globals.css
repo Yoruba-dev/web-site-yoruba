@@ -8587,3 +8587,107 @@ button[type="submit"],
   .pyj-kids_piezas { gap: 10px; }
   .pyj-kids_cta { gap: 12px; }
 }
+
+/* ============================================================================
+   "¿Quieres varias medidas?" — pedir varias variantes de una vez.
+   Va debajo del selector normal, plegado: lo habitual es comprar una pieza en
+   tu talla, así que esto no debe estorbar a quien viene a eso.
+   ========================================================================= */
+.pyj-varias {
+  margin-top: 14px;
+}
+.template-color-1 .pyj-varias_toggle {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--pyj-gold, #e3b23c);
+  font-size: 13.5px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.pyj-varias_toggle:hover { color: var(--pyj-gold-light, #f2d685); }
+
+.pyj-varias_panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--dk-border);
+  background: rgba(227, 178, 60, 0.04);
+}
+.template-color-1 .pyj-varias_ayuda {
+  margin: 0 0 12px;
+  color: var(--dk-muted);
+  font-size: 12.5px;
+}
+.pyj-varias_lista {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pyj-varias_lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.12);
+}
+.pyj-varias_lista li:last-child { border-bottom: 0; padding-bottom: 0; }
+.pyj-varias_lista li.is-agotada { opacity: 0.45; }
+
+.template-color-1 .pyj-varias_nombre {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--dk-head, #f1e7d2);
+  font-size: 14px;
+}
+.template-color-1 .pyj-varias_nombre small {
+  color: var(--dk-muted);
+  font-size: 12px;
+}
+
+.pyj-varias_cant {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  border: 1px solid var(--dk-border);
+}
+.template-color-1 .pyj-varias_cant button {
+  /* 40px de lado: por debajo de eso se falla el toque en el móvil. */
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: 0;
+  color: var(--pyj-gold, #e3b23c);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pyj-varias_cant button:disabled { opacity: 0.3; cursor: default; }
+.template-color-1 .pyj-varias_cant input {
+  width: 46px;
+  height: 40px;
+  border: 0;
+  border-left: 1px solid var(--dk-border);
+  border-right: 1px solid var(--dk-border);
+  background: none;
+  color: var(--dk-head, #f1e7d2);
+  text-align: center;
+  font-size: 14px;
+  /* Sin las flechitas del navegador: ya hay + y − más grandes y usables. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.pyj-varias_cant input::-webkit-outer-spin-button,
+.pyj-varias_cant input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.pyj-varias_add {
+  width: 100%;
+  text-align: center;
+}
+.pyj-varias_add:disabled { opacity: 0.45; cursor: default; }
