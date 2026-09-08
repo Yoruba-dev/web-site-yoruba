@@ -18,9 +18,13 @@ import { useEffect, useState } from "react";
 export default function PromoBadge({
   pct,
   hasta,
+  variante = "tarjeta",
 }: {
   pct: number;
   hasta: string | null;
+  /** `banda` añade la palabra OFF y pesa más: ahí la insignia ES el mensaje.
+   *  En la rejilla se queda corta, que compite con "Nuevo" en la misma esquina. */
+  variante?: "tarjeta" | "banda";
 }) {
   const objetivo = hasta ? Date.parse(hasta) : NaN;
   const [muerta, setMuerta] = useState(false);
@@ -38,8 +42,13 @@ export default function PromoBadge({
   if (muerta) return null;
 
   return (
-    <span className="pyj-promo-badge" title="El descuento se aplica al pagar">
-      <span aria-hidden="true">−{pct}%</span>
+    <span
+      className={`pyj-promo-badge${variante === "banda" ? " pyj-promo-badge--banda" : ""}`}
+      title="El descuento se aplica al pagar"
+    >
+      <span aria-hidden="true">
+        −{pct}%{variante === "banda" && " OFF"}
+      </span>
       <span className="pyj-sr">
         {pct}% de descuento, se aplica al pagar
       </span>

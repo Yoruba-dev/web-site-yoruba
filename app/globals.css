@@ -8933,3 +8933,19 @@ button[type="submit"],
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+
+/* La insignia sobre cada foto de la banda de promo. La foto necesita ser el
+   contenedor posicionado; antes el <a> llevaba la imagen suelta. */
+.pyj-promoV_foto {
+  position: relative;
+  display: block;
+}
+.pyj-promo-badge--banda {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 5px 10px;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+}

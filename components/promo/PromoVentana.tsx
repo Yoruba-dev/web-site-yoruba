@@ -1,4 +1,5 @@
 import Countdown from "@/components/ui/Countdown";
+import PromoBadge from "@/components/promo/PromoBadge";
 import { getPromoVentana } from "@/lib/promo-ventana";
 
 // La banda de la promo por tiempo limitado.
@@ -78,14 +79,20 @@ export default async function PromoVentana({
               {vm.piezas.map((p) => (
                 <li key={p.handle}>
                   <a href={`/products/${encodeURIComponent(p.handle)}`}>
-                    {p.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image} alt={p.title} loading="lazy" />
-                    ) : (
-                      <span className="pyj-promoV_sinfoto" aria-hidden="true">
-                        ✦
-                      </span>
-                    )}
+                    <span className="pyj-promoV_foto">
+                      {p.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.image} alt={p.title} loading="lazy" />
+                      ) : (
+                        <span className="pyj-promoV_sinfoto" aria-hidden="true">
+                          ✦
+                        </span>
+                      )}
+                      {/* Sin esto, las fotos de la banda eran las únicas piezas
+                          rebajadas de toda la web sin decirlo. Y se quita sola
+                          al pasar la hora, como las de la rejilla. */}
+                      <PromoBadge pct={vm.pct} hasta={vm.hasta} variante="banda" />
+                    </span>
                     <span className="pyj-promoV_nombre">{p.title}</span>
                   </a>
                 </li>
