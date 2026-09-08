@@ -9,6 +9,7 @@ import WishlistButton from "./WishlistButton";
 import ReviewStars from "./ReviewStars";
 import CardActions from "./CardActions";
 import ShareButton from "./ShareButton";
+import PromoBadge from "@/components/promo/PromoBadge";
 
 // Faithful port of the template's `.single_product` markup, driven by data.
 export default function ProductCard({ product }: { product: Product }) {
@@ -38,12 +39,18 @@ export default function ProductCard({ product }: { product: Product }) {
             />
           )}
         </Link>
-        {product.isNew && <span className="pyj-new-badge">Nuevo</span>}
-        {product.badge && (
-          <span className={`sticker${product.isNew ? " sticker--below-new" : ""}`}>
-            {product.badge}
-          </span>
-        )}
+        {/* Los sellos se apilan en una columna en vez de colocarse cada uno con
+            su propio `top` absoluto. Con dos ya hacía falta una clase extra
+            (`sticker--below-new`); con un tercero habría que inventar otra, y
+            con cuatro, seis. Aquí el orden lo pone el flex y no hay nada que
+            recalcular al añadir el siguiente. */}
+        <div className="pyj-badges">
+          {product.isNew && <span className="pyj-new-badge">Nuevo</span>}
+          {product.promo && (
+            <PromoBadge pct={product.promo.pct} hasta={product.promo.hasta} />
+          )}
+          {product.badge && <span className="sticker">{product.badge}</span>}
+        </div>
         {/* Card actions (behind the ⋯ menu on touch). No quick-view here — it
             just links to the product, which tapping the card already does; the
             fewer controls keep the ⋯ stack fitting inside small cards. */}

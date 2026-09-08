@@ -16,6 +16,8 @@ import {
 } from "@/lib/schema";
 import { sizedImageUrl } from "@/lib/utils";
 import { OG_IMAGE } from "@/lib/site";
+import PromoVentana from "@/components/promo/PromoVentana";
+import { COLECCION_PROMO } from "@/lib/promo-ventana";
 
 // Live from Shopify; refresh hourly (a product webhook can also revalidate).
 export const revalidate = 3600;
@@ -106,6 +108,11 @@ export default async function CollectionPage({ params }: { params: Params }) {
       <JsonLd data={collectionPageLd} />
       <JsonLd data={itemListLd} />
       {faqLd && <JsonLd data={faqLd} />}
+
+      {/* La colección de la promo es también su "publicación": el titular, el
+          texto y la foto los escribe el dueño en Shopify. Aquí encima va el
+          reloj. En cualquier otra colección esto no pinta nada. */}
+      {handle === COLECCION_PROMO && <PromoVentana variante="compacta" />}
 
       {/* `section-space_add` en vez de un paddingTop a mano: son los 75/80 px
           del sistema, los mismos que usa cualquier otra sección de productos. */}

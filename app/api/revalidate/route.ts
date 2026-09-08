@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { revalidateTag } from "next/cache";
+import { olvidarPromoVentana } from "@/lib/promo-ventana";
 import { NextResponse } from "next/server";
 
 // On-demand revalidation endpoint for Shopify webhooks.
@@ -46,6 +47,11 @@ function querySecretValid(request: Request): boolean {
 
 function refresh() {
   revalidateTag("shopify", "max");
+  // La promo temporal guarda su respuesta en memoria del proceso (un minuto)
+  // para no montar un carrito de prueba en cada render. Esa memoria NO la toca
+  // revalidateTag, así que sin esta línea el webhook refrescaría el catálogo
+  // pero la promo seguiría encendida —o apagada— hasta un minuto más.
+  olvidarPromoVentana();
   return NextResponse.json({ ok: true, revalidated: true });
 }
 

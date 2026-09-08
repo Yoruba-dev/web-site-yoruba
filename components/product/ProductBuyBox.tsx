@@ -16,6 +16,7 @@ import {
 } from "@/lib/commerce";
 import { formatMoney, money } from "@/lib/utils";
 import { SITE } from "@/lib/site";
+import PromoLineaFicha from "@/components/promo/PromoLineaFicha";
 
 
 import CompareButton from "./CompareButton";
@@ -179,6 +180,15 @@ export default function ProductBuyBox({
           </>
         )}
       </div>
+
+      {/* La promo por tiempo limitado. Va justo bajo el precio porque el
+          descuento de Shopify es automático: no baja el número de arriba, se
+          resta al pagar. Sin este aviso la clienta ve el precio entero, no se
+          entera de la oferta, y la que sí se enteró se lleva un susto (bueno)
+          en el checkout. */}
+      {product.promo && !placeholderPrice && (
+        <PromoLineaFicha pct={product.promo.pct} hasta={product.promo.hasta} />
+      )}
 
       {/* A coin is engraved and a ring is built, so each opens its own editor.
           Coin wins when a piece somehow matches both. */}

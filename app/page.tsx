@@ -7,6 +7,7 @@ import HeroSlider from "@/components/home/HeroSlider";
 import ProductSlider from "@/components/product/ProductSlider";
 import BannerGrid from "@/components/home/BannerGrid";
 import FeaturedOffer from "@/components/home/FeaturedOffer";
+import PromoVentana from "@/components/promo/PromoVentana";
 import CategorySection from "@/components/home/CategorySection";
 import CategoryCircles from "@/components/home/CategoryCircles";
 import WholesaleBanner from "@/components/home/WholesaleBanner";
@@ -97,6 +98,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* La promo por tiempo limitado, encima de todo lo demás: es la que tiene
+          reloj, así que es la que se pierde si no se ve. Se apaga sola cuando
+          Shopify deja de descontar (ver lib/promo-ventana.ts). */}
+      <PromoVentana />
 
       {/* Oferta destacada — live promo band for the featured on-sale piece,
           placed high so the deal gets top billing right under Novedades. */}

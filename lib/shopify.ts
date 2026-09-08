@@ -374,6 +374,58 @@ export async function shopifyGetCollectionProducts(
   };
 }
 
+/** La colección de la promo temporal, con su fecha de fin y sus piezas, en UNA
+ *  sola petición (ver lib/promo-ventana.ts).
+ *
+ *  El `namespace` va explícito a propósito: aunque el esquema lo marque
+ *  opcional, sin él la consulta resuelve contra el namespace reservado de la
+ *  app y devuelve null. Y `null` en `termina` significa "no existe O no está
+ *  expuesto al Storefront" — nunca hay que leerlo como "no hay fecha". */
+export async function shopifyGetPromoVentana(
+  handle: string,
+  first = 50,
+): Promise<{
+  title: string;
+  description: string;
+  image: string | null;
+  termina: string | null;
+  products: Product[];
+} | null> {
+  const data = await shopifyFetch<{
+    collection: {
+      title: string;
+      description: string;
+      image: { url: string } | null;
+      termina: { value: string } | null;
+      products: { edges: { node: ShopifyProduct }[] };
+    } | null;
+  }>(
+    /* GraphQL */ `
+      ${PRODUCT_FRAGMENT}
+      query PromoVentana($handle: String!, $first: Int!) {
+        collection(handle: $handle) {
+          title
+          description
+          image { url }
+          termina: metafield(namespace: "promo", key: "termina") { value }
+          products(first: $first, sortKey: BEST_SELLING) {
+            edges { node { ...ProductCard } }
+          }
+        }
+      }
+    `,
+    { handle, first },
+  );
+  if (!data.collection) return null;
+  return {
+    title: data.collection.title,
+    description: data.collection.description,
+    image: data.collection.image?.url ?? null,
+    termina: data.collection.termina?.value ?? null,
+    products: data.collection.products.edges.map((e) => reshape(e.node)),
+  };
+}
+
 /** How many products each collection holds, as the STOREFRONT sees them —
  *  archived and unpublished pieces are already excluded, so these are the
  *  numbers a shopper will actually find after the click. Asks for ids only, so

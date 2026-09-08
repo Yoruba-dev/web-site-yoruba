@@ -50,6 +50,12 @@ export interface Product {
   /** True for pieces published within the last NEW_ARRIVAL_DAYS → shows the
    *  "Nuevo" badge on the card. Computed server-side in `reshape`. */
   isNew?: boolean;
+  /** Promoción por tiempo limitado. Lo pone `marcarPromo` (lib/promo-ventana.ts)
+   *  al pasar por el embudo de lib/products.ts, y SOLO cuando Shopify está
+   *  descontando de verdad. null o ausente el resto del tiempo. `hasta` viaja
+   *  como instante absoluto para que el navegador pueda esconder la insignia
+   *  aunque la página venga de la caché. */
+  promo?: { pct: number; hasta: string | null } | null;
   availableForSale: boolean;
   tags: string[];
   /** Tipo de producto de Shopify ("Idde", "Dijes y Medallas"…). Es lo que se

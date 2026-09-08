@@ -8691,3 +8691,245 @@ button[type="submit"],
   text-align: center;
 }
 .pyj-varias_add:disabled { opacity: 0.45; cursor: default; }
+
+/* ==========================================================================
+   Promoción por tiempo limitado — banda, contador e insignia
+   (ver lib/promo-ventana.ts). Todo se apaga solo cuando Shopify deja de
+   descontar; aquí solo está el aspecto.
+   ========================================================================== */
+
+/* Texto solo para lectores de pantalla. */
+.pyj-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- La pila de sellos de la tarjeta ------------------------------------ */
+/* Un solo contenedor posicionado; los sellos van dentro en columna. Así
+   añadir uno nuevo no obliga a recalcular el `top` de los demás. */
+.pyj-badges {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+.pyj-badges > * {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  margin: 0;
+}
+
+/* --- La insignia de la promo -------------------------------------------- */
+/* Invertida respecto a "Nuevo" (fondo oro, texto oscuro) para que se
+   distingan de un vistazo cuando una pieza lleva las dos. */
+.pyj-promo-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: var(--pyj-gold);
+  color: #1a1408;
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+  white-space: nowrap;
+}
+
+/* --- La banda ----------------------------------------------------------- */
+.pyj-promoV {
+  padding: 56px 0;
+  background: linear-gradient(160deg, #1c1509 0%, #241b0d 60%, #1a1408 100%);
+  color: #f0e7d2;
+}
+.pyj-promoV--compacta {
+  padding: 34px 0;
+}
+.pyj-promoV_grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 40px;
+  align-items: center;
+}
+.pyj-promoV_texto h2 {
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  color: var(--pyj-gold-light);
+  font-size: clamp(26px, 3.4vw, 38px);
+  line-height: 1.18;
+  text-wrap: balance;
+  margin: 8px 0 12px;
+}
+.pyj-promoV_texto > p {
+  color: #cdbf9f;
+  max-width: 56ch;
+  margin: 0 0 20px;
+}
+.pyj-promoV_letra {
+  font-size: 15px;
+  color: #e6dcc2;
+  border-left: 2px solid var(--pyj-gold);
+  padding-left: 14px;
+  margin: 22px 0 14px;
+  max-width: 56ch;
+}
+.pyj-promoV_letra strong {
+  color: var(--pyj-gold-light);
+}
+.pyj-promoV_ejemplo {
+  font-size: 15px;
+  color: #cdbf9f;
+  margin: 0 0 22px;
+}
+.pyj-promoV_ejemplo s {
+  opacity: 0.65;
+}
+.pyj-promoV_ejemplo b {
+  color: var(--pyj-gold-light);
+  font-size: 18px;
+  margin: 0 6px;
+}
+.pyj-promoV_ejemplo span {
+  color: var(--pyj-gold);
+}
+
+/* --- Las piezas participantes ------------------------------------------- */
+.pyj-promoV_piezas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pyj-promoV_piezas a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.pyj-promoV_piezas img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border: 1px solid rgba(227, 178, 60, 0.28);
+  display: block;
+}
+.pyj-promoV_sinfoto {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(227, 178, 60, 0.28);
+  color: var(--pyj-gold);
+  font-size: 26px;
+}
+.pyj-promoV_nombre {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #c3b697;
+}
+.pyj-promoV_piezas a:hover .pyj-promoV_nombre {
+  color: var(--pyj-gold-light);
+}
+
+/* --- El contador -------------------------------------------------------- */
+.pyj-countdown {
+  margin: 4px 0 6px;
+}
+.pyj-countdown_cajas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pyj-countdown_caja {
+  min-width: 74px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid rgba(227, 178, 60, 0.42);
+  background: rgba(0, 0, 0, 0.22);
+}
+.pyj-countdown_num {
+  display: block;
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--pyj-gold-light);
+  /* Sin esto los dígitos bailan de ancho cada segundo. */
+  font-variant-numeric: tabular-nums;
+}
+.pyj-countdown_lbl {
+  display: block;
+  margin-top: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8aa8b;
+}
+.pyj-countdown_pie {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  color: #b8aa8b;
+}
+.pyj-countdown_fin {
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: 19px;
+  color: var(--pyj-gold);
+  margin: 8px 0 14px;
+}
+.pyj-countdown--compacto .pyj-countdown_caja {
+  min-width: 58px;
+  padding: 8px 6px;
+}
+.pyj-countdown--compacto .pyj-countdown_num {
+  font-size: 22px;
+}
+
+@media (max-width: 767px) {
+  .pyj-promoV {
+    padding: 40px 0;
+  }
+  .pyj-promoV_grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .pyj-countdown_caja {
+    min-width: 0;
+    flex: 1 1 68px;
+  }
+}
+
+/* Aviso de la promo en la ficha del producto — bajo el precio, porque el
+   descuento no baja el número de arriba: se resta al pagar. */
+.pyj-promo_ficha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 18px;
+  font-size: 14px;
+  color: var(--dk-text, #5c5347);
+}
+.pyj-promo_ficha_pct {
+  flex: none;
+  padding: 3px 9px;
+  background: var(--pyj-gold);
+  color: #1a1408;
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

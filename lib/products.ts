@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { isKidsProduct } from "./kids";
+import { getPromoVentana, marcarPromo } from "./promo-ventana";
 import type { Product } from "./types";
 import { MOCK_PRODUCTS } from "./mock-data";
 import {
@@ -22,10 +23,25 @@ export interface CategoryCollection {
 // Single data-access layer for the whole app. Components import from here and
 // never need to know whether the data is mock or live Shopify.
 
+/**
+ * Pega la marca de la promo temporal a las piezas que participan.
+ *
+ * Va aquí, en el embudo, y no en los componentes: así la insignia sale sola en
+ * la portada, la tienda, las colecciones, /ninos, los carruseles y la ficha,
+ * sin pasar props por seis páginas. Es el mismo sitio donde tendría que estar
+ * `attachRatings`.
+ *
+ * No hay recursión: getPromoVentana consulta Shopify por su cuenta y nunca
+ * vuelve a entrar por aquí.
+ */
+async function conPromo(products: Product[]): Promise<Product[]> {
+  return marcarPromo(products, await getPromoVentana());
+}
+
 export const getProducts = cache(async (limit = 24): Promise<Product[]> => {
   if (isShopifyConfigured()) {
     try {
-      return (await shopifyGetProducts(limit)).slice(0, limit);
+      return await conPromo((await shopifyGetProducts(limit)).slice(0, limit));
     } catch (err) {
       console.error("[shopify] getProducts failed, using mock data:", err);
     }
@@ -38,7 +54,7 @@ export const getProducts = cache(async (limit = 24): Promise<Product[]> => {
 export const getNewArrivals = cache(async (limit = 10): Promise<Product[]> => {
   if (isShopifyConfigured()) {
     try {
-      return await shopifyGetNewArrivals(limit);
+      return await conPromo(await shopifyGetNewArrivals(limit));
     } catch (err) {
       console.error("[shopify] getNewArrivals failed, using mock data:", err);
     }
@@ -60,7 +76,8 @@ export const getProductByHandle = cache(
     }
     if (isShopifyConfigured()) {
       try {
-        return await shopifyGetProductByHandle(handle);
+        const p = await shopifyGetProductByHandle(handle);
+        return p ? (await conPromo([p]))[0] : null;
       } catch (err) {
         console.error("[shopify] getProductByHandle failed, using mock:", err);
       }
@@ -112,7 +129,8 @@ export const getCollectionProducts = cache(
   ): Promise<{ title: string; description: string; products: Product[] } | null> => {
     if (!isShopifyConfigured()) return null;
     try {
-      return await shopifyGetCollectionProducts(handle);
+      const col = await shopifyGetCollectionProducts(handle);
+      return col ? { ...col, products: await conPromo(col.products) } : null;
     } catch (err) {
       console.error("[shopify] getCollectionProducts failed:", err);
       return null;

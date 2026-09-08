@@ -147,11 +147,16 @@ export function personalizationField(
   return PERSONALIZATION_FIELDS.find((f) => normalized.includes(f.tag));
 }
 
+/** Banderas internas de campaña. No dicen nada de la pieza — son interruptores
+ *  para la web—, así que no tienen por qué salir en la ficha de la clienta. */
+export const PROMO_TAGS = ["promo-24h", "promo-activa", "promo-regalo", "oferta"];
+
 const CONTROL_TAGS = new Set([
   ...MADE_TO_ORDER_TAGS,
   ...PERSONALIZATION_FIELDS.map((f) => f.tag),
   ...CONFIGURABLE_TAGS,
   ...COIN_CONFIGURABLE_TAGS,
+  ...PROMO_TAGS,
 ]);
 
 /** A product's tags with internal control tags stripped — safe to display. */

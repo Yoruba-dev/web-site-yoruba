@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
-import Countdown from "@/components/coming-soon/Countdown";
+import Countdown from "@/components/ui/Countdown";
 
 export const metadata: Metadata = {
   title: "Próximamente",
@@ -35,7 +35,7 @@ export default function ComingSoonPage() {
                     and be the first to know the moment we launch.
                   </p>
                 </div>
-                <Countdown />
+                <Countdown hasta="2027-01-01T00:00:00Z" />
               </div>
             </div>
           </div>
