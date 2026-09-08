@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { isKidsProduct } from "./kids";
-import { getPromoVentana, marcarPromo } from "./promo-ventana";
+import { COLECCION_PROMO, getPromoVentana, marcarPromo } from "./promo-ventana";
 import type { Product } from "./types";
 import { MOCK_PRODUCTS } from "./mock-data";
 import {
@@ -106,7 +106,15 @@ export const getCollections = cache(async (): Promise<CategoryCollection[]> => {
   try {
     const cols = await shopifyGetCollections(30);
     return cols.filter(
-      (c) => c.image && !/copia|copy/i.test(c.handle) && !/copia|copy/i.test(c.title),
+      (c) =>
+        c.image &&
+        !/copia|copy/i.test(c.handle) &&
+        !/copia|copy/i.test(c.title) &&
+        // La colección de la promo es una campaña que va y viene: fuera del
+        // sitemap y de los círculos de categorías de la portada, que es lo que
+        // esta lista alimenta. Si se quedara, tendrías un enlace permanente a
+        // una página que la mitad del año no existe.
+        c.handle !== COLECCION_PROMO,
     );
   } catch (err) {
     console.error("[shopify] getCollections failed:", err);

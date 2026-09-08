@@ -17,7 +17,7 @@ import {
 import { sizedImageUrl } from "@/lib/utils";
 import { OG_IMAGE } from "@/lib/site";
 import PromoVentana from "@/components/promo/PromoVentana";
-import { COLECCION_PROMO } from "@/lib/promo-ventana";
+import { COLECCION_PROMO, getPromoVentana } from "@/lib/promo-ventana";
 
 // Live from Shopify; refresh hourly (a product webhook can also revalidate).
 export const revalidate = 3600;
@@ -49,6 +49,10 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // La colección de la promo es una campaña, no un catálogo: su título y sus
+    // piezas cambian cada mes y muere cada vez que caduca el descuento. Fuera
+    // del índice, para que Google no guarde "— 24 horas" de una oferta muerta.
+    ...(handle === COLECCION_PROMO ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: `/collections/${handle}` },
     openGraph: {
       type: "website",
@@ -69,6 +73,15 @@ export default async function CollectionPage({ params }: { params: Params }) {
   const { handle } = await params;
   const col = await getCollectionProducts(handle);
   if (!col) notFound();
+
+  // La colección de la promo existe SOLO mientras la promo esté viva.
+  //
+  // Sin esto queda el residuo que de verdad molesta: una página titulada
+  // "— 24 horas", con las piezas y sin ninguna oferta, viva para siempre y
+  // enlazable. Como el handle es permanente, la URL vuelve sola la próxima vez
+  // que se lance una campaña; mientras tanto, no existe.
+  if (handle === COLECCION_PROMO && !(await getPromoVentana())) notFound();
+
   const products = await attachRatings(col.products);
   const content = getCollectionContent(handle);
 
