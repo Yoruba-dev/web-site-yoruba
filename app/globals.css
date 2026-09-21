@@ -9240,3 +9240,15 @@ button[type="submit"],
     transition: none;
   }
 }
+
+/* El botón de resultado del medidor es un <a>, y el color de enlace del
+   sistema (oro) le ganaba al del botón: oro sobre oro, ilegible. Mismo texto
+   oscuro que llevan los <button> con esta clase. */
+.pyj-sizer a.pyj-btn-gold,
+.pyj-sizer a.pyj-btn-gold:hover,
+.pyj-sizer a.pyj-btn-gold:focus {
+  /* !important porque el template declara `a:hover { color: oro !important }`
+     y sin esto el botón se vuelve oro sobre oro en cuanto pasas el ratón. */
+  color: #2c1f0a !important;
+  text-decoration: none;
+}
