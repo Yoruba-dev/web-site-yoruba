@@ -8963,3 +8963,280 @@ button[type="submit"],
   box-shadow: inset 0 0 0 1px rgba(227, 178, 60, 0.5),
     0 2px 10px rgba(0, 0, 0, 0.35);
 }
+
+/* ==========================================================================
+   Medidor de anillos (components/sizer/RingSizer.tsx)
+   ========================================================================== */
+
+.pyj-sizer {
+  max-width: 560px;
+  margin: 0 auto 48px;
+  padding: 28px 22px 32px;
+  background: var(--dk-surface, #221a10);
+  border: 1px solid var(--dk-border, rgba(227, 178, 60, 0.34));
+  color: var(--dk-text, #d6cbb2);
+  text-align: center;
+}
+.pyj-sizer--cargando {
+  min-height: 420px;
+}
+.pyj-sizer_paso {
+  display: block;
+  font-family: var(--font-body), Lato, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pyj-gold);
+  margin-bottom: 8px;
+}
+.pyj-sizer h2 {
+  font-family: var(--font-display), Cinzel, serif;
+  font-size: clamp(22px, 4vw, 28px);
+  color: var(--pyj-gold-light);
+  margin: 0 0 12px;
+  text-wrap: balance;
+}
+.pyj-sizer h2:focus {
+  outline: none;
+}
+.pyj-sizer > p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.pyj-sizer_para {
+  color: var(--pyj-gold-light);
+}
+.pyj-sizer_pasos {
+  text-align: left;
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+.pyj-sizer_pasos li {
+  margin-bottom: 6px;
+}
+
+/* --- La zona donde se apoya la tarjeta o el anillo ------------------------ */
+/* Sin márgenes laterales a propósito: la tarjeta tiene que poder pegarse a la
+   línea del borde. Y sin gestos de scroll: con un anillo encima, un roce no
+   puede mover la página. */
+.pyj-sizer_zona {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  margin: 8px -22px 18px;
+  background: #0e0b06;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pyj-sizer_zona--cal {
+  justify-content: flex-start;
+  min-height: 300px;
+  padding-left: 14px;
+}
+.pyj-sizer_linea {
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--pyj-gold);
+}
+.pyj-sizer_banda {
+  height: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(227, 178, 60, 0.16);
+  border-right: 2px solid var(--pyj-gold-light);
+  box-sizing: border-box;
+}
+.pyj-sizer_banda span {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--pyj-gold-light);
+  opacity: 0.8;
+}
+
+/* El disco: relleno claro con borde fino oscuro. Ver el comentario de
+   RingSizer.tsx sobre por qué un disco y no un aro. */
+.pyj-sizer_disco {
+  /* !important a propósito: la web tiene un reset global de esquinas rectas
+     (`* { border-radius: 0 !important }`) que es parte del diseño. Este es el
+     único sitio donde hace falta un círculo de verdad — un medidor de anillos
+     con un cuadrado no mide nada. */
+  border-radius: 50% !important;
+  background: #f2e9d3;
+  box-shadow: inset 0 0 0 1.5px #3a2b12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 60ms linear, height 60ms linear;
+}
+.pyj-sizer_disco_valor {
+  font-family: var(--font-display), Cinzel, serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2c1f0a;
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pyj-sizer_disco_valor small {
+  display: block;
+  font-family: var(--font-body), Lato, sans-serif;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+
+/* --- El control: deslizador grande + botones finos ------------------------- */
+.pyj-sizer_control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.pyj-sizer_range {
+  flex: 1;
+  height: 44px;
+  accent-color: var(--pyj-gold);
+  cursor: pointer;
+}
+.pyj-sizer_btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--dk-border, rgba(227, 178, 60, 0.34));
+  background: transparent;
+  color: var(--pyj-gold-light);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pyj-sizer_btn:hover,
+.pyj-sizer_btn:focus-visible {
+  border-color: var(--pyj-gold);
+  outline: none;
+}
+.pyj-sizer_lectura {
+  display: block;
+  font-size: 14px;
+  color: var(--pyj-gold-light);
+  margin: 0 0 18px;
+  font-variant-numeric: tabular-nums;
+}
+.pyj-sizer_cta {
+  display: inline-block;
+  margin: 4px 0 10px;
+}
+.pyj-sizer_enlace {
+  display: inline-block;
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  color: var(--pyj-gold);
+  font-size: 13.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pyj-sizer_zoom {
+  background: rgba(156, 53, 32, 0.18);
+  border-left: 3px solid #c25a3c;
+  color: #f0c9b8;
+  padding: 10px 14px;
+  font-size: 14px;
+  text-align: left;
+  margin: 0 0 14px;
+}
+
+/* --- El resultado ---------------------------------------------------------- */
+.pyj-sizer_talla {
+  display: block;
+  font-size: clamp(56px, 14vw, 84px);
+  line-height: 1;
+  color: var(--pyj-gold);
+}
+.pyj-sizer_mm {
+  font-size: 15px;
+  color: var(--dk-muted, #a89a7c);
+  margin: 6px 0 18px;
+}
+.pyj-sizer_nota {
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+  padding: 10px 14px;
+  border-left: 2px solid var(--pyj-gold);
+  background: rgba(227, 178, 60, 0.06);
+  margin: 0 0 12px;
+}
+.pyj-sizer_nota--encargo {
+  border-left-color: var(--pyj-gold-light);
+}
+.pyj-sizer_honesto {
+  font-size: 13px;
+  color: var(--dk-muted, #a89a7c);
+  margin: 14px 0 6px;
+}
+.pyj-sizer_otra {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* --- El texto indexable de debajo ------------------------------------------ */
+.pyj-sizer_texto {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.pyj-sizer_texto h2 {
+  font-family: var(--font-display), Cinzel, serif;
+  font-size: 24px;
+  margin: 40px 0 14px;
+}
+.pyj-sizer_tabla {
+  width: 100%;
+  max-width: 360px;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.pyj-sizer_tabla th,
+.pyj-sizer_tabla td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--dk-border, rgba(227, 178, 60, 0.34));
+}
+.pyj-sizer_tabla th {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pyj-gold);
+}
+
+/* En la ficha del anillo: el enlace bajo el selector de talla. */
+.pyj-talla_ayuda {
+  display: inline-block;
+  margin: -6px 0 12px;
+  font-size: 13.5px;
+  color: var(--pyj-gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-sizer_disco {
+    transition: none;
+  }
+}

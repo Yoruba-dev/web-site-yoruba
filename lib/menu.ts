@@ -49,6 +49,7 @@ export const SERVICE_LINKS: MenuLink[] = [
   { label: "Cómo trabajamos", href: "/servicios/como-trabajamos" },
   { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Diseña tu moneda de Ifá", href: "/configurador-monedas" },
+  { label: "Mide tu talla de anillo", href: "/medidor-de-anillos" },
 ];
 
 // Curated informational/landing pages shown in the "Páginas" mega menu.

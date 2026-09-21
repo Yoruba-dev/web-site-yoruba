@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import type { Rating } from "@/lib/judgeme";
 import { publicTags } from "@/lib/commerce";
+import { CLAVE_TALLA, tallaDeTitulo } from "@/lib/ring-size";
 import ProductGallery from "./ProductGallery";
 import ProductBuyBox from "./ProductBuyBox";
 import ReviewStars from "./ReviewStars";
@@ -26,6 +27,36 @@ export default function ProductShowcase({
   const [variant, setVariant] = useState<ProductVariant | undefined>(
     product.variants[0],
   );
+
+  // Preselección de talla desde el medidor (/medidor-de-anillos).
+  //
+  // Dos fuentes, por este orden: `?talla=10` en la URL (explícita, funciona
+  // en modo privado y al compartir el enlace) y, si no viene, la última talla
+  // que la clienta midió (localStorage). Se busca la variante cuyo título
+  // lleve esa talla, normalizando las tres formas que hay en el catálogo
+  // ("#9", "9", "12/5") — ver tallaDeTitulo.
+  //
+  // Va en useEffect y lee window.location, no useSearchParams: es el patrón
+  // del proyecto para no envolver la ficha en Suspense (ver AuthForms).
+  useEffect(() => {
+    if (product.variants.length < 2) return;
+    let pedida: number | null = null;
+    try {
+      const q = new URLSearchParams(window.location.search).get("talla");
+      if (q) pedida = Number(q.replace(/^#/, ""));
+      if (!pedida) {
+        const guardada = localStorage.getItem(CLAVE_TALLA);
+        if (guardada) pedida = Number(guardada);
+      }
+    } catch {
+      /* sin acceso al almacenamiento: se queda la primera variante */
+    }
+    if (!pedida || !Number.isFinite(pedida)) return;
+    const candidatas = product.variants.filter((v) => tallaDeTitulo(v.title) === pedida);
+    // Si hay varias (una por quilate), la primera comprable; si no, la primera.
+    const elegida = candidatas.find((v) => v.availableForSale) ?? candidatas[0];
+    if (elegida) setVariant(elegida);
+  }, [product.variants]);
 
   // Gallery on the right => flip the Bootstrap column order (mirrors the
   // template's single-product-gallery-right markup).

@@ -102,3 +102,36 @@ export function itemListSchema(opts: {
     })),
   };
 }
+
+// A step-by-step tool page (the ring sizer). HowTo is what Google shows as a
+// numbered how-to card, and it's the schema that fits "how do I find my ring
+// size" queries. `tool` names the physical thing the visitor needs, so the
+// card can say it up front.
+export function howToSchema(opts: {
+  name: string;
+  description: string;
+  path: string;
+  totalTime?: string; // ISO 8601 duration, e.g. "PT2M"
+  tools?: string[];
+  steps: { name: string; text: string }[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "@id": `${SITE_URL}${opts.path}#howto`,
+    name: opts.name,
+    description: opts.description,
+    inLanguage: "es",
+    ...(opts.totalTime && { totalTime: opts.totalTime }),
+    ...(opts.tools && {
+      tool: opts.tools.map((t) => ({ "@type": "HowToTool", name: t })),
+    }),
+    step: opts.steps.map((s, i) => ({
+      "@type": "HowToStep",
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+      url: `${SITE_URL}${opts.path}#paso-${i + 1}`,
+    })),
+  };
+}

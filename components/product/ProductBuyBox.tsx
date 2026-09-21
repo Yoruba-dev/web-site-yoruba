@@ -49,6 +49,8 @@ export default function ProductBuyBox({
   const { addLine, addItem, setCartOpen } = useCart();
   const variants = product.variants;
   const hasVariants = variants.length > 1;
+  // "Anillos" en casi todo el catálogo; hay un "Anillo" en singular por error.
+  const esAnillo = /^anillos?$/i.test(product.productType ?? "");
   const [qty, setQty] = useState(1);
 
   // Pedido de varias medidas a la vez. Guarda cuántas unidades quiere de cada
@@ -243,6 +245,18 @@ export default function ProductBuyBox({
               <span className="pyj-variant-chosen">{variant.title}</span>
             )}
           </label>
+          {/* Solo en anillos: el enlace al medidor, que vuelve aquí con la
+              talla puesta (?talla=N). Se detecta por productType y no por el
+              nombre de la opción, porque hay un Idde con opción "Talla" y un
+              anillo con "Tamaño del anillo". */}
+          {esAnillo && (
+            <a
+              className="pyj-talla_ayuda"
+              href={`/medidor-de-anillos?anillo=${encodeURIComponent(product.handle)}`}
+            >
+              ¿No sabes tu talla? Mídela con tu teléfono →
+            </a>
+          )}
           <div className="pyj-variant-options" role="radiogroup">
             {variants.map((v) => {
               const selected = v.id === variant?.id;

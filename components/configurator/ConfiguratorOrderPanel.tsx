@@ -170,6 +170,21 @@ export default function ConfiguratorOrderPanel({
         </div>
       )}
 
+      {/* El medidor. Con producto, vuelve a ese anillo con la talla puesta;
+          sin producto (modo libre), a la página suelta. Un anillo de Ifá
+          diseñado a medida en la talla equivocada es el peor de los fallos:
+          no se cambia por otro, se rehace. */}
+      <a
+        className="pyj-talla_ayuda"
+        href={
+          product
+            ? `/medidor-de-anillos?anillo=${encodeURIComponent(product.handle)}`
+            : "/medidor-de-anillos"
+        }
+      >
+        ¿No sabes tu talla? Mídela con tu teléfono →
+      </a>
+
       <ul className="pyj-cfg_summary">
         {faces.map((f) => (
           <li key={f.id} className="pyj-cfg_summary-row">
