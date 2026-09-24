@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import ProductCard from "@/components/product/ProductCard";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -74,13 +74,19 @@ export default async function CollectionPage({ params }: { params: Params }) {
   const col = await getCollectionProducts(handle);
   if (!col) notFound();
 
-  // La colección de la promo existe SOLO mientras la promo esté viva.
+  // La colección de la promo solo tiene sentido mientras la promo esté viva.
   //
-  // Sin esto queda el residuo que de verdad molesta: una página titulada
-  // "— 24 horas", con las piezas y sin ninguna oferta, viva para siempre y
-  // enlazable. Como el handle es permanente, la URL vuelve sola la próxima vez
-  // que se lance una campaña; mientras tanto, no existe.
-  if (handle === COLECCION_PROMO && !(await getPromoVentana())) notFound();
+  // Fuera de campaña NO se hace 404: quien llega aquí viene de un enlace de una
+  // oferta que ya pasó —un correo, un WhatsApp reenviado— y merece algo mejor
+  // que un callejón sin salida. Se le manda a las ofertas que SÍ están vivas,
+  // que es lo que venía buscando.
+  //
+  // Redirección temporal (307) a propósito, no permanente: esta URL vuelve a
+  // existir en cuanto se lance la siguiente campaña, y un 308 le diría a Google
+  // que se mudó para siempre.
+  if (handle === COLECCION_PROMO && !(await getPromoVentana())) {
+    redirect("/collections/ofertas");
+  }
 
   const products = await attachRatings(col.products);
   const content = getCollectionContent(handle);
