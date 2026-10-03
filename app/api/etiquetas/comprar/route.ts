@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { esFlow, compraActiva, noAutorizado } from "@/lib/etiquetas/acceso";
 import { nombreTienda, numeroDeGid } from "@/lib/etiquetas/admin";
-import { crearTrabajo, reclamarCompra } from "@/lib/etiquetas/cola";
+import { crearTrabajo, leerCompra, reclamarCompra } from "@/lib/etiquetas/cola";
 import { anotarIntento, ESPERA_INICIAL_MS, iniciarCompra } from "@/lib/etiquetas/comprar";
 
 // POST /api/etiquetas/comprar — lo llama Shopify Flow cuando entra un pedido
@@ -37,7 +37,10 @@ export async function POST(req: Request) {
 
   if (!compraActiva()) {
     // Apagado: no se compra, pero el pedido no se pierde — la PC lo abre para
-    // que se compre a mano.
+    // que se compre a mano. Salvo que este pedido ya pasara por aquí (un
+    // reintento de Flow): entonces decir "cómprala a mano" invitaría a pagar
+    // una segunda etiqueta.
+    if (await leerCompra(llave)) return Response.json({ ok: true, duplicado: true });
     await crearTrabajo({
       id: `apagado-${llave}`,
       tipo: "abrir",

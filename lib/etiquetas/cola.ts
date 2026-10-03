@@ -76,6 +76,9 @@ export type EstadoCompra =
 
 const TERMINALES: EstadoCompra[] = ["comprada", "fallida", "omitida"];
 
+/** ¿Sigue viva? Sin terminar, o terminada con un aviso aún por entregar. */
+const viva = (c: Compra) => !TERMINALES.includes(c.estado) || (!!c.aviso && !c.avisado);
+
 export interface Compra {
   fulfillmentOrderId: string;
   pedido: string;
@@ -85,6 +88,16 @@ export interface Compra {
   etiquetaId?: string;
   motivo?: string;
   intentos?: number;
+  /** Cuándo se pidió la compra a Shopify (para el plazo de "comprando"). */
+  lanzada?: string;
+  /**
+   * Aviso para la PC que aún no se entregó. Se guarda DENTRO de la compra al
+   * cerrarla, y la compra no sale del índice activa/ hasta que el aviso está
+   * en la cola. Así un fallo de red entre "cerrar" y "avisar" no puede dejar
+   * una etiqueta pagada sin que nadie se entere: la próxima consulta lo reenvía.
+   */
+  aviso?: { id: string; titulo: string; mensaje: string; adminUrl?: string };
+  avisado?: boolean;
   creada: string;
   actualizada: string;
 }
@@ -96,8 +109,17 @@ export async function reclamarCompra(
 ): Promise<boolean> {
   const compra: Compra = { ...datos, estado: "reclamada", creada: ahora(), actualizada: ahora() };
   const nueva = await setCondicional(`compra/${llave}`, JSON.stringify(compra), { onlyIfNew: true });
-  if (nueva) await almacen().set(`activa/${llave}`, "1");
-  return nueva;
+  if (nueva) {
+    await almacen().set(`activa/${llave}`, "1");
+    return true;
+  }
+  // Ya existía. Puede ser un duplicado de verdad… o que la escritura llegó
+  // pero su respuesta se perdió (Blobs reintenta y recibe 412), o que el
+  // índice no llegó a escribirse. Re-asegurar el índice es inofensivo y evita
+  // que un pedido se quede sin etiqueta ni aviso.
+  const c = await leerCompra(llave);
+  if (c && viva(c)) await almacen().set(`activa/${llave}`, "1");
+  return false;
 }
 
 export async function leerCompra(llave: string): Promise<Compra | null> {
@@ -124,8 +146,21 @@ export async function moverCompra(
     onlyIfMatch: actual.etag,
   });
   if (!ok) return null;
-  if (TERMINALES.includes(nueva.estado)) await almacen().delete(`activa/${llave}`);
+  if (!viva(nueva)) await almacen().delete(`activa/${llave}`);
   return nueva;
+}
+
+/**
+ * Entrega a la cola de la PC el aviso guardado en una compra cerrada y, solo
+ * entonces, la saca del índice. Repetible: crearTrabajo no duplica.
+ */
+export async function entregarAviso(llave: string): Promise<void> {
+  const c = await leerCompra(llave);
+  if (!c?.aviso || c.avisado || !TERMINALES.includes(c.estado)) return;
+  await crearTrabajo({ tipo: "abrir", pedido: c.pedido, ...c.aviso });
+  // Ya cerrada: nadie más la escribe, no hace falta comparar ETag.
+  await almacen().set(`compra/${llave}`, JSON.stringify({ ...c, avisado: true, actualizada: ahora() }));
+  await almacen().delete(`activa/${llave}`);
 }
 
 /**
@@ -136,8 +171,8 @@ export async function moverCompra(
 export async function soltarCompra(llave: string): Promise<void> {
   const c = await leerCompra(llave);
   if (c?.estado !== "reclamada") return;
-  await almacen().delete(`compra/${llave}`);
   await almacen().delete(`activa/${llave}`);
+  await almacen().delete(`compra/${llave}`);
 }
 
 /** Compras sin terminar (la función se quedó sin tiempo o se cayó). */
@@ -148,8 +183,14 @@ export async function comprasEnCurso(): Promise<{ llave: string; compra: Compra 
   const out: { llave: string; compra: Compra }[] = [];
   for (let n = 0; n < llaves.length; n++) {
     const c = compras[n];
-    if (c && !TERMINALES.includes(c.estado)) out.push({ llave: llaves[n], compra: c });
-    else await almacen().delete(`activa/${llaves[n]}`); // índice huérfano
+    if (c && viva(c)) {
+      out.push({ llave: llaves[n], compra: c });
+      continue;
+    }
+    // Índice que ya no sirve. Se vuelve a leer antes de borrarlo por si justo
+    // ahora se reclamó de nuevo.
+    const otra = await leerCompra(llaves[n]);
+    if (!otra || !viva(otra)) await almacen().delete(`activa/${llaves[n]}`);
   }
   return out;
 }
@@ -186,8 +227,19 @@ export async function crearTrabajo(
   const nuevo = await setCondicional(`trabajo/${t.id}`, JSON.stringify(trabajo), {
     onlyIfNew: true,
   });
-  if (nuevo) await almacen().set(`pendiente/${t.id}`, "1");
-  return nuevo;
+  if (nuevo) {
+    await almacen().set(`pendiente/${t.id}`, "1");
+    return true;
+  }
+  // Ya existía: si sigue pendiente, que no se quede fuera del índice por una
+  // escritura cuya respuesta se perdió.
+  const previo = await leerTrabajo(t.id);
+  if (previo?.estado === "pendiente") await almacen().set(`pendiente/${t.id}`, "1");
+  return false;
+}
+
+export async function existeTrabajo(id: string): Promise<boolean> {
+  return (await leerTrabajo(id)) !== null;
 }
 
 export async function leerTrabajo(id: string): Promise<Trabajo | null> {

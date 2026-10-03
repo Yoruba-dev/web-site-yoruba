@@ -25,11 +25,12 @@ import { adminGraphql, nombreTienda, numeroDeGid, tokenAdmin } from "./admin";
 import {
   comprasEnCurso,
   crearTrabajo,
+  entregarAviso,
+  existeTrabajo,
   guardarArchivo,
   leerCompra,
   moverCompra,
   soltarCompra,
-  type Compra,
   type EstadoCompra,
 } from "./cola";
 
@@ -45,22 +46,15 @@ function urlPedido(orderId: string): string | undefined {
   return n ? `https://admin.shopify.com/store/${nombreTienda()}/orders/${n}` : undefined;
 }
 
-/** Un aviso en la PC con el pedido abierto. Idempotente por id. */
-async function avisar(id: string, compra: Compra, titulo: string, mensaje: string) {
-  await crearTrabajo({
-    id,
-    tipo: "abrir",
-    pedido: compra.pedido,
-    titulo,
-    mensaje,
-    adminUrl: urlPedido(compra.orderId),
-  });
-}
-
 /**
  * Cierra una compra como fallida y avisa. El texto depende de lo único que le
  * importa a quien lo lee: ¿ya se pagó o no? Decir "cómprala a mano" sobre una
  * etiqueta que ya se cobró es invitar a pagar dos.
+ *
+ * El aviso se guarda en la misma escritura que cierra la compra (con ETag):
+ * solo quien gana ese cambio avisa, así nunca sale un "cómprala a mano"
+ * mientras otro proceso la está comprando. Y si la entrega a la cola falla,
+ * la próxima consulta de la PC la reintenta (entregarAviso).
  */
 async function fallar(
   llave: string,
@@ -68,8 +62,8 @@ async function fallar(
   motivo: string,
   pago: "no" | "si" | "no-se",
 ): Promise<void> {
-  const c = await moverCompra(llave, de, { estado: "fallida", motivo: motivo.slice(0, 500) });
-  if (!c) return; // otro proceso ya la cerró
+  const c = await leerCompra(llave);
+  if (!c || c.estado !== de) return;
   const textos = {
     no: [
       `No se compró la etiqueta de ${c.pedido}`,
@@ -84,13 +78,31 @@ async function fallar(
       `No se sabe si la etiqueta llegó a pagarse. Mira en el pedido si ya tiene una; solo si no la tiene, cómprala a mano. ${motivo}`,
     ],
   } as const;
-  await avisar(`fallo-${llave}`, c, textos[pago][0], textos[pago][1]);
+  const hecha = await moverCompra(llave, de, {
+    estado: "fallida",
+    motivo: motivo.slice(0, 500),
+    aviso: {
+      id: `fallo-${llave}`,
+      titulo: textos[pago][0],
+      mensaje: textos[pago][1],
+      adminUrl: urlPedido(c.orderId),
+    },
+  });
+  if (hecha) await entregarAviso(llave);
 }
 
 /** No toca comprarla: se cierra la compra y, si hay algo que hacer, se avisa. */
 async function omitir(llave: string, motivo: string, aviso?: [titulo: string, mensaje: string]) {
-  const c = await moverCompra(llave, "reclamada", { estado: "omitida", motivo });
-  if (c && aviso) await avisar(`aviso-${llave}`, c, aviso[0], aviso[1]);
+  const c = await leerCompra(llave);
+  if (!c || c.estado !== "reclamada") return;
+  const hecha = await moverCompra(llave, "reclamada", {
+    estado: "omitida",
+    motivo,
+    ...(aviso
+      ? { aviso: { id: `aviso-${llave}`, titulo: aviso[0], mensaje: aviso[1], adminUrl: urlPedido(c.orderId) } }
+      : {}),
+  });
+  if (hecha && aviso) await entregarAviso(llave);
 }
 
 interface PedidoParaComprar {
@@ -192,6 +204,7 @@ export async function iniciarCompra(llave: string, presupuestoMs: number): Promi
     estado: "lanzando",
     pedido,
     orderId: o.id,
+    lanzada: new Date().toISOString(),
   });
   if (!lanzada) return;
 
@@ -272,6 +285,13 @@ export async function esperarCompra(llave: string, presupuestoMs: number): Promi
   }
 
   const etiqueta = res.shippingLabels[0];
+  const num0 = etiqueta ? numeroDeGid(etiqueta.id, "ShippingLabel") : null;
+  // Otra consulta ya la dejó en la cola: no volver a bajar ni guardar el PDF
+  // (lleva la dirección de la clienta y nadie lo borraría).
+  if (num0 && (await existeTrabajo(`etiqueta-${num0}`))) {
+    await moverCompra(llave, "comprando", { estado: "comprada", etiquetaId: etiqueta.id });
+    return;
+  }
   const doc = etiqueta?.shippingDocuments.find((d) => d.documentType === "LABEL");
   const bytes = doc?.url ? await bajarDocumento(doc.url) : null;
   if (!etiqueta || !doc || !bytes) {
@@ -330,9 +350,13 @@ export async function avanzarCompras(presupuestoMs: number): Promise<void> {
     if (resta < 4_000) return;
     const desdeCreada = Date.now() - Date.parse(compra.creada);
     const desdeCambio = Date.now() - Date.parse(compra.actualizada);
+    const desdeLanzada = Date.now() - Date.parse(compra.lanzada ?? compra.actualizada);
     const presupuesto = Math.min(resta - 2_000, 8_000);
     try {
-      if (compra.estado === "reclamada") {
+      if (compra.aviso && !compra.avisado) {
+        // Cerrada pero su aviso no llegó a la cola: reenviarlo.
+        await entregarAviso(llave);
+      } else if (compra.estado === "reclamada") {
         if (desdeCreada > 15 * MINUTO || (compra.intentos ?? 0) >= 5) {
           await fallar(llave, "reclamada", "Errores repetidos al consultar Shopify.", "no");
         } else if (desdeCambio > 90_000) {
@@ -340,11 +364,13 @@ export async function avanzarCompras(presupuestoMs: number): Promise<void> {
         }
       } else if (compra.estado === "lanzando" && desdeCambio > 3 * MINUTO) {
         await fallar(llave, "lanzando", "Se cortó la conexión al pedirla.", "no-se");
-      } else if (compra.estado === "comprando") {
-        if (desdeCreada > 15 * MINUTO) {
+      } else if (compra.estado === "comprando" && desdeCambio > 45_000) {
+        // Preguntar no cuesta: SIEMPRE se pregunta antes de rendirse, aunque
+        // la PC haya estado apagada horas — la etiqueta pudo terminar hace rato.
+        await esperarCompra(llave, presupuesto);
+        const ahora = await leerCompra(llave);
+        if (ahora?.estado === "comprando" && desdeLanzada > 15 * MINUTO) {
           await fallar(llave, "comprando", "Shopify no terminó la compra en 15 min.", "no-se");
-        } else if (desdeCambio > 45_000) {
-          await esperarCompra(llave, presupuesto);
         }
       }
     } catch (e) {

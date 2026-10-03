@@ -2,8 +2,9 @@
 # ------------------------------------------------------------------
 # Uso (PowerShell normal, NO hace falta administrador):
 #   powershell -ExecutionPolicy Bypass -File instalar.ps1
-# o, sin bajar nada a mano:
-#   irm https://pedroyorubajewelry.netlify.app/herramientas/etiquetas/instalar.ps1 | iex
+# o, sin bajar nada a mano (la primera parte activa TLS 1.2, que Netlify exige
+# y que algunos Windows no traen encendido):
+#   [Net.ServicePointManager]::SecurityProtocol = 'Tls12'; irm https://pedroyorubajewelry.netlify.app/herramientas/etiquetas/instalar.ps1 | iex
 #
 # Que hace:
 #   1. Pide la clave del agente y te deja elegir la impresora termica.
@@ -101,12 +102,13 @@ Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Silen
 $lanzador = Join-Path $base 'arrancar.vbs'
 @"
 CreateObject("WScript.Shell").Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""$agente""", 0, False
-"@ | Set-Content -Path $lanzador -Encoding ASCII
+"@ | Set-Content -Path $lanzador -Encoding Unicode
 
 $accion = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$lanzador`""
 # Al iniciar sesion y, ademas, cada 5 minutos: si el agente se cerro, vuelve.
 # Si ya esta corriendo, el nuevo sale solo (el agente lleva un candado).
-$alEntrar = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$usuario = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$alEntrar = New-ScheduledTaskTrigger -AtLogOn -User $usuario
 $cada5 = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $ajustes = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
@@ -125,8 +127,22 @@ $atajo.Save()
 $r = Read-Host 'Evitar que esta PC se suspenda mientras esta enchufada? (S/N)'
 if ($r -match '^[sS]') { powercfg /change standby-timeout-ac 0; Write-Host 'Listo: no se suspendera enchufada.' }
 
+$marca = Get-Date
 Start-ScheduledTask -TaskName 'PYJ Etiquetas'
+Write-Host 'Arrancando el agente...'
+$arranco = $false
+for ($i = 0; $i -lt 20 -and -not $arranco; $i++) {
+  Start-Sleep -Seconds 1
+  $log = Join-Path $base 'agente.log'
+  if ((Test-Path $log) -and ((Get-Item $log).LastWriteTime -ge $marca) -and
+      (Select-String -Path $log -Pattern 'iniciado' -SimpleMatch -Quiet)) { $arranco = $true }
+}
 Write-Host ''
+if (-not $arranco) {
+  Write-Host 'El agente NO arranco. Prueba a correrlo a mano para ver el error:' -ForegroundColor Red
+  Write-Host "  powershell -ExecutionPolicy Bypass -File `"$agente`""
+  return
+}
 Write-Host 'Instalado y funcionando.' -ForegroundColor Green
 Write-Host 'Ultimo paso: abre "Shopify - Imprimir etiquetas" en el escritorio, entra a tu Shopify,'
 Write-Host 'y en Windows pon la impresora termica como PREDETERMINADA.'

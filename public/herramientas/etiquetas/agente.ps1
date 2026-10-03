@@ -11,12 +11,15 @@
 # Compatible con Windows PowerShell 5.1 (el que trae Windows 10/11).
 
 $ErrorActionPreference = 'Stop'
-$VERSION = '1.1.0'
+$VERSION = '1.2.0'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $base = Join-Path $env:LOCALAPPDATA 'PYJ-Etiquetas'
 $cfg = Get-Content (Join-Path $base 'config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $registro = Join-Path $base 'agente.log'
+# Lo ya decidido por trabajo: "id<TAB>estado<TAB>motivo". Si la web no se
+# entero (se corto la conexion), se le vuelve a mandar EXACTAMENTE eso: un
+# fallo nunca se reenvia como si se hubiera impreso.
 $hechos = Join-Path $base 'hechos.txt'
 if (-not (Test-Path $hechos)) { New-Item -ItemType File -Path $hechos | Out-Null }
 
@@ -81,20 +84,53 @@ function Llamar($metodo, $ruta, $cuerpo) {
   if ($texto) { return $texto | ConvertFrom-Json }
 }
 
-function YaHecho($id) { (Get-Content $hechos -Encoding UTF8) -contains $id }
-
-# Una impresora apagada, sin papel o en pausa: SumatraPDF igual devuelve 0
-# (Windows acepta el trabajo en la cola), asi que se mira antes de imprimir.
-function ImpresoraLista() {
-  try {
-    $imp = Get-Printer -Name $cfg.impresora -ErrorAction Stop
-    if ($imp.WorkOffline) { return $false }
-    return ([string]$imp.PrinterStatus -eq 'Normal')
-  } catch { return $false }
+function Decidido($id) {
+  foreach ($linea in (Get-Content $hechos -Encoding UTF8)) {
+    $partes = $linea -split "`t", 3
+    if ($partes[0] -eq $id) {
+      $estado = 'hecho'; if ($partes.Count -ge 2 -and $partes[1]) { $estado = $partes[1] }
+      $motivo = $null; if ($partes.Count -ge 3) { $motivo = $partes[2] }
+      return @{ estado = $estado; motivo = $motivo }
+    }
+  }
+  return $null
 }
 
-$intentos = @{}       # id -> intentos de bajar/imprimir en esta sesion
-$avisadoSinImpresora = $false
+function Decidir($id, $estado, $motivo) {
+  $limpio = ([string]$motivo) -replace "[`t`r`n]", ' '
+  Add-Content -Path $hechos -Value ("{0}`t{1}`t{2}" -f $id, $estado, $limpio) -Encoding UTF8
+}
+
+function Cerrar($id, $estado, $motivo) {
+  Llamar 'POST' "/api/etiquetas/trabajos/$id/hecho" @{ estado = $estado; error = $motivo } | Out-Null
+}
+
+# Solo estos estados impiden imprimir. Imprimiendo, ocupada, calentando o
+# "poco toner" son normales y no deben frenar una etiqueta.
+$ESTADOS_MALOS = @('Paused', 'Error', 'PendingDeletion', 'PaperJam', 'PaperOut', 'PaperProblem',
+  'Offline', 'OutputBinFull', 'NotAvailable', 'NoToner', 'UserIntervention', 'OutOfMemory',
+  'DoorOpen', 'ServerUnknown', 'ServerOffline')
+
+# Devuelve $null si la impresora esta lista, o el motivo si no.
+function ProblemaImpresora() {
+  try {
+    $imp = Get-Printer -Name $cfg.impresora -ErrorAction Stop
+  } catch {
+    return "No encuentro la impresora '$($cfg.impresora)' en Windows."
+  }
+  $estado = [string]$imp.PrinterStatus
+  if ($ESTADOS_MALOS -contains $estado) { return "La impresora esta en estado '$estado' (apagada, sin papel o en pausa?)." }
+  try {
+    $nombre = $cfg.impresora -replace "'", "''"
+    $w = Get-CimInstance Win32_Printer -Filter "Name='$nombre'" -ErrorAction Stop
+    if ($w -and $w.WorkOffline) { return 'La impresora esta marcada "Usar sin conexion".' }
+  } catch { }
+  return $null
+}
+
+$intentos = @{}          # id -> intentos fallidos de bajar/imprimir
+$esperaDesde = @{}       # id -> cuando se vio por primera vez sin impresora
+$ultimoAvisoImpresora = [DateTime]::MinValue
 
 function Imprimir($trabajo) {
   if ($trabajo.formato -eq 'ZPL') { throw (New-Object System.InvalidOperationException 'Llego en formato ZPL; imprimela desde el pedido.') }
@@ -117,10 +153,6 @@ function Imprimir($trabajo) {
   }
 }
 
-function Cerrar($t, $estado, $falla) {
-  Llamar 'POST' "/api/etiquetas/trabajos/$($t.id)/hecho" @{ estado = $estado; error = $falla } | Out-Null
-}
-
 Anotar "Agente $VERSION iniciado. Impresora: $($cfg.impresora)"
 Avisar 'PYJ Etiquetas' 'Listo: escuchando pedidos.'
 
@@ -129,43 +161,55 @@ while ($true) {
     $r = Llamar 'GET' '/api/etiquetas/trabajos' $null
     foreach ($t in @($r.trabajos)) {
       if (-not $t) { continue }
-      if (YaHecho $t.id) {
-        # Ya se hizo pero la web no se entero (se corto la conexion): solo confirmar.
-        Cerrar $t 'hecho' $null
+
+      $previo = Decidido $t.id
+      if ($previo) {
+        # Ya se decidio pero la web no se entero: reenviar lo mismo.
+        Cerrar $t.id $previo.estado $previo.motivo
         continue
       }
 
       if ($t.tipo -eq 'pdf') {
-        if (-not (ImpresoraLista)) {
-          # No se marca nada: la etiqueta sigue en cola y sale al volver la impresora.
-          if (-not $avisadoSinImpresora) {
-            Avisar 'Impresora no lista' "Hay etiquetas esperando. Revisa que '$($cfg.impresora)' este encendida y con papel."
-            Anotar "Impresora no lista; $($t.pedido) espera."
-            $avisadoSinImpresora = $true
+        $problema = ProblemaImpresora
+        if ($problema) {
+          # No se marca nada: la etiqueta sigue en cola y sale al volver la
+          # impresora. Se avisa cada 15 min; tras 1 hora se rinde y la web deja
+          # el aviso de etiqueta YA PAGADA para imprimirla a mano.
+          if (-not $esperaDesde.ContainsKey($t.id)) { $esperaDesde[$t.id] = Get-Date }
+          if (((Get-Date) - $ultimoAvisoImpresora).TotalMinutes -ge 15) {
+            Avisar 'Etiqueta esperando' "$($t.titulo): $problema"
+            Anotar "Impresora no lista ($problema); $($t.pedido) espera."
+            $ultimoAvisoImpresora = Get-Date
+          }
+          if (((Get-Date) - $esperaDesde[$t.id]).TotalMinutes -ge 60) {
+            $motivo = "Sin impresora desde hace 1 hora: $problema"
+            Decidir $t.id 'fallido' $motivo
+            AbrirPedido $t.adminUrl
+            Cerrar $t.id 'fallido' $motivo
           }
           continue
         }
-        $avisadoSinImpresora = $false
-        try {
-          Imprimir $t
-          Add-Content -Path $hechos -Value $t.id -Encoding UTF8
+
+        $falla = $null
+        try { Imprimir $t } catch { $falla = $_.Exception }
+        if (-not $falla) {
+          Decidir $t.id 'hecho' $null
           Anotar "OK pdf $($t.pedido)"
           Avisar $t.titulo 'Impresa.'
-          Cerrar $t 'hecho' $null
-        } catch {
-          $falla = $_.Exception.Message
-          $n = 1 + [int]$intentos[$t.id]
-          $intentos[$t.id] = $n
-          Anotar "FALLO pdf $($t.pedido) (intento $n): $falla"
-          # Errores de red o del momento: se reintenta en la proxima vuelta.
-          # A los 5, o si el problema no se arregla reintentando, se rinde y
-          # la web deja un aviso de etiqueta YA PAGADA para imprimirla a mano.
-          if ($n -ge 5 -or $_.Exception -is [System.InvalidOperationException]) {
-            Avisar "No se pudo imprimir: $($t.titulo)" "$falla Imprimela desde el pedido."
-            AbrirPedido $t.adminUrl
-            Add-Content -Path $hechos -Value $t.id -Encoding UTF8
-            Cerrar $t 'fallido' $falla
-          }
+          Cerrar $t.id 'hecho' $null
+          continue
+        }
+
+        $n = 1 + [int]$intentos[$t.id]
+        $intentos[$t.id] = $n
+        Anotar "FALLO pdf $($t.pedido) (intento $n): $($falla.Message)"
+        # Errores de red o del momento: se reintenta en la proxima vuelta.
+        # A los 5, o si reintentar no lo arregla, se rinde.
+        if ($n -ge 5 -or $falla -is [System.InvalidOperationException]) {
+          Decidir $t.id 'fallido' $falla.Message
+          Avisar "No se pudo imprimir: $($t.titulo)" "$($falla.Message) Imprimela desde el pedido."
+          AbrirPedido $t.adminUrl
+          Cerrar $t.id 'fallido' $falla.Message
         }
         continue
       }
@@ -173,9 +217,9 @@ while ($true) {
       # abrir / aviso: no pueden fallar de forma que convenga repetir.
       if ($t.tipo -eq 'abrir') { Avisar $t.titulo $t.mensaje; AbrirPedido $t.adminUrl }
       else { Avisar $t.titulo $t.mensaje }
-      Add-Content -Path $hechos -Value $t.id -Encoding UTF8
+      Decidir $t.id 'hecho' $null
       Anotar "OK $($t.tipo) $($t.pedido)"
-      Cerrar $t 'hecho' $null
+      Cerrar $t.id 'hecho' $null
     }
   } catch {
     Anotar "Sin conexion con la web: $($_.Exception.Message)"
