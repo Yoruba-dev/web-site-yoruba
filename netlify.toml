@@ -6,3 +6,13 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Scripts del agente de etiquetas (PC de la impresora, Windows). Se sirven como
+# texto para que "irm … | iex" de PowerShell los lea, y fuera de Google: no son
+# páginas de la tienda.
+[[headers]]
+  for = "/herramientas/etiquetas/*"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"

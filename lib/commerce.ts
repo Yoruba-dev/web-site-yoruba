@@ -147,6 +147,33 @@ export function personalizationField(
   return PERSONALIZATION_FIELDS.find((f) => normalized.includes(f.tag));
 }
 
+/**
+ * ¿Esta línea de un pedido PAGADO se fabrica antes de poder enviarse?
+ *
+ * Lo pregunta el sistema de etiquetas antes de comprar la de un pedido: una
+ * pieza con color de Orisha, animal, diseño de Ifá o moneda personalizada se
+ * paga en la web pero sale del taller días después, y comprar la etiqueta al
+ * pagar mandaría a la clienta un rastreo de un paquete que no existe aún.
+ *
+ * Mira las etiquetas del producto (las mismas listas de arriba) y las
+ * propiedades de la línea: cualquiera que no empiece por "_" la escribió la
+ * clienta, así que la pieza lleva algo hecho para ella.
+ */
+export function lineaHechaPorEncargo(
+  tags?: readonly string[],
+  propiedades?: readonly { key: string }[],
+): boolean {
+  const t = (tags ?? []).map((x) => x.toLowerCase().trim());
+  const porTag = [
+    ...MADE_TO_ORDER_TAGS,
+    ...CONFIGURABLE_TAGS,
+    ...COIN_CONFIGURABLE_TAGS,
+    ...PERSONALIZATION_FIELDS.map((f) => f.tag),
+  ].some((tag) => t.includes(tag));
+  const porPropiedad = (propiedades ?? []).some((p) => p.key && !p.key.startsWith("_"));
+  return porTag || porPropiedad;
+}
+
 /** Banderas internas de campaña. No dicen nada de la pieza — son interruptores
  *  para la web—, así que no tienen por qué salir en la ficha de la clienta. */
 export const PROMO_TAGS = ["promo-24h", "promo-activa", "promo-regalo", "oferta"];
