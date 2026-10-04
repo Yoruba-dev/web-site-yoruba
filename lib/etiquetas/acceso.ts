@@ -28,13 +28,27 @@ export function esAgente(req: Request): boolean {
   return Boolean(esperada && m && iguales(m[1].trim(), esperada));
 }
 
+/** La etiqueta (tag) de pedido que marca una prueba del sistema. */
+export const TAG_PRUEBA = "prueba-etiqueta";
+
 /**
- * Interruptor general. Sin ETIQUETAS_MODO=activo no se compra NADA: la ruta
- * solo deja un aviso para comprar a mano. Es el estado por defecto, para que
- * un despliegue sin configurar nunca gaste dinero.
+ * Interruptor general, ETIQUETAS_MODO:
+ *   "activo"   se compran etiquetas de todos los pedidos que toque.
+ *   "prueba"   solo de los pedidos con la etiqueta «prueba-etiqueta»; los
+ *              reales siguen esperando como si estuviera apagado.
+ *   otro valor o sin definir = apagado: no se compra NADA, solo se avisa
+ *              para comprar a mano. Es el estado por defecto, para que un
+ *              despliegue sin configurar nunca gaste dinero.
  */
-export function compraActiva(): boolean {
-  return process.env.ETIQUETAS_MODO === "activo";
+export function modoEtiquetas(): "activo" | "prueba" | "apagado" {
+  const m = process.env.ETIQUETAS_MODO;
+  return m === "activo" || m === "prueba" ? m : "apagado";
+}
+
+export function compraActiva(tagsDelPedido: readonly string[]): boolean {
+  const modo = modoEtiquetas();
+  if (modo === "activo") return true;
+  return modo === "prueba" && tagsDelPedido.some((t) => t.toLowerCase() === TAG_PRUEBA);
 }
 
 export const noAutorizado = () =>

@@ -70,7 +70,7 @@ async function leerVarias<T>(llaves: string[]): Promise<(T | null)[]> {
 
 export type EstadoCompra =
   | "reclamada" // recibida, aún sin pedir nada a Shopify
-  | "flow" // Express: Flow compra la FedEx; aquí solo se vigila que lo haga
+  | "flow" // $1.000 o más: Flow compra la FedEx; aquí solo se vigila que lo haga
   | "lanzando" // a punto de pedir la compra: si algo se cae aquí, NO se
   //                 reintenta sola (podría pagarse dos veces); se avisa
   | "comprando" // Shopify aceptó la compra y la está procesando

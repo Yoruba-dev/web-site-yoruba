@@ -12,11 +12,12 @@ import { decidir } from "@/lib/etiquetas/reglas";
 //     "orderId": "gid://shopify/Order/…", "orderName": "#1460#" }
 //
 // Aquí se decide todo (lib/etiquetas/reglas.ts) y Flow no decide nada:
-//   { "fedex": true }   Express apto. Flow compra FedEx 2Day y luego llama a
-//                        /api/etiquetas/aviso. Es lo ÚNICO que le deja comprar:
-//                        el paso de Flow solo sigue si lee exactamente esto.
-//   { "fedex": false }  todo lo demás. Si era Economy apto, este código compra
-//                        la USPS después de responder (202).
+//   { "fedex": true }   envío de $1.000 o más, apto. Flow compra la FedEx y
+//                        luego llama a /api/etiquetas/aviso. Es lo ÚNICO que le
+//                        deja comprar: el paso de Flow solo sigue si lee
+//                        exactamente esto.
+//   { "fedex": false }  todo lo demás. Si era un envío de menos de $1.000 apto,
+//                        este código compra la USPS después de responder (202).
 //
 // Errores → 500 y Flow reintenta. Mientras tanto no se compra nada; si el
 // mismo pedido sigue fallando pasados 10 min, se avisa en la PC.

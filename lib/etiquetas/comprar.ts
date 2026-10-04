@@ -1,5 +1,5 @@
-// Compra de la etiqueta USPS de un pedido Economy, de principio a fin, y
-// vigilancia de la FedEx que compra Flow en los Express.
+// Compra de la etiqueta USPS de los pedidos de menos de $1.000, de principio a
+// fin, y vigilancia de la FedEx que compra Flow en los de $1.000 o más.
 //
 // Por qué la compra la hace este código y no Flow: Shopify solo deja bajar el
 // PDF de las etiquetas que compró la propia app (probado el 2026-10-03: la
@@ -10,7 +10,7 @@
 // la práctica, así que no se manda y Shopify compra la tarifa más barata de
 // las transportistas preferidas. FedEx está excluido de la API, de modo que
 // en esta tienda (USPS + FedEx preferidas) la más barata es USPS Ground
-// Advantage — justo lo que corresponde a "Economy".
+// Advantage — justo la que toca a los pedidos de menos de $1.000.
 //
 // Lo que tampoco deja: seguro adicional ni firma. Qué pedidos pueden salir
 // solos lo decide reglas.ts, y se vuelve a preguntar AQUÍ, releyendo el pedido
@@ -99,10 +99,12 @@ export async function iniciarCompra(llave: string, presupuestoMs: number): Promi
   const v = await decidir(compra.fulfillmentOrderId);
   if (v.accion === "nada") return omitir(llave, "reclamada", v.motivo);
   if (v.accion === "fedex") {
-    return omitir(llave, "reclamada", "Ahora es Express.", {
+    // Se editó y ahora vale $1.000 o más: esa la compra Flow, no este código,
+    // y Flow ya pasó por este pedido.
+    return omitir(llave, "reclamada", "Ahora vale $1.000 o más.", {
       id: `revisar-${llave}`,
-      titulo: `${v.pedido} pasó a Express`,
-      mensaje: "Cómprale la etiqueta FedEx 2Day a mano.",
+      titulo: `${v.pedido} pasó a FedEx`,
+      mensaje: "Ahora vale $1.000 o más: cómprale la etiqueta FedEx a mano.",
       adminUrl: urlPedidoAdmin(v.orderId),
     });
   }
@@ -243,7 +245,7 @@ async function bajarDocumento(url: string): Promise<ArrayBuffer | null> {
 }
 
 /**
- * Express: Flow recibió "fedex" y debía comprarla al momento. Pasados 20 min
+ * $1.000 o más: Flow recibió "fedex" y debía comprarla al momento. Pasados 20 min
  * se mira el pedido. Si sigue abierto, Flow no la compró (sin tarifa, apartado
  * a mano, flujo apagado…) y se avisa. Si ya salió por FedEx pero el aviso de
  * Flow nunca llegó, se avisa para imprimirla.

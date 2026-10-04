@@ -1,26 +1,26 @@
 // Qué etiqueta lleva cada pedido, y qué pasa con el que no puede salir solo.
 // UNA sola puerta para todo: Flow avisa de cada pedido listo para preparar
-// (app/api/etiquetas/pedido) y lo que se decide aquí es lo único que cuenta:
+// (app/api/etiquetas/pedido) y lo que se decide aquí es lo único que cuenta.
 //
-//   - Economy → "usps": este código compra USPS Ground Advantage (comprar.ts).
-//   - Express → "fedex": Flow compra FedEx 2Day (la API no puede). Flow solo
-//     compra si la respuesta lo dice; ante un error, un "no" o ninguna
-//     respuesta, no gasta.
+// Solo los pedidos CON ENVÍO llevan etiqueta (recogida, Etsy, etc.: nada), y
+// el transportista lo decide el valor, no el envío que eligió la clienta
+// (decisión del dueño, 2026-10-04):
+//   - Menos de $1.000 → "usps": este código compra USPS Ground Advantage
+//     (comprar.ts), aunque la clienta haya pagado Express.
+//   - $1.000 o más    → "fedex": Flow compra la FedEx (la API no puede). Flow
+//     solo compra si la respuesta lo dice; ante un error, un "no" o ninguna
+//     respuesta, no gasta. Sin firma ni seguro adicional: Flow no los ofrece.
 //   - El resto → "nada", y si hay algo que hacer, un aviso en la PC.
 //
 // Lo que el dueño tiene que resolver (pago, fraude, pieza por encargo) además
 // se APARTA en Shopify. Liberarlo es su visto bueno: Flow vuelve a avisar,
-// esos motivos ya no cuentan y la etiqueta sale sola. Para hacerla a mano en
-// su lugar, el pedido lleva la etiqueta (tag) «etiqueta-manual».
-//
-// Los de $1.000 o más NUNCA salen solos: ni la API ni Flow pueden poner firma,
-// y sin firma el seguro no cubre joyería de ese valor. Esos solo se avisan
-// (apartarlos obligaría a liberarlos para poder comprarles la etiqueta).
+// esos motivos ya no cuentan y la etiqueta se crea sola. Para hacerla a mano
+// en su lugar, el pedido lleva la etiqueta (tag) «etiqueta-manual».
 //
 // Se lee el pedido de Shopify en el momento, nunca lo que mandó quien llamó.
 
 import { lineaHechaPorEncargo } from "@/lib/commerce";
-import { compraActiva } from "./acceso";
+import { compraActiva, modoEtiquetas, TAG_PRUEBA } from "./acceso";
 import { adminGraphql, numeroDeGid, urlPedidoAdmin } from "./admin";
 import { anotarRevisado, crearTrabajo, leerRevisado } from "./cola";
 
@@ -33,7 +33,7 @@ export type Decision =
 
 /** Lo que el dueño puede dar por bueno liberando el pedido. */
 type Apartable = "pago" | "riesgo" | "encargo";
-type Problema = { tipo: Apartable | "valor"; texto: string };
+type Problema = { tipo: Apartable; texto: string };
 
 interface PedidoLeido {
   status: string;
@@ -99,23 +99,21 @@ function medir(o: PedidoLeido["order"]): Problema[] {
   if (o.lineItems.nodes.some((l) => lineaHechaPorEncargo(l.product?.tags, l.customAttributes))) {
     out.push({ tipo: "encargo", texto: "Lleva una pieza por encargo: se fabrica antes de enviarse." });
   }
-  // El precio de lista, no el rebajado: un descuento no cambia lo que vale la
-  // pieza si se pierde. Se toma el mayor de los dos por si el pedido se editó.
+  return out;
+}
+
+/**
+ * Lo que vale el pedido para elegir transportista: el precio de lista, no el
+ * rebajado (un descuento no cambia lo que vale la pieza si se pierde), y el
+ * mayor de los dos por si el pedido se editó.
+ */
+function valorDe(o: PedidoLeido["order"]): number {
   const lista = o.lineItems.nodes.reduce(
     (s, l) => s + Number(l.originalUnitPriceSet.shopMoney.amount) * l.currentQuantity,
     0,
   );
-  const valor = Math.max(lista, Number(o.subtotalPriceSet?.shopMoney.amount ?? 0));
-  if (valor >= LIMITE_VALOR) {
-    out.push({
-      tipo: "valor",
-      texto: `Vale $${Math.round(valor)}: cómprale FedEx con FIRMA y seguro por el valor total, a mano.`,
-    });
-  }
-  return out;
+  return Math.max(lista, Number(o.subtotalPriceSet?.shopMoney.amount ?? 0));
 }
-
-const esApartable = (p: Problema): p is Problema & { tipo: Apartable } => p.tipo !== "valor";
 
 async function avisar(id: string, o: PedidoLeido["order"], titulo: string, lineas: string[]) {
   await crearTrabajo({
@@ -145,7 +143,7 @@ export async function decidir(fulfillmentOrderId: string): Promise<Decision> {
     // Si lo apartamos nosotros y se cortó antes de anotarlo, se anota ahora:
     // si no, al liberarlo se volvería a apartar por lo mismo.
     if (fo.fulfillmentHolds.some((h) => h.heldByRequestingApp)) {
-      await anotarRevisado(llave, medir(o).filter(esApartable).map((p) => p.tipo));
+      await anotarRevisado(llave, medir(o).map((p) => p.tipo));
     }
     return nada(`Pedido ${fo.status}: se decide al liberarlo.`);
   }
@@ -156,21 +154,22 @@ export async function decidir(fulfillmentOrderId: string): Promise<Decision> {
   if (o.shippingLine?.source !== "shopify") return nada("Envío de otro canal.");
   if (o.tags.some((t) => t.toLowerCase() === TAG_MANUAL)) return nada("Etiqueta a mano.");
 
-  const express = /express/i.test(o.shippingLine.title);
-  const servicio = express ? "FedEx 2Day" : "USPS Ground Advantage";
+  const fedex = valorDe(o) >= LIMITE_VALOR;
+  const servicio = fedex ? "FedEx" : "USPS Ground Advantage";
   const problemas = medir(o);
-  const alto = problemas.find((p) => p.tipo === "valor");
 
-  if (!compraActiva()) {
+  if (!compraActiva(o.tags)) {
     await avisar(`apagado-${llave}`, o, `Compra la etiqueta de ${o.name}`, [
-      `La compra automática está apagada: cómprala a mano (${alto ? "FedEx con firma" : servicio}).`,
-      ...problemas.filter(esApartable).map((p) => p.texto),
+      modoEtiquetas() === "prueba"
+        ? `Modo de prueba: solo se compran solas las de pedidos con la etiqueta «${TAG_PRUEBA}». Esta, a mano (${servicio}).`
+        : `La compra automática está apagada: cómprala a mano (${servicio}).`,
+      ...problemas.map((p) => p.texto),
     ]);
     return nada("Compra automática apagada.");
   }
 
   const vistos = await leerRevisado(llave);
-  const nuevos = problemas.filter(esApartable).filter((p) => !vistos.includes(p.tipo));
+  const nuevos = problemas.filter((p) => !vistos.includes(p.tipo));
   if (nuevos.length) {
     const tipos = nuevos.map((p) => p.tipo);
     // Orden a propósito: 1º el aviso, 2º apartar, 3º anotarlo. Si algo se
@@ -179,24 +178,18 @@ export async function decidir(fulfillmentOrderId: string): Promise<Decision> {
     // dejaría comprarlo sin revisar).
     await avisar(`apartado-${tipos.join("-")}-${llave}`, o, `${o.name} APARTADO: revísalo`, [
       ...problemas.map((p) => p.texto),
-      alto
-        ? "Cuando esté listo, libéralo y compra la etiqueta a mano."
-        : `Cuando esté listo, LIBÉRALO en Shopify: la etiqueta ${servicio} se compra e imprime sola. Para hacerla tú, ponle antes la etiqueta «${TAG_MANUAL}».`,
+      `Cuando esté listo, LIBÉRALO en Shopify: la etiqueta ${servicio} se crea sola. Para hacerla tú, ponle antes la etiqueta «${TAG_MANUAL}».`,
     ]);
     await apartar(
       fulfillmentOrderId,
       tipos.includes("pago") ? "AWAITING_PAYMENT" : tipos.includes("riesgo") ? "HIGH_RISK_OF_FRAUD" : "OTHER",
-      `Etiquetas PYJ: ${nuevos.map((p) => p.texto).join(" ")} Al liberarlo, la etiqueta sale sola.`,
+      `Etiquetas PYJ: ${nuevos.map((p) => p.texto).join(" ")} Al liberarlo, la etiqueta se crea sola.`,
     );
     await anotarRevisado(llave, tipos);
     return nada(`Apartado: ${tipos.join(", ")}.`);
   }
 
-  if (alto) {
-    await avisar(`valor-${llave}`, o, `${o.name} vale $1.000 o más`, [alto.texto]);
-    return nada("Vale $1.000 o más.");
-  }
-  return { accion: express ? "fedex" : "usps", pedido: o.name, orderId: o.id };
+  return { accion: fedex ? "fedex" : "usps", pedido: o.name, orderId: o.id };
 }
 
 /** Un pedido apartado no admite etiqueta: ni Flow ni nadie puede comprarla. */
