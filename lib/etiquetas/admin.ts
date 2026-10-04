@@ -84,3 +84,9 @@ export function numeroDeGid(gid: string, tipo: string): string | null {
   const m = new RegExp(`^gid://shopify/${tipo}/(\\d+)$`).exec(gid);
   return m ? m[1] : null;
 }
+
+/** La página del pedido en el admin: la que abre la PC en cada aviso. */
+export function urlPedidoAdmin(orderId: string): string | undefined {
+  const n = numeroDeGid(orderId, "Order");
+  return n ? `https://admin.shopify.com/store/${nombreTienda()}/orders/${n}` : undefined;
+}

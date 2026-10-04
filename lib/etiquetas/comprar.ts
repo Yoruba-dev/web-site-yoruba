@@ -1,4 +1,5 @@
-// Compra de la etiqueta USPS de un pedido Economy, de principio a fin.
+// Compra de la etiqueta USPS de un pedido Economy, de principio a fin, y
+// vigilancia de la FedEx que compra Flow en los Express.
 //
 // Por qué la compra la hace este código y no Flow: Shopify solo deja bajar el
 // PDF de las etiquetas que compró la propia app (probado el 2026-10-03: la
@@ -11,17 +12,12 @@
 // en esta tienda (USPS + FedEx preferidas) la más barata es USPS Ground
 // Advantage — justo lo que corresponde a "Economy".
 //
-// Lo que tampoco deja: seguro adicional ni firma. Por eso aquí solo se compran
-// pedidos de menos de $1.000, pagados, sin riesgo de fraude y sin piezas por
-// encargo. Todo lo demás se aparta y se avisa en la PC para hacerlo a mano.
-//
-// Las reglas se comprueban AQUÍ, releyendo el pedido en Shopify justo antes de
-// pagar, aunque Flow ya filtre: el filtro de Flow puede cambiarse sin querer,
-// y si la clave de Flow se filtrara, esta es la última puerta antes del dinero.
+// Lo que tampoco deja: seguro adicional ni firma. Qué pedidos pueden salir
+// solos lo decide reglas.ts, y se vuelve a preguntar AQUÍ, releyendo el pedido
+// justo antes de pagar: es la última puerta antes del dinero.
 
-import { lineaHechaPorEncargo } from "@/lib/commerce";
-import { compraActiva } from "./acceso";
-import { adminGraphql, nombreTienda, numeroDeGid, tokenAdmin } from "./admin";
+import { adminGraphql, numeroDeGid, tokenAdmin, urlPedidoAdmin } from "./admin";
+import { decidir } from "./reglas";
 import {
   comprasEnCurso,
   crearTrabajo,
@@ -30,7 +26,7 @@ import {
   guardarArchivo,
   leerCompra,
   moverCompra,
-  soltarCompra,
+  type Compra,
   type EstadoCompra,
 } from "./cola";
 
@@ -40,11 +36,6 @@ const PAUSA_MS = 2_500;
 const MINUTO = 60_000;
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function urlPedido(orderId: string): string | undefined {
-  const n = numeroDeGid(orderId, "Order");
-  return n ? `https://admin.shopify.com/store/${nombreTienda()}/orders/${n}` : undefined;
-}
 
 /**
  * Cierra una compra como fallida y avisa. El texto depende de lo único que le
@@ -85,41 +76,16 @@ async function fallar(
       id: `fallo-${llave}`,
       titulo: textos[pago][0],
       mensaje: textos[pago][1],
-      adminUrl: urlPedido(c.orderId),
+      adminUrl: urlPedidoAdmin(c.orderId),
     },
   });
   if (hecha) await entregarAviso(llave);
 }
 
-/** No toca comprarla: se cierra la compra y, si hay algo que hacer, se avisa. */
-async function omitir(llave: string, motivo: string, aviso?: [titulo: string, mensaje: string]) {
-  const c = await leerCompra(llave);
-  if (!c || c.estado !== "reclamada") return;
-  const hecha = await moverCompra(llave, "reclamada", {
-    estado: "omitida",
-    motivo,
-    ...(aviso
-      ? { aviso: { id: `aviso-${llave}`, titulo: aviso[0], mensaje: aviso[1], adminUrl: urlPedido(c.orderId) } }
-      : {}),
-  });
+/** No toca comprarla: se cierra la compra y, si hay algo más que decir, se avisa. */
+async function omitir(llave: string, de: EstadoCompra, motivo: string, aviso?: Compra["aviso"]) {
+  const hecha = await moverCompra(llave, de, { estado: "omitida", motivo, ...(aviso ? { aviso } : {}) });
   if (hecha && aviso) await entregarAviso(llave);
-}
-
-interface PedidoParaComprar {
-  status: string;
-  deliveryMethod: { methodType: string } | null;
-  order: {
-    id: string;
-    name: string;
-    cancelledAt: string | null;
-    displayFinancialStatus: string | null;
-    subtotalPriceSet: { shopMoney: { amount: string } };
-    shippingLine: { title: string } | null;
-    risk: { recommendation: string };
-    lineItems: {
-      nodes: { customAttributes: { key: string }[]; product: { tags: string[] } | null }[];
-    };
-  };
 }
 
 /** Paso 1: relee el pedido, comprueba TODAS las reglas y lanza la compra. */
@@ -127,75 +93,20 @@ export async function iniciarCompra(llave: string, presupuestoMs: number): Promi
   const compra = await leerCompra(llave);
   if (!compra || compra.estado !== "reclamada") return;
 
-  // El interruptor manda también aquí, no solo en la ruta de Flow: esta
-  // función la llaman además las consultas de la PC, que no pasan por la ruta.
-  if (!compraActiva()) {
-    return omitir(llave, "Compra automática apagada.", [
-      `Compra la etiqueta de ${compra.pedido}`,
-      "La compra automática está apagada. Cómprala a mano: USPS Ground Advantage.",
-    ]);
+  // Las mismas reglas que al entrar el pedido (reglas.ts), con el pedido de
+  // ahora: entre una cosa y otra pudo cambiar. Si dice que no, ya avisó o
+  // apartó ella; aquí solo se cierra la compra.
+  const v = await decidir(compra.fulfillmentOrderId);
+  if (v.accion === "nada") return omitir(llave, "reclamada", v.motivo);
+  if (v.accion === "fedex") {
+    return omitir(llave, "reclamada", "Ahora es Express.", {
+      id: `revisar-${llave}`,
+      titulo: `${v.pedido} pasó a Express`,
+      mensaje: "Cómprale la etiqueta FedEx 2Day a mano.",
+      adminUrl: urlPedidoAdmin(v.orderId),
+    });
   }
-
-  const { fulfillmentOrder: fo } = await adminGraphql<{
-    fulfillmentOrder: PedidoParaComprar | null;
-  }>(
-    `query($id: ID!) { fulfillmentOrder(id: $id) {
-       status
-       deliveryMethod { methodType }
-       order {
-         id name cancelledAt displayFinancialStatus
-         subtotalPriceSet { shopMoney { amount } }
-         shippingLine { title }
-         risk { recommendation }
-         lineItems(first: 50) { nodes { customAttributes { key } product { tags } } }
-       }
-     } }`,
-    { id: compra.fulfillmentOrderId },
-  );
-
-  if (!fo) return fallar(llave, "reclamada", "Shopify no encuentra ese pedido.", "no");
-  const o = fo.order;
-  const pedido = o.name; // de Shopify, no de lo que mandó quien llamó
-
-  // Retenido o programado: aún no. Se suelta el cerrojo para que el aviso de
-  // Flow al liberarlo pueda reclamarlo otra vez.
-  if (fo.status === "ON_HOLD" || fo.status === "SCHEDULED") return soltarCompra(llave);
-  // Ya preparado, cancelado o recogida: no hay nada que comprar ni que avisar.
-  if (fo.status !== "OPEN" || o.cancelledAt) return omitir(llave, `Pedido ${fo.status}.`);
-  if (fo.deliveryMethod?.methodType !== "SHIPPING") return omitir(llave, "No es un envío.");
-
-  if (o.displayFinancialStatus !== "PAID") {
-    return omitir(llave, `Pago ${o.displayFinancialStatus}.`, [
-      `${pedido}: el pago no está completo`,
-      `Shopify lo marca como ${o.displayFinancialStatus}. Revísalo antes de enviar; la etiqueta se compra a mano.`,
-    ]);
-  }
-  if (o.risk.recommendation !== "ACCEPT") {
-    return omitir(llave, `Riesgo ${o.risk.recommendation}.`, [
-      `${pedido}: revisar riesgo de fraude`,
-      "Shopify no lo dio por seguro. Mira el análisis de fraude en el pedido antes de enviar oro; la etiqueta se compra a mano.",
-    ]);
-  }
-  // Nunca sin firma una pieza de $1.000 o más: el seguro de Shopify no la
-  // cubriría en absoluto. Flow ya las aparta; esto es la segunda red.
-  if (Number(o.subtotalPriceSet.shopMoney.amount) >= 1000) {
-    return omitir(llave, "Vale $1.000 o más.", [
-      `${pedido} vale $1.000 o más`,
-      "Cómprale FedEx con FIRMA y seguro por el valor total, a mano.",
-    ]);
-  }
-  if (/express/i.test(o.shippingLine?.title ?? "")) {
-    return omitir(llave, "Envío Express.", [
-      `${pedido} pagó Express`,
-      "Express va por FedEx: no la compra este programa. Revisa el flujo de Flow.",
-    ]);
-  }
-  if (o.lineItems.nodes.some((l) => lineaHechaPorEncargo(l.product?.tags, l.customAttributes))) {
-    return omitir(llave, "Lleva una pieza por encargo.", [
-      `${pedido} lleva una pieza por encargo`,
-      "Se fabrica antes de enviarse. Compra la etiqueta cuando la pieza esté lista.",
-    ]);
-  }
+  const pedido = v.pedido; // de Shopify, no de lo que mandó quien llamó
 
   // El cerrojo de verdad: solo quien logre pasar "reclamada" → "lanzando"
   // pide la compra. A partir de aquí, si algo se cae, la compra NO se vuelve
@@ -203,7 +114,7 @@ export async function iniciarCompra(llave: string, presupuestoMs: number): Promi
   const lanzada = await moverCompra(llave, "reclamada", {
     estado: "lanzando",
     pedido,
-    orderId: o.id,
+    orderId: v.orderId,
     lanzada: new Date().toISOString(),
   });
   if (!lanzada) return;
@@ -309,7 +220,7 @@ export async function esperarCompra(llave: string, presupuestoMs: number): Promi
     archivo,
     formato: doc.format,
     // Si la PC no puede imprimirla, abre el pedido para hacerlo desde ahí.
-    adminUrl: urlPedido(compra.orderId),
+    adminUrl: urlPedidoAdmin(compra.orderId),
   });
   await moverCompra(llave, "comprando", { estado: "comprada", etiquetaId: etiqueta.id });
 }
@@ -332,6 +243,54 @@ async function bajarDocumento(url: string): Promise<ArrayBuffer | null> {
 }
 
 /**
+ * Express: Flow recibió "fedex" y debía comprarla al momento. Pasados 20 min
+ * se mira el pedido. Si sigue abierto, Flow no la compró (sin tarifa, apartado
+ * a mano, flujo apagado…) y se avisa. Si ya salió por FedEx pero el aviso de
+ * Flow nunca llegó, se avisa para imprimirla.
+ */
+async function vigilarFedex(llave: string): Promise<void> {
+  const c = await leerCompra(llave);
+  if (c?.estado !== "flow") return;
+  const { fulfillmentOrder: fo } = await adminGraphql<{
+    fulfillmentOrder: {
+      status: string;
+      fulfillments: { nodes: { trackingInfo: { company: string | null }[] }[] };
+    } | null;
+  }>(
+    `query($id: ID!) { fulfillmentOrder(id: $id) {
+       status fulfillments(first: 5) { nodes { trackingInfo { company } } }
+     } }`,
+    { id: c.fulfillmentOrderId },
+  );
+  const adminUrl = urlPedidoAdmin(c.orderId);
+  if (!fo || fo.status === "OPEN") {
+    return omitir(llave, "flow", "Flow no compró la FedEx.", {
+      id: `fedex-falta-${llave}`,
+      titulo: `FedEx de ${c.pedido} sin comprar`,
+      mensaje:
+        "Flow no la compró en 20 min. Mira si el pedido ya tiene etiqueta; solo si no la tiene, cómprala a mano: FedEx 2Day.",
+      adminUrl,
+    });
+  }
+  // Apartado a mano: al liberarlo, Flow vuelve a avisar y se reclama de nuevo.
+  if (fo.status === "ON_HOLD" || fo.status === "SCHEDULED") return omitir(llave, "flow", "Apartado.");
+  const porFedex = fo.fulfillments.nodes.some((f) =>
+    f.trackingInfo.some((t) => /fedex/i.test(t.company ?? "")),
+  );
+  if (!porFedex) return omitir(llave, "flow", `Preparado sin FedEx (${fo.status}).`);
+  const hecha = await moverCompra(llave, "flow", {
+    estado: "comprada",
+    aviso: {
+      id: `fedex-${llave}`, // el mismo id que usa el aviso de Flow: nunca dos
+      titulo: `Etiqueta FedEx de ${c.pedido} lista`,
+      mensaje: "Se abrió el pedido: pulsa «Imprimir etiqueta».",
+      adminUrl,
+    },
+  });
+  if (hecha) await entregarAviso(llave);
+}
+
+/**
  * Retoma lo que quedó a medias. La llama cada consulta de la PC (cada medio
  * minuto), así que hace de "cron" sin necesitar una función programada.
  *
@@ -342,6 +301,7 @@ async function bajarDocumento(url: string): Promise<ArrayBuffer | null> {
  *    si Shopify la cobró → NO se reintenta; se avisa para revisarlo a mano.
  *  - "comprando": solo se pregunta a Shopify cómo va (preguntar no cuesta).
  *    Tras 45 s, para no pisarse con la llamada original; a los 15 min, aviso.
+ *  - "flow": a los 20 min se mira si Flow compró la FedEx (vigilarFedex).
  */
 export async function avanzarCompras(presupuestoMs: number): Promise<void> {
   const hasta = Date.now() + presupuestoMs;
@@ -372,6 +332,8 @@ export async function avanzarCompras(presupuestoMs: number): Promise<void> {
         if (ahora?.estado === "comprando" && desdeLanzada > 15 * MINUTO) {
           await fallar(llave, "comprando", "Shopify no terminó la compra en 15 min.", "no-se");
         }
+      } else if (compra.estado === "flow" && desdeCambio > 20 * MINUTO) {
+        await vigilarFedex(llave);
       }
     } catch (e) {
       console.error("[etiquetas] avanzar", llave, (e as Error).message);

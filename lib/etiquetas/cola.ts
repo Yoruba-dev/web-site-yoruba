@@ -4,10 +4,13 @@
 // Blobs. Dos clases de llave:
 //
 //   REGISTROS (se quedan para siempre, son el cerrojo contra duplicados)
-//     compra/<fulfillmentOrder>  una por pedido que este código compra. Se crea
-//                                con onlyIfNew: si Flow reintenta o dispara dos
-//                                veces, la segunda no encuentra hueco y no se
-//                                paga otra etiqueta.
+//     compra/<fulfillmentOrder>  una por pedido con etiqueta automática (USPS
+//                                que compra este código, o FedEx que compra
+//                                Flow). Se crea con onlyIfNew: si Flow reintenta
+//                                o dispara dos veces, la segunda no encuentra
+//                                hueco y no se paga otra etiqueta.
+//     revisado/<fulfillmentOrder> los motivos por los que se apartó ese pedido.
+//                                Liberarlo los da por buenos.
 //     trabajo/<id>               lo que la PC tiene que hacer. También onlyIfNew:
 //                                un aviso repetido no abre el pedido dos veces.
 //
@@ -67,12 +70,15 @@ async function leerVarias<T>(llaves: string[]): Promise<(T | null)[]> {
 
 export type EstadoCompra =
   | "reclamada" // recibida, aún sin pedir nada a Shopify
+  | "flow" // Express: Flow compra la FedEx; aquí solo se vigila que lo haga
   | "lanzando" // a punto de pedir la compra: si algo se cae aquí, NO se
   //                 reintenta sola (podría pagarse dos veces); se avisa
   | "comprando" // Shopify aceptó la compra y la está procesando
   | "comprada" // etiqueta pagada y su PDF en la cola
   | "fallida" // no se compró, o no se sabe: aviso en la PC
-  | "omitida"; // no tocaba comprarla (por encargo, $1.000+, ya preparada…)
+  | "omitida"; // no tocaba comprarla (apartada, $1.000+, ya preparada…). Nunca
+//                 se pidió nada a Shopify: si Flow vuelve a avisar (el dueño
+//                 liberó el pedido), se puede reclamar otra vez.
 
 const TERMINALES: EstadoCompra[] = ["comprada", "fallida", "omitida"];
 
@@ -102,24 +108,38 @@ export interface Compra {
   actualizada: string;
 }
 
-/** Devuelve false si ese pedido ya se estaba (o se había) comprado. */
+/**
+ * Toma el pedido para comprarle la etiqueta. Devuelve false si ya se estaba
+ * (o se había) comprado. Una compra "omitida" nunca pidió nada a Shopify, así
+ * que se puede volver a tomar; y una "flow" que se pide otra vez como "flow" es
+ * Flow repitiendo la misma pregunta: misma respuesta.
+ */
 export async function reclamarCompra(
   datos: Pick<Compra, "fulfillmentOrderId" | "pedido" | "orderId">,
   llave: string,
+  estado: "reclamada" | "flow" = "reclamada",
 ): Promise<boolean> {
-  const compra: Compra = { ...datos, estado: "reclamada", creada: ahora(), actualizada: ahora() };
+  const compra: Compra = { ...datos, estado, creada: ahora(), actualizada: ahora() };
   const nueva = await setCondicional(`compra/${llave}`, JSON.stringify(compra), { onlyIfNew: true });
   if (nueva) {
     await almacen().set(`activa/${llave}`, "1");
     return true;
   }
+  const actual = await almacen().getWithMetadata(`compra/${llave}`, { type: "text" });
+  const previa = actual ? (JSON.parse(actual.data) as Compra) : null;
+  if (previa?.estado === "omitida" && actual?.etag) {
+    const ok = await setCondicional(`compra/${llave}`, JSON.stringify(compra), {
+      onlyIfMatch: actual.etag,
+    });
+    if (ok) await almacen().set(`activa/${llave}`, "1");
+    return ok;
+  }
   // Ya existía. Puede ser un duplicado de verdad… o que la escritura llegó
   // pero su respuesta se perdió (Blobs reintenta y recibe 412), o que el
   // índice no llegó a escribirse. Re-asegurar el índice es inofensivo y evita
   // que un pedido se quede sin etiqueta ni aviso.
-  const c = await leerCompra(llave);
-  if (c && viva(c)) await almacen().set(`activa/${llave}`, "1");
-  return false;
+  if (previa && viva(previa)) await almacen().set(`activa/${llave}`, "1");
+  return previa?.estado === "flow" && estado === "flow";
 }
 
 export async function leerCompra(llave: string): Promise<Compra | null> {
@@ -146,7 +166,13 @@ export async function moverCompra(
     onlyIfMatch: actual.etag,
   });
   if (!ok) return null;
-  if (!viva(nueva)) await almacen().delete(`activa/${llave}`);
+  if (!viva(nueva)) {
+    await almacen().delete(`activa/${llave}`);
+    // Una "omitida" se puede reclamar: si justo ahora otro la tomó, que no se
+    // quede fuera del índice por este borrado.
+    const otra = await leerCompra(llave);
+    if (otra && viva(otra)) await almacen().set(`activa/${llave}`, "1");
+  }
   return nueva;
 }
 
@@ -158,21 +184,9 @@ export async function entregarAviso(llave: string): Promise<void> {
   const c = await leerCompra(llave);
   if (!c?.aviso || c.avisado || !TERMINALES.includes(c.estado)) return;
   await crearTrabajo({ tipo: "abrir", pedido: c.pedido, ...c.aviso });
-  // Ya cerrada: nadie más la escribe, no hace falta comparar ETag.
-  await almacen().set(`compra/${llave}`, JSON.stringify({ ...c, avisado: true, actualizada: ahora() }));
-  await almacen().delete(`activa/${llave}`);
-}
-
-/**
- * Borra el cerrojo de una compra que NUNCA llegó a pedirse a Shopify (pedido
- * retenido o programado). Así, cuando Flow vuelva a avisar al liberarse, se
- * puede reclamar de nuevo. Solo desde "reclamada": nunca después de lanzarla.
- */
-export async function soltarCompra(llave: string): Promise<void> {
-  const c = await leerCompra(llave);
-  if (c?.estado !== "reclamada") return;
-  await almacen().delete(`activa/${llave}`);
-  await almacen().delete(`compra/${llave}`);
+  // Con ETag aunque esté cerrada: una "omitida" puede reclamarse otra vez
+  // mientras tanto, y esta escritura no debe pisar esa compra nueva.
+  await moverCompra(llave, c.estado, { estado: c.estado, avisado: true });
 }
 
 /** Compras sin terminar (la función se quedó sin tiempo o se cayó). */
@@ -293,4 +307,35 @@ export async function leerArchivo(llave: string): Promise<ArrayBuffer | null> {
 
 export async function registrarLatido(info: Record<string, string>): Promise<void> {
   await almacen().set("latido", JSON.stringify({ ...info, visto: ahora() }));
+}
+
+// ---------- pedidos apartados ----------
+//
+// Los motivos por los que se apartó un pedido (pago, riesgo, encargo). Si el
+// dueño lo LIBERA, Flow vuelve a avisar y estos ya no cuentan: liberarlo es
+// su visto bueno. Uno nuevo que aparezca después sí lo vuelve a apartar.
+
+export async function leerRevisado(llave: string): Promise<string[]> {
+  const t = await almacen().get(`revisado/${llave}`, { type: "text" });
+  return t ? ((JSON.parse(t) as { motivos: string[] }).motivos ?? []) : [];
+}
+
+export async function anotarRevisado(llave: string, motivos: string[]): Promise<void> {
+  const antes = await leerRevisado(llave);
+  const todos = [...new Set([...antes, ...motivos])];
+  if (todos.length === antes.length) return;
+  await almacen().set(`revisado/${llave}`, JSON.stringify({ motivos: todos, cuando: ahora() }));
+}
+
+// ---------- errores que no se arreglan solos ----------
+
+/**
+ * Flow reintenta cada error; casi todos se arreglan solos en el siguiente
+ * intento y avisar de ellos sería ruido. Devuelve true cuando ese pedido lleva
+ * más de 10 minutos fallando: entonces sí hay que avisar.
+ */
+export async function falloPersistente(llave: string): Promise<boolean> {
+  await almacen().set(`error/${llave}`, ahora(), { onlyIfNew: true });
+  const desde = await almacen().get(`error/${llave}`, { type: "text" });
+  return !!desde && Date.now() - Date.parse(desde) > 10 * 60_000;
 }
