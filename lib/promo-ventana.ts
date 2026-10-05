@@ -2,6 +2,7 @@ import { cache } from "react";
 import { shopifyFetch, shopifyGetPromoVentana } from "./shopify";
 import { formatMoney, sizedImageUrl } from "./utils";
 import type { Product } from "./types";
+import type { FeaturedOfferVM } from "./featured-offer";
 
 // ---------------------------------------------------------------------------
 // La promoción por tiempo limitado: "un % de descuento en un grupo de piezas,
@@ -56,7 +57,10 @@ export interface PromoVentanaVM {
   titulo: string;
   /** Texto de la colección — es el cuerpo del anuncio. */
   descripcion: string;
+  /** La imagen de la colección: es el banner de la campaña en la portada. */
   imagen?: string;
+  imagenAlt: string | null;
+  /** La ficha de la pieza si la promo es de UNA sola; si no, la colección. */
   href: string;
   /** Porcentaje MEDIDO en el carrito de prueba. Nunca escrito en el código. */
   pct: number;
@@ -65,8 +69,56 @@ export interface PromoVentanaVM {
   /** Handles de las piezas participantes, para marcarlas en las rejillas. */
   handles: string[];
   piezas: { handle: string; title: string; image?: string }[];
-  /** Un ejemplo con números reales, para ilustrar el ahorro. */
-  ejemplo: { titulo: string; antes: string; ahora: string; ahorro: string };
+  /** Un ejemplo con números reales, para ilustrar el ahorro. Los `…Corto`
+   *  quitan los centavos cuando no los hay ("$100" y no "$100.00"), que es como
+   *  se dice un precio en un anuncio. */
+  ejemplo: {
+    titulo: string;
+    antes: string;
+    ahora: string;
+    ahorro: string;
+    antesCorto: string;
+    ahoraCorto: string;
+    ahorroCorto: string;
+  };
+}
+
+/** "$100" si el importe es redondo; "$99.50" si no. */
+function precioCorto(amount: number, currencyCode: string): string {
+  const completo = formatMoney({ amount: amount.toFixed(2), currencyCode });
+  return Number.isInteger(Math.round(amount * 100) / 100) ? completo.replace(/\.00$/, "") : completo;
+}
+
+/** "miércoles 7 de octubre", en hora de Miami: la fecha de fin dicha como la
+ *  diría alguien del taller. Se calcula en el servidor para que no dependa del
+ *  reloj ni del huso del visitante. */
+export function fechaCortaMiami(iso: string): string {
+  const partes = new Intl.DateTimeFormat("es-US", {
+    timeZone: "America/New_York",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).formatToParts(new Date(iso));
+  const v = (t: string) => partes.find((p) => p.type === t)?.value ?? "";
+  return `${v("weekday")} ${v("day")} de ${v("month")}`;
+}
+
+/**
+ * La promo vestida como "oferta destacada", para el popup de bienvenida. Así
+ * el popup no necesita saber de dónde sale la oferta: le llega la misma forma
+ * que con una pieza rebajada, más la hora de fin para apagarse a tiempo.
+ */
+export function comoOfertaDestacada(vm: PromoVentanaVM): FeaturedOfferVM {
+  return {
+    title: vm.titulo,
+    href: vm.href,
+    image: vm.imagen ?? vm.piezas[0]?.image,
+    pct: vm.pct,
+    was: vm.ejemplo.antes,
+    now: vm.ejemplo.ahora,
+    saved: vm.ejemplo.ahorro,
+    hasta: vm.hasta,
+  };
 }
 
 const CON_HUSO = /(Z|[+-]\d{2}:\d{2})$/;
@@ -219,7 +271,13 @@ export const getPromoVentana = cache(
         titulo: col.title,
         descripcion: col.description,
         imagen: col.image ? sizedImageUrl(col.image, 1200) : undefined,
-        href: `/collections/${COLECCION_PROMO}`,
+        imagenAlt: col.imageAlt,
+        // Con una sola pieza, la colección sería un paso de más antes de
+        // poder comprarla.
+        href:
+          col.products.length === 1
+            ? `/products/${encodeURIComponent(col.products[0].handle)}`
+            : `/collections/${COLECCION_PROMO}`,
         pct,
         hasta: hastaMs !== null ? new Date(hastaMs).toISOString() : null,
         handles: col.products.map((p) => p.handle),
@@ -233,6 +291,9 @@ export const getPromoVentana = cache(
           antes: formatMoney({ amount: String(ahora + desc), currencyCode: moneda }),
           ahora: formatMoney({ amount: String(ahora), currencyCode: moneda }),
           ahorro: formatMoney({ amount: String(desc), currencyCode: moneda }),
+          antesCorto: precioCorto(ahora + desc, moneda),
+          ahoraCorto: precioCorto(ahora, moneda),
+          ahorroCorto: precioCorto(desc, moneda),
         },
       });
     } catch {

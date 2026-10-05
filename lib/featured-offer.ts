@@ -14,6 +14,10 @@ export interface FeaturedOfferVM {
   was: string; // formatted original price, e.g. "$900.00"
   now: string; // formatted sale price, e.g. "$720.00"
   saved: string; // formatted amount saved, e.g. "$180.00"
+  /** Fin absoluto (ISO) si la oferta caduca a una hora fija — la promo por
+   *  tiempo limitado. El popup deja de salir a esa hora aunque la página venga
+   *  de la caché. */
+  hasta?: string | null;
 }
 
 // Reads the configured featured product LIVE and returns the offer ONLY when it's

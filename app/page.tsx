@@ -79,6 +79,12 @@ export default async function HomePage() {
         mano en Miami
       </h1>
 
+      {/* La promo por tiempo limitado, lo PRIMERO de la portada: es la que tiene
+          reloj, así que es la que se pierde si no se ve. Con foto de campaña en
+          Shopify sale como banner; sin ella, como banda. Se apaga sola cuando
+          Shopify deja de descontar o pasa la hora (ver lib/promo-ventana.ts). */}
+      <PromoVentana variante="portada" />
+
       <HeroSlider />
 
       {/* Recién llegado — front-and-center right under the hero so a new piece
@@ -98,11 +104,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* La promo por tiempo limitado, encima de todo lo demás: es la que tiene
-          reloj, así que es la que se pierde si no se ve. Se apaga sola cuando
-          Shopify deja de descontar (ver lib/promo-ventana.ts). */}
-      <PromoVentana />
 
       {/* Oferta destacada — live promo band for the featured on-sale piece,
           placed high so the deal gets top billing right under Novedades. */}

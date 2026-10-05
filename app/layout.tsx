@@ -19,6 +19,11 @@ import { AccountProvider } from "@/lib/account-context";
 import { getCollections } from "@/lib/products";
 import { getFeaturedOffer } from "@/lib/featured-offer";
 import { getPromo } from "@/lib/promo";
+import {
+  comoOfertaDestacada,
+  fechaCortaMiami,
+  getPromoVentana,
+} from "@/lib/promo-ventana";
 import PromoPopup from "@/components/promo/PromoPopup";
 import { SITE, SITE_URL } from "@/lib/site";
 
@@ -99,10 +104,14 @@ export default async function RootLayout({
     image: c.image ?? undefined,
   }));
 
+  // La promo por tiempo limitado (lib/promo-ventana.ts). Cuando está viva manda
+  // en la barra de arriba y en el popup de bienvenida: es la que tiene reloj.
+  const ventana = await getPromoVentana();
+
   // Featured offer (if a piece is on sale) — powers the startup popup's promo
   // variant. null when there's no active offer, so the popup falls back to the
-  // newsletter signup.
-  const offer = await getFeaturedOffer();
+  // newsletter signup. The time-limited promo takes precedence.
+  const offer = ventana ? comoOfertaDestacada(ventana) : await getFeaturedOffer();
   // La oferta cruzada (anillo + moneda). Manda sobre el resto: es la campaña
   // viva y la que más deja. Si está, el popup del boletín no sale — dos ventanas
   // encima de la misma persona no es una promoción, es un estorbo.
@@ -119,7 +128,18 @@ export default async function RootLayout({
         <CartProvider>
           <WishlistProvider>
           <CompareProvider>
-            <AnnouncementBar />
+            <AnnouncementBar
+              promo={
+                ventana
+                  ? {
+                      titulo: ventana.titulo,
+                      href: ventana.href,
+                      hasta: ventana.hasta,
+                      fecha: ventana.hasta ? fechaCortaMiami(ventana.hasta) : null,
+                    }
+                  : null
+              }
+            />
             <ElekeBar />
             <div className="main-wrapper">
               {promo ? (

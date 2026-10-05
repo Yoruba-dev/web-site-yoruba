@@ -1,6 +1,7 @@
 import Countdown from "@/components/ui/Countdown";
 import PromoBadge from "@/components/promo/PromoBadge";
-import { getPromoVentana } from "@/lib/promo-ventana";
+import PromoCaduca from "@/components/promo/PromoCaduca";
+import { fechaCortaMiami, getPromoVentana } from "@/lib/promo-ventana";
 
 // La banda de la promo por tiempo limitado.
 //
@@ -26,7 +27,9 @@ function horaDeMiami(iso: string): string {
 export default async function PromoVentana({
   variante = "banda",
 }: {
-  variante?: "banda" | "compacta";
+  /** `portada` = el banner de la campaña, arriba de la página de inicio. Usa
+   *  la foto de la colección; si la promo no tiene foto, sale la banda. */
+  variante?: "banda" | "compacta" | "portada";
 }) {
   const vm = await getPromoVentana();
   if (!vm) return null;
@@ -35,6 +38,79 @@ export default async function PromoVentana({
   const descripcionReloj = cuando
     ? `La oferta termina el ${cuando}, hora de Miami.`
     : undefined;
+
+  if (variante === "portada" && vm.imagen) {
+    const fecha = vm.hasta ? fechaCortaMiami(vm.hasta) : null;
+    // El precio grande solo cuando la promo es de UNA pieza: con varias, un
+    // único precio en un banner tan grande prometería algo que no es para todas.
+    const unaPieza = vm.handles.length === 1;
+    return (
+      <PromoCaduca hasta={vm.hasta}>
+        <section className="pyj-promoP" aria-labelledby="pyj-promoP-tit">
+          <div className="pyj-promoP_foto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={vm.imagen}
+              alt={vm.imagenAlt || vm.titulo}
+              width={1200}
+              height={1200}
+              fetchPriority="high"
+            />
+          </div>
+          <div className="container">
+            <div className="pyj-promoP_texto">
+              {/* Los espacios duros pegan la estrella final a la fecha: si no,
+                  en un móvil la "✦" se queda sola en la segunda línea. */}
+              <span className="pyj-eyebrow">
+                ✦{" "}
+                {(fecha ? `Solo hasta el ${fecha}` : "Por tiempo limitado").replace(
+                  / (\S+ \S+ \S+)$/,
+                  (_, cola: string) => ` ${cola.replace(/ /g, "\u00a0")}`,
+                )}
+                {"\u00a0✦"}
+              </span>
+              <h2 id="pyj-promoP-tit" className="pyj-promoP_tit">
+                {vm.titulo}
+              </h2>
+              {unaPieza ? (
+                <p className="pyj-promoP_precio">
+                  <b>{vm.ejemplo.ahoraCorto}</b>
+                  <span className="pyj-sr">Antes </span>
+                  <s>{vm.ejemplo.antesCorto}</s>
+                  <span className="pyj-promoP_ahorro">
+                    ahorras {vm.ejemplo.ahorroCorto}
+                  </span>
+                </p>
+              ) : (
+                <p className="pyj-promoP_precio">
+                  <b>−{vm.pct}%</b>
+                  <span className="pyj-promoP_ahorro">
+                    en {vm.handles.length} piezas
+                  </span>
+                </p>
+              )}
+              {vm.descripcion && <p className="pyj-promoP_desc">{vm.descripcion}</p>}
+
+              <Countdown
+                hasta={vm.hasta}
+                descripcion={descripcionReloj}
+                alTerminar="La oferta terminó"
+              />
+
+              {/* La misma frase honesta que la banda: el precio de la tarjeta no
+                  baja, el descuento se resta al pagar. La hora de fin ya la dice
+                  el reloj justo encima. */}
+              <p className="pyj-promoP_letra">El descuento se aplica solo al pagar.</p>
+
+              <a href={vm.href} className="pyj-btn-gold">
+                {unaPieza ? "Comprar ahora" : "Ver las piezas"}
+              </a>
+            </div>
+          </div>
+        </section>
+      </PromoCaduca>
+    );
+  }
 
   return (
     <section

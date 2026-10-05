@@ -8807,6 +8807,109 @@ button[type="submit"],
   color: var(--pyj-gold);
 }
 
+/* --- La portada: el banner de la campaña, arriba del inicio --------------
+   Foto cuadrada de la campaña (la imagen de la colección en Shopify) a la
+   derecha, fundida con el fondo por una máscara; el texto, de verdad (HTML), a
+   la izquierda. En móvil la foto va arriba y el texto debajo. */
+.pyj-promoP {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #070603;
+  color: #f0e7d2;
+}
+.pyj-promoP_foto {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(62%, 980px);
+  z-index: 0;
+}
+.pyj-promoP_foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 72% 50%;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 34%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 34%);
+}
+.pyj-promoP .container {
+  position: relative;
+  z-index: 1;
+}
+.pyj-promoP_texto {
+  max-width: 540px;
+  padding: 60px 0 56px;
+}
+.pyj-promoP_tit {
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: clamp(30px, 3.6vw, 48px);
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 10px 0 14px;
+  color: var(--pyj-gold-light);
+  background: linear-gradient(177deg, #fff4cf 0%, #f5d77a 30%, #e3b23c 55%, #a8781f 78%, #f2cf6b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* text-shadow no pinta a través del texto recortado: va como filtro. */
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.55));
+}
+.pyj-promoP_precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin: 0 0 14px;
+}
+.pyj-promoP_precio b {
+  font-family: var(--pyj-font-display, "Cinzel"), Georgia, serif;
+  font-size: clamp(44px, 5vw, 64px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pyj-gold-light);
+}
+.pyj-promoP_precio s {
+  font-size: 22px;
+  color: #b8aa8b;
+  text-decoration-color: rgba(227, 178, 60, 0.8);
+}
+.pyj-promoP_ahorro {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--pyj-gold);
+}
+.pyj-promoP_desc {
+  color: #cdbf9f;
+  font-size: 16px;
+  max-width: 46ch;
+  margin: 0 0 18px;
+}
+.pyj-promoP_letra {
+  font-size: 13.5px;
+  color: #b8aa8b;
+  margin: 14px 0 22px;
+}
+@media (max-width: 991px) {
+  .pyj-promoP_foto {
+    position: relative;
+    width: 100%;
+    height: clamp(240px, 62vw, 380px);
+  }
+  .pyj-promoP_foto img {
+    object-position: 74% 52%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  }
+  .pyj-promoP_texto {
+    max-width: none;
+    margin-top: -28px;
+    padding: 0 0 40px;
+  }
+}
+
 /* --- Las piezas participantes ------------------------------------------- */
 .pyj-promoV_piezas {
   display: grid;

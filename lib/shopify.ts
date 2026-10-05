@@ -388,6 +388,7 @@ export async function shopifyGetPromoVentana(
   title: string;
   description: string;
   image: string | null;
+  imageAlt: string | null;
   termina: string | null;
   products: Product[];
 } | null> {
@@ -395,7 +396,7 @@ export async function shopifyGetPromoVentana(
     collection: {
       title: string;
       description: string;
-      image: { url: string } | null;
+      image: { url: string; altText: string | null } | null;
       termina: { value: string } | null;
       products: { edges: { node: ShopifyProduct }[] };
     } | null;
@@ -406,7 +407,7 @@ export async function shopifyGetPromoVentana(
         collection(handle: $handle) {
           title
           description
-          image { url }
+          image { url altText }
           termina: metafield(namespace: "promo", key: "termina") { value }
           products(first: $first, sortKey: BEST_SELLING) {
             edges { node { ...ProductCard } }
@@ -421,6 +422,7 @@ export async function shopifyGetPromoVentana(
     title: data.collection.title,
     description: data.collection.description,
     image: data.collection.image?.url ?? null,
+    imageAlt: data.collection.image?.altText ?? null,
     termina: data.collection.termina?.value ?? null,
     products: data.collection.products.edges.map((e) => reshape(e.node)),
   };

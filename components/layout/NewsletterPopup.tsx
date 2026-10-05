@@ -27,11 +27,16 @@ export default function NewsletterPopup({
 
   const storageKey = offer ? `pyj-popup-offer:${offer.href}` : STORAGE_KEY;
 
+  // A time-limited offer must not pop up after it ends, even when this page's
+  // HTML comes from cache (the server would no longer send it).
+  const fin = offer?.hasta ? Date.parse(offer.hasta) : NaN;
+
   useEffect(() => {
     if (localStorage.getItem(storageKey)) return;
+    if (Number.isFinite(fin) && Date.now() > fin) return;
     const t = setTimeout(() => setVisible(true), 5000);
     return () => clearTimeout(t);
-  }, [storageKey]);
+  }, [storageKey, fin]);
 
   function remember() {
     try {
