@@ -26,6 +26,15 @@ export const BREADCRUMB_IMAGE = "/assets/images/hero/capas/fondo-diseno-personal
 
 export const FEATURED_OFFER_HANDLE = "pulsos-de-yemaya";
 
+// La sección fija "Monedas de Ifá" de la portada (components/home/MonedasIfa.tsx):
+// esta pieza, con su precio leído en vivo de Shopify, y un botón a la colección.
+// Se esconde sola mientras la pieza esté en una promo por tiempo limitado
+// (lib/promo-ventana.ts), porque entonces ya la anuncia el banner de arriba.
+export const SECCION_MONEDAS = {
+  handle: "moneda-de-coleccion-2",
+  coleccion: "monedas",
+};
+
 export const SITE = {
   name: "Pedro Yoruba Jewelry",
   tagline:

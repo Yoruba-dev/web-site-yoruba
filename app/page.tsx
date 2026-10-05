@@ -12,6 +12,7 @@ import CategorySection from "@/components/home/CategorySection";
 import CategoryCircles from "@/components/home/CategoryCircles";
 import WholesaleBanner from "@/components/home/WholesaleBanner";
 import KidsBanner from "@/components/home/KidsBanner";
+import MonedasIfa from "@/components/home/MonedasIfa";
 import { getCollections } from "@/lib/products";
 
 const SHIPPING = [
@@ -104,6 +105,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Monedas de Ifá — sección fija con la moneda de los 16 Meyis. Se esconde
+          sola mientras esa moneda esté en una promo (el banner de arriba ya la
+          anuncia) y vuelve sola cuando la promo termina. */}
+      <MonedasIfa />
 
       {/* Oferta destacada — live promo band for the featured on-sale piece,
           placed high so the deal gets top billing right under Novedades. */}
