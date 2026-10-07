@@ -49,7 +49,7 @@ export default function BuyNowButton({
       // carrito, así que si no se pasa a mano, quien llegó por un enlace con
       // descuento pagaba el precio entero — justo después de leer "tu descuento
       // está guardado".
-      const url = await createShopifyCheckout([line], leerCodigoGuardado());
+      const { url } = await createShopifyCheckout([line], leerCodigoGuardado());
       window.location.href = url;
     } catch {
       // Never strand the shopper on a spinner. Add-to-cart still works, so say so.

@@ -56,8 +56,17 @@ function orderNote(lines: CartLine[]): string {
   return bits.join(" | ");
 }
 
+export interface ShopifyCheckout {
+  /** Shopify's hosted checkout page. */
+  url: string;
+  /** The cart behind that checkout. Shopify deletes it the moment the order is
+   *  placed — see isShopifyCartGone. */
+  cartId: string;
+}
+
 /** Creates a Shopify cart from the local lines and returns the hosted checkout
- *  URL — Shopify collects shipping + payment there. Throws on failure.
+ *  URL — Shopify collects shipping + payment there — plus the cart's id.
+ *  Throws on failure.
  *
  *  `discountCode` viaja con el carrito para que el descuento ya esté puesto al
  *  llegar a pagar: si la clienta lo escribió en el carrito (o venía en el
@@ -66,7 +75,7 @@ function orderNote(lines: CartLine[]): string {
 export async function createShopifyCheckout(
   lines: CartLine[],
   discountCode?: string | null,
-): Promise<string> {
+): Promise<ShopifyCheckout> {
   if (!DOMAIN || !TOKEN) throw new Error("Shopify is not configured.");
 
   const cartLines = lines.map((l) => ({
@@ -111,7 +120,45 @@ export async function createShopifyCheckout(
   if (!result?.cart?.checkoutUrl) {
     throw new Error(result?.userErrors?.[0]?.message ?? "No checkout URL returned.");
   }
-  return result.cart.checkoutUrl;
+  return { url: result.cart.checkoutUrl, cartId: result.cart.id };
+}
+
+/**
+ * ¿Ese carrito ya no existe en Shopify? Shopify lo borra en cuanto se crea el
+ * pedido (y los abandonados caducan solos, semanas después), así que
+ * `cart: null` es la señal de que la compra se hizo.
+ *
+ * true = ya no existe · false = sigue abierto · null = no se pudo saber (sin
+ * red, error): quien pregunta no debe tocar nada.
+ *
+ * Basta el id sin la `?key=`: la clave solo hace falta para leer los datos
+ * privados del comprador o para cambiar el carrito, y aquí no se hace ninguna
+ * de las dos cosas.
+ */
+export async function isShopifyCartGone(cartId: string): Promise<boolean | null> {
+  if (!DOMAIN || !TOKEN) return null;
+  try {
+    const res = await fetch(`https://${DOMAIN}/api/${API_VERSION}/graphql.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": TOKEN,
+      },
+      body: JSON.stringify({
+        query: /* GraphQL */ `query CartExists($id: ID!) { cart(id: $id) { id } }`,
+        variables: { id: cartId },
+      }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      data?: { cart: { id: string } | null };
+      errors?: unknown;
+    };
+    if (json.errors || !json.data) return null;
+    return json.data.cart === null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

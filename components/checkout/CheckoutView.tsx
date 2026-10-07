@@ -23,7 +23,7 @@ const FIELDS: { name: string; label: string; type?: string; half?: boolean }[] =
 ];
 
 export default function CheckoutView({ promo }: { promo?: PromoVM | null }) {
-  const { lines, subtotal, currencyCode, clear } = useCart();
+  const { lines, subtotal, currencyCode, clear, rememberCheckout } = useCart();
   // El recordatorio de la moneda: se interpone UNA vez y solo si de verdad
   // falta. Si la clienta dice que no, `yaPreguntado` cierra el tema para
   // siempre en esta visita — insistir dos veces es un peaje, no una ayuda.
@@ -157,10 +157,13 @@ export default function CheckoutView({ promo }: { promo?: PromoVM | null }) {
       setError(null);
       setLoading(true);
       try {
-        const url = await createShopifyCheckout(
-          extra ? [...lines, extra] : lines,
+        const checkoutLines = extra ? [...lines, extra] : lines;
+        const { url, cartId } = await createShopifyCheckout(
+          checkoutLines,
           descuento?.code ?? null,
         );
+        // Para vaciar el carrito cuando se pague (lib/cart-context.tsx).
+        rememberCheckout(cartId, checkoutLines);
         window.location.href = url; // Shopify hosted, PCI-secure checkout
       } catch {
         setError(

@@ -5,12 +5,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
 } from "react";
 import { usePathname } from "next/navigation";
 import type { Product } from "./types";
-import { registerAbandonedCart } from "./shopify-cart";
+import { isShopifyCartGone, registerAbandonedCart } from "./shopify-cart";
 
 export interface CartLine {
   /** local unique id for this cart line (may be synthetic for custom pieces) */
@@ -48,6 +49,9 @@ interface CartContextValue {
   removeItem: (id: string) => void;
   updateQty: (id: string, quantity: number) => void;
   clear: () => void;
+  /** Note the Shopify cart a checkout was started with and which lines went
+   *  into it, so those lines leave the local cart once that order is placed. */
+  rememberCheckout: (cartId: string, lines: CartLine[]) => void;
   cartOpen: boolean;
   setCartOpen: (open: boolean) => void;
   /** Shopper email captured from the newsletter form — used to hand the cart to
@@ -59,6 +63,19 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "hiraola_cart";
 const EMAIL_KEY = "pyj_email";
+const CHECKOUT_KEY = "pyj_checkout";
+// Shopify borra el carrito al crearse el pedido, pero los abandonados también
+// caducan solos (hasta 30 días). Dentro de esta ventana, que haya desaparecido
+// solo puede ser porque se pagó; pasada, ya no se sabe y el carrito no se toca.
+const CHECKOUT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** The checkout this browser last left for: which Shopify cart, when, and how
+ *  many of each local line went into it. */
+interface PendingCheckout {
+  cartId: string;
+  at: number;
+  lines: { id: string; quantity: number }[];
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
@@ -110,6 +127,81 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
+
+  // Después de pagar en Shopify la clienta volvía a la web con el carrito igual
+  // (vive en este navegador; Shopify no lo ve) y podía pagar lo mismo otra vez.
+  // Al volver se pregunta por el carrito con el que se fue a pagar: si ya no
+  // existe, el pedido se hizo y esas piezas salen del carrito — solo esas, por
+  // si añadió algo después.
+  const checking = useRef(false);
+  const settleCheckout = useCallback(async () => {
+    if (checking.current) return;
+    let pending: PendingCheckout | null = null;
+    try {
+      const raw = localStorage.getItem(CHECKOUT_KEY);
+      pending = raw ? (JSON.parse(raw) as PendingCheckout) : null;
+    } catch {
+      return;
+    }
+    if (!pending?.cartId) return;
+    const forget = () => {
+      try {
+        localStorage.removeItem(CHECKOUT_KEY);
+      } catch {
+        /* ignore */
+      }
+    };
+    if (Date.now() - pending.at > CHECKOUT_WINDOW_MS) return forget();
+
+    checking.current = true;
+    const gone = await isShopifyCartGone(pending.cartId);
+    checking.current = false;
+    if (gone !== true) return; // sigue abierto, o no se pudo saber: se mira la próxima vez
+
+    forget();
+    const bought = new Map(pending.lines.map((l) => [l.id, l.quantity]));
+    setLines((prev) =>
+      prev
+        .map((l) => ({ ...l, quantity: l.quantity - (bought.get(l.id) ?? 0) }))
+        .filter((l) => l.quantity > 0),
+    );
+  }, []);
+
+  // Al cargar, al volver a la pestaña y al regresar con «Atrás» desde Shopify
+  // (el navegador restaura la página tal cual, sin volver a montarla).
+  useEffect(() => {
+    if (!hydrated) return;
+    void settleCheckout();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void settleCheckout();
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) void settleCheckout();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [hydrated, settleCheckout]);
+
+  const rememberCheckout = useCallback((cartId: string, checkoutLines: CartLine[]) => {
+    const quantities = new Map<string, number>();
+    for (const l of checkoutLines) {
+      quantities.set(l.id, (quantities.get(l.id) ?? 0) + l.quantity);
+    }
+    const pending: PendingCheckout = {
+      cartId: cartId.split("?")[0], // sin la clave: para saber si existe no hace falta
+      at: Date.now(),
+      lines: [...quantities].map(([id, quantity]) => ({ id, quantity })),
+    };
+    try {
+      localStorage.setItem(CHECKOUT_KEY, JSON.stringify(pending));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
     const variant = product.variants[0];
@@ -180,12 +272,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem,
       updateQty,
       clear,
+      rememberCheckout,
       cartOpen,
       setCartOpen,
       email,
       setEmail,
     };
-  }, [lines, cartOpen, addItem, addLine, removeItem, updateQty, clear, email, setEmail]);
+  }, [lines, cartOpen, addItem, addLine, removeItem, updateQty, clear, rememberCheckout, email, setEmail]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
