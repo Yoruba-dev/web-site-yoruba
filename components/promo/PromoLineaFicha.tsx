@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { PromoMezcla } from "@/lib/types";
 
 // El aviso de la promo en la ficha del producto.
 //
@@ -11,13 +12,20 @@ import { useEffect, useState } from "react";
 // a la regla de "el precio lo dice Shopify", y se sostiene porque el número sale
 // del mismo porcentaje que Shopify acaba de aplicar en el carrito de prueba. Sin
 // esta línea, la clienta ve el precio entero y no se entera de la oferta.
+//
+// Con un mínimo de unidades, la línea cambia "por tiempo limitado" por la
+// condición, y dice si se pueden mezclar medidas para llegar.
 
 export default function PromoLineaFicha({
   pct,
   hasta,
+  minimo = 1,
+  mezcla = null,
 }: {
   pct: number;
   hasta: string | null;
+  minimo?: number;
+  mezcla?: PromoMezcla;
 }) {
   const objetivo = hasta ? Date.parse(hasta) : NaN;
   const [muerta, setMuerta] = useState(false);
@@ -35,9 +43,16 @@ export default function PromoLineaFicha({
   return (
     <p className="pyj-promo_ficha">
       <span className="pyj-promo_ficha_pct">−{pct}%</span>
-      <span>
-        por tiempo limitado — <strong>se descuenta al pagar</strong>
-      </span>
+      {minimo > 1 ? (
+        <span>
+          {`llevando ${minimo} piezas o más${mezcla ? ` (puedes mezclar ${mezcla})` : ""} — `}
+          <strong>se descuenta al pagar</strong>
+        </span>
+      ) : (
+        <span>
+          por tiempo limitado — <strong>se descuenta al pagar</strong>
+        </span>
+      )}
     </p>
   );
 }

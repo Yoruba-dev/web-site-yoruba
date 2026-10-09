@@ -9371,3 +9371,33 @@ button[type="submit"],
   color: #2c1f0a !important;
   text-decoration: none;
 }
+
+/* Popup de la oferta con mínimo de unidades: "c/u llevando 12 o más" va en la
+   misma fila que el precio, y si no cabe baja debajo en vez de apretarlo. */
+.pyj-pop--offer .pyj-offer_prices--min {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.pyj-offer_cond {
+  font-size: 14px;
+  color: #b8aa8b;
+  letter-spacing: 0.02em;
+}
+
+/* Insignia de una promo con mínimo ("−10% · 12+ pzas"): más larga que la de
+   siempre. Menos aire entre letras para que quepa entera en una tarjeta de un
+   móvil de 320 px, y si aun así no cabe (otra fuente de reserva, un mínimo de
+   tres cifras) baja a dos líneas en vez de salirse de la foto. La clase solo
+   sale con minimo > 1: las insignias de siempre no cambian. */
+.pyj-promo-badge--min {
+  padding: 4px 7px;
+  letter-spacing: 0.02em;
+  white-space: normal;
+}
+/* En las fotos de la banda: en tableta vertical miden ~90 px y la insignia
+   empieza a 9 px del borde, así que no puede pasar del borde derecho. */
+.pyj-promo-badge--banda.pyj-promo-badge--min {
+  padding: 4px 6px;
+  letter-spacing: 0.06em;
+  max-width: calc(100% - 12px);
+}

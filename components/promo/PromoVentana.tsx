@@ -12,6 +12,10 @@ import { fechaCortaMiami, getPromoVentana } from "@/lib/promo-ventana";
 // Todo lo que se lee aquí (titular, texto, foto, piezas, porcentaje y fecha)
 // sale de la colección de Shopify. No hay una sola cifra escrita a mano, así
 // que la promo del mes que viene se lanza sin tocar este fichero.
+//
+// Con un mínimo de unidades (`vm.minimo` > 1) cada precio y cada % llevan la
+// condición pegada, y el precio grande pasa a ser POR UNIDAD ("c/u"). Con
+// minimo 1 todo sale exactamente como siempre.
 
 /** La hora de fin en cristiano, siempre en hora de Miami — que es donde está el
  *  taller y la referencia que entiende la clienta. Se formatea en el servidor
@@ -35,6 +39,7 @@ export default async function PromoVentana({
   if (!vm) return null;
 
   const cuando = vm.hasta ? horaDeMiami(vm.hasta) : null;
+  const conMinimo = vm.minimo > 1;
   const descripcionReloj = cuando
     ? `La oferta termina el ${cuando}, hora de Miami.`
     : undefined;
@@ -60,10 +65,17 @@ export default async function PromoVentana({
           <div className="container">
             <div className="pyj-promoP_texto">
               {/* Los espacios duros pegan la estrella final a la fecha: si no,
-                  en un móvil la "✦" se queda sola en la segunda línea. */}
+                  en un móvil la "✦" se queda sola en la segunda línea. Sin
+                  fecha y con mínimo, "por tiempo limitado" sería urgencia
+                  inventada: lo que define esa promo es la cantidad. */}
               <span className="pyj-eyebrow">
                 ✦{" "}
-                {(fecha ? `Solo hasta el ${fecha}` : "Por tiempo limitado").replace(
+                {(fecha
+                  ? `Solo hasta el ${fecha}`
+                  : conMinimo
+                    ? "Descuento por cantidad"
+                    : "Por tiempo limitado"
+                ).replace(
                   / (\S+ \S+ \S+)$/,
                   (_, cola: string) => ` ${cola.replace(/ /g, "\u00a0")}`,
                 )}
@@ -72,13 +84,31 @@ export default async function PromoVentana({
               <h2 id="pyj-promoP-tit" className="pyj-promoP_tit">
                 {vm.titulo}
               </h2>
-              {unaPieza ? (
+              {unaPieza && conMinimo ? (
+                // Precio por unidad, y la condición y la medida del ejemplo
+                // justo al lado: sin ellas "$13.50" valdría para una sola.
+                <p className="pyj-promoP_precio">
+                  <b>{vm.ejemplo.ahoraCorto}</b>
+                  <span className="pyj-sr">Antes </span>
+                  <s>{vm.ejemplo.antesCorto}</s>
+                  <span className="pyj-promoP_ahorro">
+                    {`c/u${vm.ejemplo.variante ? ` (${vm.ejemplo.variante})` : ""}, llevando ${vm.minimo} o más`}
+                  </span>
+                </p>
+              ) : unaPieza ? (
                 <p className="pyj-promoP_precio">
                   <b>{vm.ejemplo.ahoraCorto}</b>
                   <span className="pyj-sr">Antes </span>
                   <s>{vm.ejemplo.antesCorto}</s>
                   <span className="pyj-promoP_ahorro">
                     ahorras {vm.ejemplo.ahorroCorto}
+                  </span>
+                </p>
+              ) : conMinimo ? (
+                <p className="pyj-promoP_precio">
+                  <b>−{vm.pct}%</b>
+                  <span className="pyj-promoP_ahorro">
+                    {`en ${vm.handles.length} piezas, llevando ${vm.minimo} o más`}
                   </span>
                 </p>
               ) : (
@@ -100,7 +130,13 @@ export default async function PromoVentana({
               {/* La misma frase honesta que la banda: el precio de la tarjeta no
                   baja, el descuento se resta al pagar. La hora de fin ya la dice
                   el reloj justo encima. */}
-              <p className="pyj-promoP_letra">El descuento se aplica solo al pagar.</p>
+              <p className="pyj-promoP_letra">
+                {conMinimo
+                  ? vm.mezcla
+                    ? `Puedes mezclar ${vm.mezcla} para llegar a ${vm.minimo}; el ${vm.pct}% se descuenta solo al pagar.`
+                    : `El ${vm.pct}% se descuenta solo al pagar.`
+                  : "El descuento se aplica solo al pagar."}
+              </p>
 
               <a href={vm.href} className="pyj-btn-gold">
                 {unaPieza ? "Comprar ahora" : "Ver las piezas"}
@@ -119,7 +155,11 @@ export default async function PromoVentana({
       <div className="container">
         <div className="pyj-promoV_grid">
           <div className="pyj-promoV_texto">
-            <span className="pyj-eyebrow">✦ Por tiempo limitado ✦</span>
+            {/* Igual que en la portada: sin fecha, una promo por cantidad no
+                es "por tiempo limitado". */}
+            <span className="pyj-eyebrow">
+              {conMinimo && !cuando ? "✦ Descuento por cantidad ✦" : "✦ Por tiempo limitado ✦"}
+            </span>
             <h2>{vm.titulo}</h2>
             {vm.descripcion && <p>{vm.descripcion}</p>}
 
@@ -133,17 +173,38 @@ export default async function PromoVentana({
             {/* La frase honesta. El descuento de Shopify es automático: no baja
                 el precio de la tarjeta, se resta al pagar. Decirlo aquí evita
                 la decepción de ver el precio entero en el carrito. */}
-            <p className="pyj-promoV_letra">
-              El <strong>−{vm.pct}%</strong> se descuenta automáticamente al
-              pagar.{" "}
-              {cuando && <>Termina el {cuando} (hora de Miami).</>}
-            </p>
+            {conMinimo ? (
+              <p className="pyj-promoV_letra">
+                Llevando <strong>{vm.minimo} o más</strong>
+                {vm.mezcla && ` (puedes mezclar ${vm.mezcla})`}, ahorras un{" "}
+                <strong>{vm.pct}%</strong>: se descuenta automáticamente al
+                pagar.{" "}
+                {cuando && <>Termina el {cuando} (hora de Miami).</>}
+              </p>
+            ) : (
+              <p className="pyj-promoV_letra">
+                El <strong>−{vm.pct}%</strong> se descuenta automáticamente al
+                pagar.{" "}
+                {cuando && <>Termina el {cuando} (hora de Miami).</>}
+              </p>
+            )}
 
-            <p className="pyj-promoV_ejemplo">
-              {vm.ejemplo.titulo}: <s>{vm.ejemplo.antes}</s>{" "}
-              <b>{vm.ejemplo.ahora}</b>{" "}
-              <span>ahorras {vm.ejemplo.ahorro}</span>
-            </p>
+            {/* Con mínimo, el ejemplo es por unidad y dice de qué medida; el
+                ahorro, el del lote entero, que es lo que la clienta paga. */}
+            {conMinimo ? (
+              <p className="pyj-promoV_ejemplo">
+                {vm.ejemplo.titulo}
+                {vm.ejemplo.variante && ` (${vm.ejemplo.variante})`}:{" "}
+                <s>{vm.ejemplo.antes}</s> <b>{vm.ejemplo.ahora}</b>{" "}
+                <span>{`c/u comprando ${vm.minimo}, ahorras ${vm.lote.ahorro}`}</span>
+              </p>
+            ) : (
+              <p className="pyj-promoV_ejemplo">
+                {vm.ejemplo.titulo}: <s>{vm.ejemplo.antes}</s>{" "}
+                <b>{vm.ejemplo.ahora}</b>{" "}
+                <span>ahorras {vm.ejemplo.ahorro}</span>
+              </p>
+            )}
 
             <a href={vm.href} className="pyj-btn-gold">
               Ver las piezas
@@ -167,7 +228,12 @@ export default async function PromoVentana({
                       {/* Sin esto, las fotos de la banda eran las únicas piezas
                           rebajadas de toda la web sin decirlo. Y se quita sola
                           al pasar la hora, como las de la rejilla. */}
-                      <PromoBadge pct={vm.pct} hasta={vm.hasta} variante="banda" />
+                      <PromoBadge
+                        pct={vm.pct}
+                        hasta={vm.hasta}
+                        variante="banda"
+                        minimo={vm.minimo}
+                      />
                     </span>
                     <span className="pyj-promoV_nombre">{p.title}</span>
                   </a>

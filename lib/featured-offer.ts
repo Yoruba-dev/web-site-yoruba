@@ -18,6 +18,13 @@ export interface FeaturedOfferVM {
    *  tiempo limitado. El popup deja de salir a esa hora aunque la página venga
    *  de la caché. */
   hasta?: string | null;
+  /** Unidades que hay que llevar para que caiga el descuento (promo por tiempo
+   *  limitado con `promo.minimo`). Con más de 1, `was`/`now`/`saved` son POR
+   *  UNIDAD y el popup dice la condición al lado del precio. */
+  minimo?: number;
+  /** La medida a la que corresponden esos precios por unidad ("3 mm") si la
+   *  pieza tiene varias: con un mínimo, cada medida paga distinto. */
+  variante?: string | null;
 }
 
 // Reads the configured featured product LIVE and returns the offer ONLY when it's

@@ -47,7 +47,11 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="pyj-badges">
           {product.isNew && <span className="pyj-new-badge">Nuevo</span>}
           {product.promo && (
-            <PromoBadge pct={product.promo.pct} hasta={product.promo.hasta} />
+            <PromoBadge
+              pct={product.promo.pct}
+              hasta={product.promo.hasta}
+              minimo={product.promo.minimo}
+            />
           )}
           {product.badge && <span className="sticker">{product.badge}</span>}
         </div>

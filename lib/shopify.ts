@@ -374,13 +374,14 @@ export async function shopifyGetCollectionProducts(
   };
 }
 
-/** La colección de la promo temporal, con su fecha de fin y sus piezas, en UNA
- *  sola petición (ver lib/promo-ventana.ts).
+/** La colección de la promo temporal, con su fecha de fin, su mínimo de
+ *  unidades y sus piezas, en UNA sola petición (ver lib/promo-ventana.ts).
  *
  *  El `namespace` va explícito a propósito: aunque el esquema lo marque
  *  opcional, sin él la consulta resuelve contra el namespace reservado de la
  *  app y devuelve null. Y `null` en `termina` significa "no existe O no está
- *  expuesto al Storefront" — nunca hay que leerlo como "no hay fecha". */
+ *  expuesto al Storefront" — nunca hay que leerlo como "no hay fecha". Lo
+ *  mismo con `minimo`: llega en crudo y lo interpreta lib/promo-ventana.ts. */
 export async function shopifyGetPromoVentana(
   handle: string,
   first = 50,
@@ -390,6 +391,7 @@ export async function shopifyGetPromoVentana(
   image: string | null;
   imageAlt: string | null;
   termina: string | null;
+  minimo: string | null;
   products: Product[];
 } | null> {
   const data = await shopifyFetch<{
@@ -398,6 +400,7 @@ export async function shopifyGetPromoVentana(
       description: string;
       image: { url: string; altText: string | null } | null;
       termina: { value: string } | null;
+      minimo: { value: string } | null;
       products: { edges: { node: ShopifyProduct }[] };
     } | null;
   }>(
@@ -409,6 +412,7 @@ export async function shopifyGetPromoVentana(
           description
           image { url altText }
           termina: metafield(namespace: "promo", key: "termina") { value }
+          minimo: metafield(namespace: "promo", key: "minimo") { value }
           products(first: $first, sortKey: BEST_SELLING) {
             edges { node { ...ProductCard } }
           }
@@ -424,6 +428,7 @@ export async function shopifyGetPromoVentana(
     image: data.collection.image?.url ?? null,
     imageAlt: data.collection.image?.altText ?? null,
     termina: data.collection.termina?.value ?? null,
+    minimo: data.collection.minimo?.value ?? null,
     products: data.collection.products.edges.map((e) => reshape(e.node)),
   };
 }

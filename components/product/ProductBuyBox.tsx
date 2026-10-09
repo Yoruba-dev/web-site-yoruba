@@ -189,7 +189,12 @@ export default function ProductBuyBox({
           entera de la oferta, y la que sí se enteró se lleva un susto (bueno)
           en el checkout. */}
       {product.promo && !placeholderPrice && (
-        <PromoLineaFicha pct={product.promo.pct} hasta={product.promo.hasta} />
+        <PromoLineaFicha
+          pct={product.promo.pct}
+          hasta={product.promo.hasta}
+          minimo={product.promo.minimo}
+          mezcla={product.promo.mezcla}
+        />
       )}
 
       {/* A coin is engraved and a ring is built, so each opens its own editor.

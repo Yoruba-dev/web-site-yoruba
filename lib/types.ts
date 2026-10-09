@@ -8,6 +8,11 @@ export interface Money {
   currencyCode: string;
 }
 
+/** Qué variantes de una pieza en promo se pueden mezclar para llegar al mínimo
+ *  ("medidas" u "opciones"); null si la pieza tiene una sola. Lo calcula
+ *  lib/promo-ventana.ts. */
+export type PromoMezcla = "medidas" | "opciones" | null;
+
 export interface ProductImage {
   url: string;
   altText: string;
@@ -54,8 +59,15 @@ export interface Product {
    *  al pasar por el embudo de lib/products.ts, y SOLO cuando Shopify está
    *  descontando de verdad. null o ausente el resto del tiempo. `hasta` viaja
    *  como instante absoluto para que el navegador pueda esconder la insignia
-   *  aunque la página venga de la caché. */
-  promo?: { pct: number; hasta: string | null } | null;
+   *  aunque la página venga de la caché. `minimo` > 1 = el descuento solo
+   *  cae llevando esa cantidad o más, y la insignia y la ficha lo dicen al lado
+   *  del %. `mezcla` dice qué puede combinar la clienta para llegar. */
+  promo?: {
+    pct: number;
+    hasta: string | null;
+    minimo?: number;
+    mezcla?: PromoMezcla;
+  } | null;
   availableForSale: boolean;
   tags: string[];
   /** Tipo de producto de Shopify ("Idde", "Dijes y Medallas"…). Es lo que se

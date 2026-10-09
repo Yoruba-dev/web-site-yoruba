@@ -20,6 +20,10 @@ export interface PromoBarra {
   hasta: string | null;
   /** "miércoles 7 de octubre", ya en hora de Miami. */
   fecha: string | null;
+  /** Unidades para que caiga el descuento. Con más de 1 la barra lo dice si el
+   *  título no lo dice ya: lo escribe el dueño y puede llevar el "10%" sin la
+   *  condición. */
+  minimo?: number;
 }
 
 function leer(key: string): boolean {
@@ -63,15 +67,28 @@ export default function AnnouncementBar({ promo }: { promo?: PromoBarra | null }
   };
 
   if (promo && verPromo && promoKey) {
+    // La condición solo se añade si el título no la trae ya: con "10% comprando
+    // 12" de título, "— llevando 12 o más" detrás diría lo mismo dos veces.
+    const minimo = promo.minimo ?? 1;
+    const pideMinimo =
+      minimo > 1 && !new RegExp(`(^|\\D)${minimo}(\\D|$)`).test(promo.titulo);
     return (
       <div className="pyj-annbar">
         <div className="pyj-annbar_inner">
           <a className="pyj-annbar_msg" href={promo.href}>
             <span className="pyj-annbar_tag">Oferta</span>
-            <span>
-              <strong>{promo.titulo}</strong>
-              {promo.fecha && <> — solo hasta el {promo.fecha}</>}
-            </span>
+            {pideMinimo ? (
+              <span>
+                <strong>{promo.titulo}</strong>
+                {` — llevando ${promo.minimo} o más`}
+                {promo.fecha && `, solo hasta el ${promo.fecha}`}
+              </span>
+            ) : (
+              <span>
+                <strong>{promo.titulo}</strong>
+                {promo.fecha && <> — solo hasta el {promo.fecha}</>}
+              </span>
+            )}
           </a>
           <a className="pyj-annbar_more" href={promo.href}>
             Ver oferta →

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { shopifyFetch, shopifyGetPromoVentana } from "./shopify";
 import { formatMoney, sizedImageUrl } from "./utils";
-import type { Product } from "./types";
+import type { Product, PromoMezcla } from "./types";
 import type { FeaturedOfferVM } from "./featured-offer";
 
 // ---------------------------------------------------------------------------
@@ -19,10 +19,21 @@ import type { FeaturedOfferVM } from "./featured-offer";
 //                     por la etiqueta `promo-24h`
 //   · el anuncio   -> título, texto e imagen de esa misma colección
 //   · cuándo acaba -> su metafield `promo.termina`
+//   · cuántas      -> su metafield `promo.minimo` (entero). Si falta, 1: la
+//                     promo de siempre, sin condición
 //   · cuánto es    -> se MIDE en un carrito de prueba, no se escribe
 //
 // Así, la promo del mes que viene se lanza sin tocar código: otras piezas, otra
 // fecha, y hasta otro porcentaje.
+//
+// EL MÍNIMO
+// ---------
+// Para descuentos de Shopify del tipo "10% llevando 12 o más". El metafield
+// tiene que decir lo MISMO que el requisito del descuento: el carrito de
+// prueba compra esas unidades, y con menos Shopify no descuenta y la promo no
+// sale. Con un mínimo mayor que 1, cada sitio que enseña el % o un precio
+// rebajado dice la condición al lado ("−10% · 12+", "$13.50 c/u llevando 12
+// o más"): un "10% OFF" a secas haría creer que vale para una sola pieza.
 //
 // LAS DOS LLAVES
 // --------------
@@ -66,27 +77,77 @@ export interface PromoVentanaVM {
   pct: number;
   /** Instante de fin en ISO absoluto (con Z), o null si falta el metafield. */
   hasta: string | null;
+  /** Unidades que hay que llevar para que caiga el descuento (`promo.minimo`).
+   *  1 = la promo de siempre. Con más, toda superficie dice la condición. */
+  minimo: number;
+  /** Qué se puede mezclar para llegar al mínimo, si la promo es de UNA pieza
+   *  con varias variantes. null con varias piezas o con una sola variante. */
+  mezcla: PromoMezcla;
   /** Handles de las piezas participantes, para marcarlas en las rejillas. */
   handles: string[];
   piezas: { handle: string; title: string; image?: string }[];
-  /** Un ejemplo con números reales, para ilustrar el ahorro. Los `…Corto`
-   *  quitan los centavos cuando no los hay ("$100" y no "$100.00"), que es como
-   *  se dice un precio en un anuncio. */
-  ejemplo: {
-    titulo: string;
-    antes: string;
-    ahora: string;
-    ahorro: string;
-    antesCorto: string;
-    ahoraCorto: string;
-    ahorroCorto: string;
-  };
+  /** Un ejemplo con números reales, para ilustrar el ahorro. Siempre POR
+   *  UNIDAD, aunque el carrito de prueba compre `minimo`: "$15 → $13.50 c/u".
+   *  `variante` es la medida del ejemplo ("3 mm") si la pieza tiene varias,
+   *  porque con un mínimo el precio por unidad cambia de una a otra. */
+  ejemplo: Precios & { titulo: string; variante: string | null };
+  /** Los mismos números para el lote entero de `minimo` unidades ("ahorras
+   *  $18 comprando 12"). Con minimo 1 coinciden con `ejemplo`. */
+  lote: Precios;
+}
+
+/** Un antes/ahora/ahorro ya formateado. Los `…Corto` quitan los centavos
+ *  cuando no los hay ("$100" y no "$100.00"), que es como se dice un precio en
+ *  un anuncio. */
+interface Precios {
+  antes: string;
+  ahora: string;
+  ahorro: string;
+  antesCorto: string;
+  ahoraCorto: string;
+  ahorroCorto: string;
 }
 
 /** "$100" si el importe es redondo; "$99.50" si no. */
 function precioCorto(amount: number, currencyCode: string): string {
   const completo = formatMoney({ amount: amount.toFixed(2), currencyCode });
   return Number.isInteger(Math.round(amount * 100) / 100) ? completo.replace(/\.00$/, "") : completo;
+}
+
+function precios(ahora: number, desc: number, currencyCode: string): Precios {
+  const largo = (n: number) => formatMoney({ amount: String(n), currencyCode });
+  return {
+    antes: largo(ahora + desc),
+    ahora: largo(ahora),
+    ahorro: largo(desc),
+    antesCorto: precioCorto(ahora + desc, currencyCode),
+    ahoraCorto: precioCorto(ahora, currencyCode),
+    ahorroCorto: precioCorto(desc, currencyCode),
+  };
+}
+
+/** El metafield `promo.minimo` hecho número. Vacío, roto o menor que 1 -> 1
+ *  (sin condición). Tope de 100: es lo que compra el carrito de prueba, y un
+ *  número absurdo puesto por error no debe acabar en un carrito de mil. */
+function minimoShopify(raw?: string | null): number {
+  const n = Number(raw ?? "");
+  if (!Number.isInteger(n) || n < 1) return 1;
+  return Math.min(n, 100);
+}
+
+/**
+ * Qué puede mezclar la clienta para llegar al mínimo. El mínimo de un
+ * descuento de Shopify cuenta todas las unidades que entran en él, así que si
+ * la pieza entera está en la promo (que es lo que marca la etiqueta) sus
+ * variantes se suman. Casi siempre son medidas o tallas; si la opción es otra
+ * (quilataje, material…) se dice "opciones", que tampoco miente.
+ *
+ * Cuentan solo las variantes que se pueden comprar: si de cuatro medidas solo
+ * hay existencias de una, "puedes mezclar medidas" prometería algo imposible.
+ */
+function queMezclar(p: Product): PromoMezcla {
+  if (p.variants.filter((v) => v.availableForSale).length < 2) return null;
+  return /medida|tama|talla|largo/i.test(p.optionName ?? "") ? "medidas" : "opciones";
 }
 
 /** "miércoles 7 de octubre", en hora de Miami: la fecha de fin dicha como la
@@ -118,6 +179,8 @@ export function comoOfertaDestacada(vm: PromoVentanaVM): FeaturedOfferVM {
     now: vm.ejemplo.ahora,
     saved: vm.ejemplo.ahorro,
     hasta: vm.hasta,
+    minimo: vm.minimo,
+    variante: vm.ejemplo.variante,
   };
 }
 
@@ -144,6 +207,7 @@ interface CarritoPrueba {
     cart: {
       lines: {
         nodes: {
+          quantity: number;
           merchandise: { id: string };
           cost: { totalAmount: { amount: string; currencyCode: string } };
           discountAllocations: { discountedAmount: { amount: string } }[];
@@ -159,6 +223,7 @@ const PROBAR = /* GraphQL */ `
       cart {
         lines(first: 10) {
           nodes {
+            quantity
             merchandise { ... on ProductVariant { id } }
             cost { totalAmount { amount currencyCode } }
             discountAllocations { discountedAmount { amount } }
@@ -233,11 +298,29 @@ export const getPromoVentana = cache(
       }>(CONTROL, { query: `-tag:${TAG_PROMO}` });
       const vControl = ctrl.products.nodes[0]?.variants.nodes[0]?.id;
 
-      const lines = [{ merchandiseId: vPromo.id, quantity: 1 }];
+      // La línea de la promo lleva `minimo` unidades: con un descuento de
+      // "llevando 12 o más", una sola no ve nada y la promo no saldría nunca.
+      // El control sigue en 1. Subirlo pediría existencias a una pieza
+      // cualquiera, y no hace falta: una rebaja general de "lleva N" le cae
+      // igual, porque el carrito ya suma N unidades.
+      const minimo = minimoShopify(col.minimo);
+      const lines = [{ merchandiseId: vPromo.id, quantity: minimo }];
       if (vControl) lines.push({ merchandiseId: vControl, quantity: 1 });
 
       const data = await shopifyFetch<CarritoPrueba>(PROBAR, { lines });
       const lineas = data.cartCreate.cart?.lines.nodes ?? [];
+
+      // Shopify recorta la cantidad a las existencias. Si no hay `minimo`
+      // unidades de la primera variante, el descuento no cae y la promo no
+      // sale — y desde fuera solo se ve que "no sale". Se avisa en los
+      // registros de Netlify.
+      const enCarrito = lineas.find((l) => l.merchandise.id === vPromo.id)?.quantity;
+      if (enCarrito !== undefined && enCarrito < minimo) {
+        console.warn(
+          `[promo] el carrito de prueba solo admitió ${enCarrito} de ${minimo} ` +
+            `unidades de "${pieza.title}" (${vPromo.title}) — ¿hay existencias?`,
+        );
+      }
 
       const pctDe = (id?: string) => {
         const l = lineas.find((x) => x.merchandise.id === id);
@@ -266,6 +349,21 @@ export const getPromoVentana = cache(
         (s, d) => s + Number(d.discountedAmount.amount),
         0,
       );
+      // El ejemplo va por unidad: se reparte el total de la línea entre las
+      // unidades que de verdad entraron. Con 1, es el número tal cual.
+      //
+      // Se redondea a centavos UNA vez y el ahorro sale de la resta: si no,
+      // $164.70 / 12 = 13.725 lo redondea cada formateador a su manera ($13.73
+      // en el popup, $13.72 en la portada) y antes − ahora no daría el ahorro.
+      // El lote tiene que ser de `minimo` unidades, que es lo que dice la
+      // etiqueta ("comprando 12"): si el carrito entró entero, los totales
+      // reales de Shopify; si entró recortado, el precio por unidad × `minimo`.
+      // Con minimo 1 nada de esto cambia un número: Shopify ya da centavos.
+      const uds = linea.quantity > 0 ? linea.quantity : 1;
+      const centavos = (n: number) => Math.round(n * 100) / 100;
+      const antesU = centavos((ahora + desc) / uds);
+      const ahoraU = centavos(ahora / uds);
+      const ahorroU = centavos(antesU - ahoraU);
 
       return recordar({
         titulo: col.title,
@@ -280,6 +378,8 @@ export const getPromoVentana = cache(
             : `/collections/${COLECCION_PROMO}`,
         pct,
         hasta: hastaMs !== null ? new Date(hastaMs).toISOString() : null,
+        minimo,
+        mezcla: col.products.length === 1 ? queMezclar(pieza) : null,
         handles: col.products.map((p) => p.handle),
         piezas: col.products.slice(0, 6).map((p) => ({
           handle: p.handle,
@@ -288,13 +388,15 @@ export const getPromoVentana = cache(
         })),
         ejemplo: {
           titulo: pieza.title,
-          antes: formatMoney({ amount: String(ahora + desc), currencyCode: moneda }),
-          ahora: formatMoney({ amount: String(ahora), currencyCode: moneda }),
-          ahorro: formatMoney({ amount: String(desc), currencyCode: moneda }),
-          antesCorto: precioCorto(ahora + desc, moneda),
-          ahoraCorto: precioCorto(ahora, moneda),
-          ahorroCorto: precioCorto(desc, moneda),
+          // Con espacios duros: "3 mm" partido en dos líneas no se lee.
+          variante:
+            pieza.variants.length > 1 ? vPromo.title.replace(/ /g, "\u00a0") : null,
+          ...precios(ahoraU, ahorroU, moneda),
         },
+        lote:
+          uds === minimo
+            ? precios(ahora, desc, moneda)
+            : precios(centavos(ahoraU * minimo), centavos(ahorroU * minimo), moneda),
       });
     } catch {
       // Nunca romper una página por culpa del aviso de una oferta.
@@ -320,6 +422,16 @@ export function marcarPromo(
   if (!vm) return products;
   const dentro = new Set(vm.handles);
   return products.map((p) =>
-    dentro.has(p.handle) ? { ...p, promo: { pct: vm.pct, hasta: vm.hasta } } : p,
+    dentro.has(p.handle)
+      ? {
+          ...p,
+          promo: {
+            pct: vm.pct,
+            hasta: vm.hasta,
+            minimo: vm.minimo,
+            mezcla: queMezclar(p),
+          },
+        }
+      : p,
   );
 }

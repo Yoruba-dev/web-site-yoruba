@@ -88,14 +88,36 @@ export default function NewsletterPopup({
           <div className="subscribe_area">
             <span className="pyj-eyebrow">✦ Oferta destacada ✦</span>
             <h2>{offer.title}</h2>
-            <p>
-              Por tiempo limitado — <strong>ahorra {offer.saved}</strong> en esta
-              pieza.
-            </p>
-            <div className="pyj-offer_prices">
-              <span className="pyj-offer_was">{offer.was}</span>
-              <span className="pyj-offer_now">{offer.now}</span>
-            </div>
+            {/* Con un mínimo de unidades los precios son POR UNIDAD: la
+                condición va en el texto y pegada al precio, o "ahorra $1.50 en
+                esta pieza" prometería el descuento comprando una sola. Y la
+                medida, que los $13.50 son de la de 3 mm, no de cualquiera. */}
+            {(offer.minimo ?? 1) > 1 ? (
+              <>
+                <p>
+                  Llevando <strong>{offer.minimo} o más</strong>, ahorras un{" "}
+                  <strong>{offer.pct}%</strong>: se descuenta al pagar.
+                </p>
+                <div className="pyj-offer_prices pyj-offer_prices--min">
+                  <span className="pyj-offer_was">{offer.was}</span>
+                  <span className="pyj-offer_now">{offer.now}</span>
+                  <span className="pyj-offer_cond">
+                    {`c/u${offer.variante ? ` (${offer.variante})` : ""}, llevando ${offer.minimo} o más`}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>
+                  Por tiempo limitado — <strong>ahorra {offer.saved}</strong> en esta
+                  pieza.
+                </p>
+                <div className="pyj-offer_prices">
+                  <span className="pyj-offer_was">{offer.was}</span>
+                  <span className="pyj-offer_now">{offer.now}</span>
+                </div>
+              </>
+            )}
             <a href={offer.href} className="pyj-btn-gold pyj-pop_cta" onClick={remember}>
               Aprovechar la oferta
             </a>

@@ -136,6 +136,7 @@ export default async function RootLayout({
                       href: ventana.href,
                       hasta: ventana.hasta,
                       fecha: ventana.hasta ? fechaCortaMiami(ventana.hasta) : null,
+                      minimo: ventana.minimo,
                     }
                   : null
               }
