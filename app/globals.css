@@ -9401,3 +9401,54 @@ button[type="submit"],
   letter-spacing: 0.06em;
   max-width: calc(100% - 12px);
 }
+
+/* ── Divisor eleke (components/layout/ElekeDivisor.tsx) ────────────────────
+   Un hilo de oro que se abre en un eleke de siete cuentas. Fondo del mismo
+   negro que el banner de la promo, así parece su remate y no una franja suelta. */
+.pyj-divisor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 16px 24px;
+  background: #070603;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.18);
+}
+.pyj-divisor_hilo {
+  flex: 1 1 0;
+  max-width: 420px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(227, 178, 60, 0), rgba(227, 178, 60, 0.8));
+}
+.pyj-divisor_hilo--der {
+  transform: scaleX(-1);
+}
+.pyj-divisor_rombo {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #fff4cf, #e3b23c 55%, #a8781f);
+  box-shadow: 0 0 6px rgba(227, 178, 60, 0.45);
+}
+.pyj-divisor_cuentas {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pyj-divisor_cuenta {
+  width: 12px;
+  height: 12px;
+  /* Una cuenta es redonda: `!important` le gana al reset global de esquinas
+     rectas (`* { border-radius: 0 !important }`), como en .pyj-sizer_disco. */
+  border-radius: 50% !important;
+  /* El brillo de cuenta de vidrio va encima del color de cada Orisha. */
+  background-image: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 46%);
+  box-shadow: 0 0 0 1px rgba(227, 178, 60, 0.35), 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+@media (max-width: 575px) {
+  .pyj-divisor { gap: 10px; padding: 16px 12px 18px; }
+  .pyj-divisor_cuentas { gap: 5px; }
+  .pyj-divisor_cuenta { width: 10px; height: 10px; }
+}

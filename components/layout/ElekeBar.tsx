@@ -1,7 +1,7 @@
 // "Eleke" bar — a thin band of the Orisha bead colours (white, gold, red, blue,
 // green, maroon, black). The elekes (sacred beaded necklaces) are the signature
 // symbol of Santería / the Lucumí tradition, so this is the brand's visual seal.
-const ELEKE = [
+export const ELEKE = [
   "#f3ead7", // Obatalá — blanco/crema
   "#d8a72c", // Oshún — oro/amarillo
   "#b5341f", // Changó / Elegguá — rojo

@@ -1,6 +1,7 @@
 import Countdown from "@/components/ui/Countdown";
 import PromoBadge from "@/components/promo/PromoBadge";
 import PromoCaduca from "@/components/promo/PromoCaduca";
+import ElekeDivisor from "@/components/layout/ElekeDivisor";
 import { fechaCortaMiami, getPromoVentana } from "@/lib/promo-ventana";
 
 // La banda de la promo por tiempo limitado.
@@ -144,6 +145,9 @@ export default async function PromoVentana({
             </div>
           </div>
         </section>
+        {/* Separa el banner del carrusel que viene debajo. Va dentro de
+            PromoCaduca para irse con el banner cuando la promo termina. */}
+        <ElekeDivisor />
       </PromoCaduca>
     );
   }
