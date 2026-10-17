@@ -93,9 +93,16 @@ export default function ProductSlider({
     };
   }, []);
 
-  const settings: Settings = autoplay
-    ? { ...PRESETS[className], autoplay: true, autoplaySpeed: 3500, pauseOnHover: true }
-    : PRESETS[className];
+  const preset = PRESETS[className];
+  // Con menos piezas de las que caben en la fila, el modo infinito clona las
+  // tarjetas y se ve una copia cortada en el borde (pasaba en /mayoreo con 2).
+  // Si caben todas, no hay nada que girar.
+  const caben = products.length <= (preset.slidesToShow ?? 1);
+  const settings: Settings = {
+    ...preset,
+    ...(caben ? { infinite: false, arrows: false } : {}),
+    ...(autoplay && !caben ? { autoplay: true, autoplaySpeed: 3500, pauseOnHover: true } : {}),
+  };
 
   return (
     <Slider {...settings} className={className}>

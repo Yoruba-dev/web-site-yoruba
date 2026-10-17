@@ -280,6 +280,11 @@ export function whatsappConsultUrl(
 /** Label for the wholesale / mayoreo call-to-action. */
 export const WHOLESALE_LABEL = "Escríbenos por WhatsApp";
 
+/** Etiqueta de Shopify para las piezas con precio por docena (o por mano) para
+ *  botánicas: salen en la página /mayoreo. El precio de mayoreo lo pone un
+ *  descuento automático de Shopify con cantidad mínima, no la web. */
+export const TAG_MAYOREO = "mayoreo";
+
 /**
  * Builds the WhatsApp link for the WHOLESALE (mayoreo) channel — the B2B route
  * for botánicas, santeros and shops that buy to resell. Prefills a message that

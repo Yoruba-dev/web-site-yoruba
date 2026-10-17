@@ -5,7 +5,7 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import JsonLd from "@/components/seo/JsonLd";
 import { getProducts } from "@/lib/products";
 import { attachRatings } from "@/lib/product-ratings";
-import { whatsappWholesaleUrl } from "@/lib/commerce";
+import { TAG_MAYOREO, whatsappWholesaleUrl } from "@/lib/commerce";
 import { SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/schema";
 
@@ -103,10 +103,16 @@ const STEPS = [
 ];
 
 export default async function MayoreoPage() {
-  const all = await getProducts(150);
+  // 250 y no 150: la lista viene ordenada por más vendidas, y con el catálogo
+  // de ~170 piezas una nueva (sin ventas) quedaba fuera del corte.
+  const all = await getProducts(250);
   const herramientas = all.filter((p) => p.tags.includes("Herramientas"));
   // Featured slice with real review stars attached.
   const herramientasFeatured = await attachRatings(herramientas.slice(0, 12));
+  // Las piezas con precio por docena para botánicas (etiqueta `mayoreo`).
+  const porDocena = await attachRatings(
+    all.filter((p) => p.tags.includes(TAG_MAYOREO)).slice(0, 12),
+  );
   const heroImg =
     herramientas.find((p) => p.images?.[0]?.url)?.images[0] ?? null;
   const wa = whatsappWholesaleUrl();
@@ -243,6 +249,27 @@ export default async function MayoreoPage() {
               </div>
               <div className="col-lg-12">
                 <ProductSlider products={herramientasFeatured} />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Precio por docena: el descuento lo aplica Shopify al pagar, así que
+          aquí se enseña la pieza a su precio normal y se dice la regla. */}
+      {porDocena.length > 0 && (
+        <section className="hiraola-product_area">
+          <div className="container">
+            <div className="row">
+              <div className="col-lg-12">
+                <SectionTitle
+                  title="Precios por docena"
+                  subtitle="Piezas con precio de mayoreo para tu botánica: al llevar la docena, el descuento se aplica solo al pagar. Los precios de cada una están en su ficha."
+                  action={{ label: "Pedir catálogo", href: wa, external: true }}
+                />
+              </div>
+              <div className="col-lg-12">
+                <ProductSlider products={porDocena} />
               </div>
             </div>
           </div>
