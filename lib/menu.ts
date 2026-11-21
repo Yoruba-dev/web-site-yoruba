@@ -1,3 +1,5 @@
+import { SECCION_RELOJES } from "./site";
+
 // Navigation model. Cleaned up per the store's chosen layouts:
 //   • Shop  → the Left Sidebar catalogue (/shop-left-sidebar)
 //   • Product pages → Tab Style Left (handled by the product route)
@@ -41,6 +43,10 @@ export interface MenuCollection {
 // no pueden divergir entre menú y footer. Cada uno apunta a SU PROPIA PÁGINA
 // (/servicios/diseno, …), no a un ancla: así la navegación es real y el botón
 // de volver del navegador devuelve a donde estabas.
+//
+// "Crea tu reloj" va junto a los otros creadores y obedece al interruptor
+// SECCION_RELOJES.activo (lib/site.ts): apagado, desaparece del menú y del pie
+// a la vez.
 export const SERVICE_LINKS: MenuLink[] = [
   { label: "Diseño de joyas", href: "/servicios/diseno" },
   { label: "Grabado de joyas", href: "/servicios/grabado" },
@@ -49,6 +55,7 @@ export const SERVICE_LINKS: MenuLink[] = [
   { label: "Cómo trabajamos", href: "/servicios/como-trabajamos" },
   { label: "Diseña tu anillo de Ifá", href: "/configurador" },
   { label: "Diseña tu moneda de Ifá", href: "/configurador-monedas" },
+  ...(SECCION_RELOJES.activo ? [{ label: "Crea tu reloj", href: SECCION_RELOJES.ruta }] : []),
   { label: "Mide tu talla de anillo", href: "/medidor-de-anillos" },
 ];
 

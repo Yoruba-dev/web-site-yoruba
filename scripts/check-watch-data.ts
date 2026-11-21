@@ -26,13 +26,19 @@ import {
   CASEBACK_MAX,
   CATALOG,
   DIAL_BASES,
+  DIAL_MODELS,
   DIAL_NAMES,
+  DIAL_TEXT_IFA,
   DIAL_TEXT_MAX,
   FLAGS,
+  ORISHA_WATCH_PRESETS,
   PRESET_ORDER,
   RULES,
   WATCH_CUSTOM_POLICY,
+  WATCH_IFA_NOTE,
+  WATCH_MATERIALS,
   WATCH_ODU_NOTE,
+  WATCH_SPECS,
   WATCH_ORIGIN,
   WATCH_PROOF_NOTE,
   WATCH_RENDER_NOTE,
@@ -59,6 +65,7 @@ import {
   validate,
   variantFor,
   visibleParts,
+  withDialModel,
   withPart,
   type DialSignPos,
   type OduSign,
@@ -73,16 +80,23 @@ import {
   DIAL_LAYOUT,
   HANDS,
   casebackPrimitives,
+  dialHasDate,
   dialPrimitives,
   estimateTextWidth,
   handAngles,
+  handPose,
+  ifaSignSlots,
   polar,
+  signInkSize,
   signPrimitives,
+  type IfaSlot,
   type Primitive,
   type RectPrim,
   type TextRun,
 } from "../lib/watch-art";
 import { casebackSvg, dialPrintSvg, frontSvg, frontSvgDataUrl, laserSvg } from "../lib/watch-svg";
+import { dialPrintSvgCurvas, laserSvgCurvas, missingGlyphs, pathBounds, pathReach, textRunToPath, textWidthMm } from "../lib/watch-curvas";
+import { CASEBACK_LAYOUT } from "../lib/watch-art";
 import { decodeDesign, encodeDesign, encodeWatchDesign, isWatchPayload } from "../lib/design-code";
 
 let failures = 0;
@@ -133,7 +147,17 @@ const SAMPLES: [string, WatchConfig][] = [
       } satisfies WatchConfig;
     })(),
   ],
+  [
+    // The star piece as ordered: the customer's personal sign on the caseback.
+    "ifa-tapa",
+    (() => {
+      const c = resolvePreset("ifa", disp);
+      return { ...c, tapa: { ...c.tapa, signo: COMBO, linea1: "Juan Pérez", fecha: "2019-10-04" } } satisfies WatchConfig;
+    })(),
+  ],
 ];
+const byName = (n: string): WatchConfig => SAMPLES.find(([k]) => k === n)![1];
+const withText = (c: WatchConfig, texto: string): WatchConfig => ({ ...c, esfera: { ...c.esfera, texto } });
 
 // --- Odù sign helpers (used by the orientation and SVG sections) -------------
 const ALL_SIGNS: OduSign[] = [...ODU_MEJI.map((o): OduSign => ({ tipo: "meyi", oduId: o.id })), COMBO];
@@ -216,9 +240,37 @@ section("presets resolve only to visible, available parts", () => {
     "Desde cero preset",
   );
   for (const [id, c] of presets) {
-    if (id === "cero") continue;
+    if (id === "cero" || id === "ifa") continue;
     ok(c.aplique === "oro" && c.esfera.pista.estilo === "cuentas" && c.esfera.texto === DIAL_NAMES[id], `preset ${id}: gold, beads, canonical name`);
+    ok(c.esfera.modelo === "clasica", `preset ${id}: classic dial`);
   }
+  // The star piece (owner §12): Ifá first, green sunray, Orula's green/yellow
+  // beads, gold applique, yellow seconds, green rubber, steel, "IFÁ" at 6, the
+  // 16 Meyis on the dial and the personal sign left for the caseback.
+  ok(PRESET_ORDER[0] === "ifa" && new Set(PRESET_ORDER).size === PRESET_ORDER.length, "Ifá is the first preset (and no preset repeats)");
+  const ifa = p.ifa;
+  ok(
+    ifa.esfera.modelo === "ifa" &&
+      ifa.esfera.base === "verde" &&
+      ifa.esfera.pista.estilo === "cuentas" &&
+      ifa.esfera.pista.orisha === "orula" &&
+      ifa.esfera.texto === DIAL_TEXT_IFA &&
+      ifa.esfera.signo === null &&
+      ifa.aplique === "oro" &&
+      ifa.segundero === "amarillo" &&
+      ifa.correa === "caucho-verde" &&
+      ifa.acabado === "acero" &&
+      ifa.tapa.signo === null &&
+      ifa.preset === "ifa",
+    `Ifá preset: ${JSON.stringify(ifa)}`,
+  );
+  ok(DIAL_TEXT_IFA === "IFÁ" && isValidDialText(DIAL_TEXT_IFA), "the Ifá dial text is IFÁ (with its accent) and passes the allow-list");
+  ok(ORISHA_WATCH_PRESETS.ifa.label === "Ifá" && WATCH_IFA_NOTE.includes("16 Meyis"), "Ifá label and card copy");
+  ok(DIAL_MODELS.clasica.ventanaFecha, "the classic dial keeps the 3 o'clock date window");
+  // Pending owner question, shipped as the reviewer's default: the Ifá dial has
+  // NO date window, so the 16 Meyis form a perfect ring (flip to true to bring
+  // the window back; the ring checks below cover both).
+  ok(DIAL_MODELS.ifa.ventanaFecha === false, "the Esfera Ifá ships without the date window (perfect ring)");
 });
 
 // ---------------------------------------------------------------------------
@@ -291,6 +343,7 @@ section("every RULE fires on a blocked example", () => {
     "cuentas-sin-orisha": { c: esf({ pista: { estilo: "cuentas" } }) },
     "texto-esfera": { c: esf({ texto: "eleggua" }) },
     "texto-esfera-fijo": { c: esf({ texto: "MI CAMINO" }), flags: off },
+    "signo-esfera-ifa": { c: esf({ modelo: "ifa", signo: { tipo: "meyi", oduId: "ofun-meji" } }) },
     "signo-esfera-apagado": { c: esf({ signo: { tipo: "meyi", oduId: "ofun-meji" } }), flags: off },
     "signo-desconocido": { c: tapa({ signo: { tipo: "meyi", oduId: "no-existe" } }) },
     "combinacion-sin-nombre": { c: tapa({ signo: { ...COMBO, nombre: "  " } }) },
@@ -298,6 +351,7 @@ section("every RULE fires on a blocked example", () => {
     "texto-tapa": { c: tapa({ linea1: "<script>" }) },
     "fecha-tapa": { c: tapa({ fecha: "2025-02-30" }) },
     "contraste-segundero": { c: withPatch(esf({ base: "blanco" }), { segundero: "blanco" }) },
+    "ifa-sin-signo": { c: esf({ modelo: "ifa", texto: DIAL_TEXT_IFA, signo: null }) },
   };
   for (const rule of RULES) {
     const ex = examples[rule.id];
@@ -314,6 +368,11 @@ section("every RULE fires on a blocked example", () => {
   for (const id of Object.keys(examples)) ok(RULES.some((r) => r.id === id), `example for unknown rule ${id}`);
   // The flags are ON at launch (owner decision §3): free dial text + sign validate.
   ok(validate(esf({ texto: "MI CAMINO", signo: COMBO })).ok, "free dial text + combination sign must validate with launch FLAGS");
+  // With free text off, the Ifá dial may still carry its own canonical "IFÁ".
+  const ifaFixed = withPatch(base, { esfera: { ...base.esfera, modelo: "ifa", texto: DIAL_TEXT_IFA } });
+  ok(validate(ifaFixed, disp, off).ok, "DIAL_FREE_TEXT off: the Ifá dial keeps IFÁ");
+  ok(!validate(withPatch(ifaFixed, { esfera: { ...ifaFixed.esfera, texto: "ELEGGUÁ" } }), disp, off).ok, "DIAL_FREE_TEXT off: an Ifá dial with another name is blocked");
+  ok(validate({ ...base, esfera: { ...base.esfera, modelo: "nada" as "ifa" } }).issues.some((i) => i.campo === "esfera.modelo"), "an unknown dial model is blocked");
   // Contrast is a catalogue invariant: every visible dial gets ≥ 3:1 ink.
   for (const b of DIAL_BASES) if (b.status === "verificado") ok(dialInk(b.id).contraste >= 3, `dial ${b.id}: text contrast < 3:1`);
 });
@@ -452,6 +511,28 @@ section("normalize, order lines and price (no product yet)", () => {
   ok(n.descontinuado.some((d) => d.campo === "correa") && n.descontinuado.some((d) => d.campo === "acabado"), "unknown ids are flagged");
   ok(n.config.esfera.pista.estilo === "rayas" && n.config.esfera.texto === "OSHÚN", "beads without Orisha → rayas; text cleaned");
   ok(same(normalize(null), normalize({})), "normalize tolerates junk");
+  // Links made before the Ifá dial carry no `modelo`: they stay classic, silently.
+  const eleggua = resolvePreset("eleggua", disp);
+  const { modelo: _m, ...oldEsfera } = eleggua.esfera;
+  const oldLink = encodeDesign({ design: {}, piece: "reloj", watch: { ...eleggua, esfera: oldEsfera } });
+  const old = decodeWatchDesign(oldLink);
+  ok(old && same(old.config, eleggua) && old.descontinuado.length === 0, "a pre-Ifá link (no esfera.modelo) decodes to the same classic watch, unflagged");
+  const junkModel = normalizeWithReport({ ...eleggua, esfera: { ...eleggua.esfera, modelo: "dorada" } });
+  ok(junkModel.config.esfera.modelo === "clasica" && junkModel.descontinuado.some((d) => d.campo === "esfera.modelo"), "an unknown dial model falls back to clasica and is flagged");
+  ok(normalize({ ...eleggua, preset: "ifa" }).preset === "ifa" && normalize({ ...eleggua, preset: "obatala" }).preset === undefined, "normalize keeps the ifa preset tag, drops unknown ones");
+  // withDialModel: canonical text follows the model, a customer's own text stays,
+  // and the Ifá dial drops a dial sign (the personal sign goes on the caseback).
+  const orula = resolvePreset("orula", disp);
+  const toIfa = withDialModel({ ...orula, esfera: { ...orula.esfera, signo: { tipo: "meyi", oduId: "ofun-meji" } } }, "ifa");
+  ok(toIfa.esfera.modelo === "ifa" && toIfa.esfera.texto === DIAL_TEXT_IFA && toIfa.esfera.signo === null && validate(toIfa).ok, "withDialModel → ifa: ORULA → IFÁ, dial sign cleared");
+  ok(withDialModel(toIfa, "clasica").esfera.texto === "ORULA", "withDialModel → clasica: IFÁ → ORULA");
+  const own = { ...orula, esfera: { ...orula.esfera, texto: "MI CAMINO" } };
+  ok(withDialModel(own, "ifa").esfera.texto === "MI CAMINO", "withDialModel keeps a customer's own text");
+  ok(withDialModel(orula, "clasica") === orula && withDialModel(orula, "x" as "ifa") === orula, "withDialModel: same or unknown model is a no-op");
+  const ifaProps = lineProperties(presets[0][1], designCode(presets[0][1]), "u");
+  const prop = (k: string) => ifaProps.find((x) => x.key === k)?.value ?? "";
+  ok(prop("Orisha") === "Orula" && prop("Esfera").includes("Esfera Ifá (los 16 Meyis)") && prop("Esfera · texto") === "«IFÁ»", `Ifá order lines: ${JSON.stringify(ifaProps.slice(0, 6))}`);
+  ok(summary(presets[0][1]).includes("Ifá con los 16 Meyis"), "Ifá summary names the 16 Meyis");
   const c = SAMPLES.find(([k]) => k === "combinacion")![1];
   const props = lineProperties(c, designCode(c), "https://example.test/diseno?d=x", { politicaAceptada: "2026-11-21" });
   const keys = props.map((p) => p.key);
@@ -459,6 +540,21 @@ section("normalize, order lines and price (no product yet)", () => {
   ok(props.every((p) => p.value.trim() !== ""), "no empty property values");
   ok(props.find((p) => p.key === "Tapa · signo")?.value.includes("derecha Otura · izquierda Ika"), "combination described right-first");
   ok(summary(c).length > 20, "summary");
+  // The caseback date reads as engraved (DD · MM · AAAA) everywhere a person
+  // reads it; the ISO value only travels inside ?d=.
+  const dated = withPatch(c, { tapa: { ...c.tapa, fecha: "2019-10-04" } });
+  ok(
+    lineProperties(dated, designCode(dated), "u").find((p) => p.key === "Tapa · fecha")?.value === "04 · 10 · 2019",
+    "lineProperties: caseback date as engraved",
+  );
+  ok(summary(dated).includes("04 · 10 · 2019") && !summary(dated).includes("2019-10-04"), "summary: caseback date as engraved, never ISO");
+  ok(decodeWatchDesign(encodeWatchDesign(dated))?.config.tapa.fecha === "2019-10-04", "?d= keeps the ISO date");
+  // The Ifá preset starts with a blank caseback: it can be ordered, with an aviso
+  // pointing to Tu tapa (owner §12: the personal sign goes on the caseback).
+  const ifaPreset = presets.find(([id]) => id === "ifa")![1];
+  const ifaV = validate(ifaPreset);
+  ok(!ifaPreset.tapa.signo && ifaV.ok && ifaV.issues.some((i) => i.regla === "ifa-sin-signo" && i.nivel === "aviso" && i.campo === "tapa.signo"), "Ifá preset: orderable, with the ifa-sin-signo aviso on tapa.signo");
+  ok(!validate(withPatch(ifaPreset, { tapa: { ...ifaPreset.tapa, signo: { tipo: "meyi", oduId: "ofun-meji" } } })).issues.some((i) => i.regla === "ifa-sin-signo"), "Ifá with a caseback sign: no aviso");
   ok(variantFor(c, undefined) === null && variantFor(c, []) === null, "variantFor: no product → null");
   ok(priceDelta(c, { correa: "brazalete" }, null) === null, "priceDelta: no product → null");
   const mk = (a: string, s: string, amount: string) => ({
@@ -715,35 +811,152 @@ section("SVG builders: well-formed XML, 1:1 sizes, never mirrored", () => {
   }
 });
 
+// --- Geometry helpers for the layout sections -------------------------------
+type Box = [number, number, number, number]; // x0 y0 x1 y1
+const EPS = 1e-6; // float noise: 5.75 vs 6.05 must count as 0.30
+const pointGap = (x: number, y: number, b: Box) => Math.hypot(Math.max(b[0] - x, 0, x - b[2]), Math.max(b[1] - y, 0, y - b[3]));
+const boxGap = (a: Box, b: Box) => Math.hypot(Math.max(b[0] - a[2], 0, a[0] - b[2]), Math.max(b[1] - a[3], 0, a[1] - b[3]));
+const rectBox = (r: { x: number; y: number; w: number; h: number }, grow = 0): Box => [r.x - grow, r.y - grow, r.x + r.w + grow, r.y + r.h + grow];
+const union = (bs: Box[]): Box => bs.reduce((u, b) => [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])]);
+/** Farthest point of a box from the dial centre. */
+const boxR = (b: Box) => Math.hypot(Math.max(Math.abs(b[0]), Math.abs(b[2])), Math.max(Math.abs(b[1]), Math.abs(b[3])));
+
+/** The text at 6 as a box (cap height + accent ≈ 1 em above the baseline). */
+function textBox(t: TextRun): Box {
+  const half = Math.min(estimateTextWidth(t.text, t.font, t.size, t.letterSpacing), t.maxWidth ?? Infinity) / 2;
+  return [t.x - half, t.y - t.size, t.x + half, t.y + 0.05 * t.size];
+}
+
+/** Closest approach (mm, edge to edge) of a hand at `deg` to box `b`. The blade
+ *  runs from -tail to tip; `half(t)` is its half-width at distance t. */
+function handGap(deg: number, tail: number, tip: number, half: (t: number) => number, b: Box): number {
+  let gap = Infinity;
+  for (let t = -tail; t <= tip + 1e-9; t += 0.02) {
+    const p = polar(t, deg);
+    gap = Math.min(gap, pointGap(p.x, p.y, b) - half(t));
+  }
+  return gap;
+}
+const S = HANDS.seconds;
+const secondsHalf = (t: number) => (t > S.tip - S.head.len ? S.head.halfW : S.halfW);
+/** Seconds hand incl. its lume dot (with ring) and counterweight. */
+function secondsGap(deg: number, b: Box): number {
+  const lume = polar(S.lume.at, deg);
+  const cw = polar(-S.counter.at, deg);
+  return Math.min(
+    handGap(deg, S.tail, S.tip, secondsHalf, b),
+    pointGap(lume.x, lume.y, b) - (S.lume.r + S.lume.ring / 2),
+    pointGap(cw.x, cw.y, b) - S.counter.r,
+  );
+}
+/** Hour / minute blade: full width up to the shoulder, then to a point. */
+const bladeHalf = (h: { shoulder: number; tip: number; halfW: number }) => (t: number) =>
+  t <= h.shoulder ? h.halfW : (h.halfW * (h.tip - t)) / (h.tip - h.shoulder);
+
+/** The 16 ring signs of an Ifá dial as dialPrimitives() must draw them. */
+function ifaRing(c: WatchConfig, slots: IfaSlot[] = ifaSignSlots()): { slot: IfaSlot; sign: OduSign; marks: Primitive[]; box: Box }[] {
+  const I = DIAL_LAYOUT.ifa;
+  const ink = dialInk(c.esfera.base).hex;
+  return slots.map((slot) => {
+    const sign: OduSign = { tipo: "meyi", oduId: slot.oduId };
+    const marks = signPrimitives(sign, slot.cx, slot.cy, I.inkH, ink, "impresion", "barras", { barScale: I.barScale });
+    return { slot, sign, marks, box: union(marks.map((m) => rectBox(m as RectPrim))) };
+  });
+}
+
+/** Farthest reach of one primitive from the dial centre (mm), strokes included. */
+function primReach(p: Primitive): number {
+  const sw = p.stroke ? (p.strokeWidth ?? 0.1) / 2 : 0;
+  switch (p.kind) {
+    case "circle":
+      return Math.hypot(p.cx, p.cy) + p.r + sw;
+    case "rect": {
+      const c = { x: p.x + p.w / 2, y: p.y + p.h / 2 };
+      const a = ((p.rotate ?? 0) * Math.PI) / 180;
+      let r = 0;
+      for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const [x, y] = [(dx * p.w) / 2, (dy * p.h) / 2];
+        r = Math.max(r, Math.hypot(c.x + x * Math.cos(a) - y * Math.sin(a), c.y + x * Math.sin(a) + y * Math.cos(a)));
+      }
+      return r + sw;
+    }
+    case "path": {
+      // Dial paths are absolute M/L polygons (the 12 o'clock triangle).
+      if (/[^MLZ\d\s.,-]/.test(p.d)) return Infinity;
+      const n = p.d.match(/-?\d*\.?\d+/g)!.map(Number);
+      let r = 0;
+      for (let i = 0; i + 1 < n.length; i += 2) r = Math.max(r, Math.hypot(n[i], n[i + 1]));
+      return r + sw;
+    }
+    case "text":
+      return boxR(textBox(p));
+    case "arcText":
+      return Infinity; // never on a dial
+  }
+}
+
 // ---------------------------------------------------------------------------
-section("dial layout: seconds hand and Odù sign clear the name, the PY applique and the date", () => {
-  type Box = [number, number, number, number]; // x0 y0 x1 y1
+section("print area: everything printed or applied sits inside the case opening", () => {
+  const L = DIAL_LAYOUT;
+  ok(WATCH_SPECS.aberturaVisibleMm === 28.8 && WATCH_SPECS.measured === false, "aberturaVisibleMm is the 28.8 mm placeholder (measured:false)");
+  // The photo template: R_ABERTURA 236 px at 16.3934 px/mm.
+  ok(Math.abs(236 / 16.3934 - WATCH_SPECS.aberturaVisibleMm / 2) < 0.01, "aberturaVisibleMm matches the photo layers' R_ABERTURA (236 px / 16.39 px/mm)");
+  ok(L.visibleR === WATCH_SPECS.aberturaVisibleMm / 2 && Math.abs(L.printR - (L.visibleR - 0.25)) < EPS, `printR = visibleR − 0.25 (${L.printR})`);
+  ok(frontSvg(SAMPLES[0][1]).includes(`<clipPath id="pywdial"><circle cx="0" cy="0" r="${L.visibleR}"/>`), "the poster shows the dial through exactly the case opening");
+  const all: [string, WatchConfig][] = [
+    ...SAMPLES,
+    ...(["rayas", "cuentas"] as const).flatMap((estilo): [string, WatchConfig][] =>
+      PRESET_ORDER.filter((id) => id !== "cero").map((id) => {
+        const c = resolvePreset(id, disp);
+        return [`${id} (${estilo})`, { ...c, esfera: { ...c.esfera, pista: { ...c.esfera.pista, estilo } } }];
+      }),
+    ),
+    ["12 letras", withText(byName("eleggua"), "WWWWWWWWWWWW")],
+    ["Ifá, 12 letras", withText(byName("ifa"), "WWWWWWWWWWWW")],
+  ];
+  for (const [name, c] of all) {
+    let worst = 0;
+    let what = "";
+    for (const p of dialPrimitives(c)) {
+      if (p.capa === "base" || p.capa === "guia") continue;
+      const r = primReach(p);
+      if (r > worst) [worst, what] = [r, `${p.capa} ${p.kind}${p.id ? ` #${p.id}` : ""}`];
+    }
+    ok(worst <= L.printR + EPS, `${name}: ${what} reaches ${worst.toFixed(3)} mm (limit ${L.printR} = opening ${L.visibleR} − 0.25)`);
+  }
+  // The classic applied indices stay clear of the minute track (both styles).
+  const T = L.track;
+  const ticksIn = T.outerR - T.major.len;
+  const beadsIn = T.r - T.beadR * T.accentScale;
+  const TRACK_AIR = 0.15;
+  ok(ticksIn - (L.triangle.outerR + L.triangle.rimW / 2) >= TRACK_AIR - EPS, "the 12 o'clock triangle clears the 12 o'clock tick");
+  ok(beadsIn - (L.triangle.outerR + L.triangle.rimW / 2) >= TRACK_AIR - EPS, "the 12 o'clock triangle clears the 12 o'clock bead");
+  ok(ticksIn - (L.dots.r + L.dots.dotR + L.dots.rimW / 2) >= TRACK_AIR - EPS, "the hour dots clear the hour ticks");
+  ok(ticksIn - (L.bar.r + L.bar.len / 2 + L.bar.rimW / 2) >= TRACK_AIR - EPS, "the 6 and 9 bars clear the ticks");
+  ok(L.triangle.tipR + (L.applique.cy - L.applique.h / 2) >= 0.8 - EPS, "the triangle tip stays ≥ 0.8 mm above the PY applique");
+});
+
+// ---------------------------------------------------------------------------
+section("classic dial layout: seconds hand and Odù sign clear the name, the PY applique and the date", () => {
   const L = DIAL_LAYOUT;
   const CLEAR = 0.25; // mm of air the seconds hand needs
   const SIGN_AIR = 0.3; // mm of air around the sign
-  const EPS = 1e-6; // float noise: 5.75 vs 6.05 must count as 0.30
-  const pointGap = (x: number, y: number, b: Box) => Math.hypot(Math.max(b[0] - x, 0, x - b[2]), Math.max(b[1] - y, 0, y - b[3]));
-  const boxGap = (a: Box, b: Box) => Math.hypot(Math.max(b[0] - a[2], 0, a[0] - b[2]), Math.max(b[1] - a[3], 0, a[1] - b[3]));
-  const rectBox = (r: { x: number; y: number; w: number; h: number }, grow = 0): Box => [r.x - grow, r.y - grow, r.x + r.w + grow, r.y + r.h + grow];
-  const union = (bs: Box[]): Box => bs.reduce((u, b) => [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])]);
+  const classic = SAMPLES.filter(([, c]) => c.esfera.modelo === "clasica");
+  const ref = classic.find(([n]) => n === "eleggua")![1];
 
-  // The name at 6 (cap height + accent ≈ 1 em above the baseline): every
-  // sample, plus the widest a 12-letter name can get (it is squeezed to maxW).
-  const prims = dialPrimitives(SAMPLES[0][1]);
-  const named: [string, WatchConfig][] = [
-    ...SAMPLES,
-    ["12 letras", { ...SAMPLES[0][1], esfera: { ...SAMPLES[0][1].esfera, texto: "WWWWWWWWWWWW" } }],
-  ];
+  // The name at 6: every classic sample, plus the widest a 12-letter name can
+  // get (it is squeezed to maxW).
+  const prims = dialPrimitives(ref);
+  const named: [string, WatchConfig][] = [...classic, ["12 letras", { ...ref, esfera: { ...ref.esfera, texto: "WWWWWWWWWWWW" } }]];
   const names: [string, Box][] = [];
   for (const [n, c] of named) {
     const t = dialPrimitives(c).find((p): p is TextRun => p.kind === "text");
-    if (!t) continue;
-    const half = Math.min(estimateTextWidth(t.text, t.font, t.size, t.letterSpacing), t.maxWidth ?? Infinity) / 2;
-    names.push([`nombre «${t.text}» (${n})`, [t.x - half, t.y - t.size, t.x + half, t.y + 0.05 * t.size]]);
+    if (t) names.push([`nombre «${t.text}» (${n})`, textBox(t)]);
   }
-  ok(names.some(([n]) => n.includes("12 letras")) && names.find(([n]) => n.includes("12 letras"))![1][2] >= L.name.maxW / 2 - 0.01, "the worst-case name fills maxW");
+  ok(names.find(([n]) => n.includes("12 letras"))![1][2] >= L.name.maxW / 2 - 0.01, "the worst-case name fills maxW");
   const slot = prims.find((p): p is RectPrim => p.kind === "rect" && p.id === "aplique")!;
   const win = prims.find((p): p is RectPrim => p.kind === "rect" && p.id === "ventana-fecha")!;
+  ok(slot && win && dialHasDate(ref), "the classic dial has the applique slot and the date window");
   const signBox = (pos: DialSignPos): Box => {
     const s = L.sign[pos];
     return union(ALL_SIGNS.flatMap((sg) => signPrimitives(sg, s.cx, s.cy, s.inkH, "#000", "impresion")).map((p) => rectBox(p as RectPrim)));
@@ -756,20 +969,11 @@ section("dial layout: seconds hand and Odù sign clear the name, the PY applique
     ["signo a las 6", signBox("seis")],
   ];
 
-  // The seconds hand as drawn (HANDS, the same numbers watch-svg uses):
-  // stem, arrow head, lume dot with its ring, counterweight.
-  const S = HANDS.seconds;
-  const deg = handAngles().seconds;
+  // The seconds hand as drawn (HANDS, the same numbers watch-svg uses).
+  const deg = handAngles(handPose(ref)).seconds;
+  ok(same(handPose(ref), HANDS.pose), "the classic poster keeps 10:10:40");
   for (const [what, b] of obstacles) {
-    let gap = Infinity;
-    for (let t = -S.tail; t <= S.tip; t += 0.02) {
-      const p = polar(t, deg);
-      gap = Math.min(gap, pointGap(p.x, p.y, b) - (t > S.tip - S.head.len ? S.head.halfW : S.halfW));
-    }
-    const lume = polar(S.lume.at, deg);
-    gap = Math.min(gap, pointGap(lume.x, lume.y, b) - (S.lume.r + S.lume.ring / 2));
-    const cw = polar(-S.counter.at, deg);
-    gap = Math.min(gap, pointGap(cw.x, cw.y, b) - S.counter.r);
+    const gap = secondsGap(deg, b);
     ok(gap >= CLEAR - EPS, `seconds hand at ${HANDS.pose.h}:${HANDS.pose.m}:${HANDS.pose.s} comes within ${gap.toFixed(2)} mm of the ${what}`);
   }
 
@@ -789,10 +993,180 @@ section("dial layout: seconds hand and Odù sign clear the name, the PY applique
       ok(pointGap(d.x, d.y, sb) - (L.dots.dotR + L.dots.rimW / 2) >= SIGN_AIR - EPS, `sign at '${pos}' touches the ${h} o'clock dot`);
     }
     // Out from under the hand hub (the minute hand's tail reaches 1.9 mm).
-    ok(pointGap(0, 0, sb) >= 1.9 - EPS, `sign at '${pos}' sits under the hand hub`);
+    ok(pointGap(0, 0, sb) >= HANDS.minute.tail - EPS, `sign at '${pos}' sits under the hand hub`);
     // Printable: a bar narrower than 0.2 mm is below what we ask the workshop to proof.
     const markW = (L.sign[pos].inkH / (ODU_GLYPH.inkBottom - ODU_GLYPH.inkTop)) * ODU_GLYPH.markW;
     ok(markW >= 0.2, `sign at '${pos}': bars ${markW.toFixed(3)} mm wide (< 0.2 mm)`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+section("Esfera Ifá: the 16 Meyis in order, upright, unmirrored and clear of everything", () => {
+  const L = DIAL_LAYOUT;
+  const I = L.ifa;
+  const SIGN_AIR = 0.3;
+  const CLEAR = 0.25;
+  const ifa = SAMPLES.find(([n]) => n === "ifa")![1];
+  const prims = dialPrimitives(ifa);
+
+  // Order and placement: Baba Ejiogbe at 12, then clockwise every 22.5°.
+  for (const fecha of [true, false]) {
+    const slots = ifaSignSlots(fecha);
+    ok(slots.length === 16 && slots.every((s, k) => s.oduId === ODU_MEJI[k].id && Math.abs(s.deg - k * 22.5) < EPS), `ring (fecha ${fecha}): the 16 Meyi in ODU_MEJI order, one every 22.5°`);
+    ok(slots[0].oduId === "eji-ogbe" && ODU_LUCUMI[slots[0].oduId] === "Baba Ejiogbe" && Math.abs(slots[0].cx) < EPS && slots[0].cy < 0, "Baba Ejiogbe sits at 12");
+    for (const s of slots) {
+      // On its own radius: the angle of its centre is its slot angle.
+      const ang = ((Math.atan2(s.cx, -s.cy) * 180) / Math.PI + 360) % 360;
+      ok(Math.abs(ang - s.deg) < 1e-6 || Math.abs(Math.hypot(s.cx, s.cy)) < EPS, `${s.oduId}: centre is not on its ${s.deg}° radius`);
+    }
+    const moved = slots.filter((s) => Math.abs(Math.hypot(s.cx, s.cy) - I.ringR) > 1e-6).map((s) => s.oduId);
+    ok(same(moved, fecha ? ["irosun-meji"] : []), `ring (fecha ${fecha}): only the sign over the date window leaves the ring, got ${moved.join(", ") || "none"}`);
+  }
+  ok(DIAL_MODELS.ifa.ventanaFecha === dialHasDate(ifa) && same(ifaSignSlots(), ifaSignSlots(DIAL_MODELS.ifa.ventanaFecha)), "the dial follows DIAL_MODELS.ifa.ventanaFecha");
+
+  // Every ring sign is in dialPrimitives, and reads back as itself: upright,
+  // unmirrored, never rotated with the ring.
+  const ring = ifaRing(ifa);
+  for (const { sign, marks } of ring) {
+    ok(marks.every((m) => prims.some((p) => same(p, m))), `${JSON.stringify(sign)}: ring marks missing from dialPrimitives`);
+    ok(same(readBack(marks), expectCols(sign)), `ring: ${JSON.stringify(sign)} is not drawn upright/unmirrored`);
+  }
+  const ringMarks = ring.flatMap((r) => r.marks);
+  ok(prims.filter((p) => p.capa === "impresion" && p.kind === "rect").length === ringMarks.length, "the Ifá dial prints exactly the 16 ring signs (no extra dial sign)");
+  // …and through the SVG text of the poster and of the print file (CTM read-back).
+  for (const [kind, svg] of [["frontSvg", frontSvg(ifa)], ["dialPrintSvg", dialPrintSvg(ifa)]] as const) {
+    for (const { sign, marks } of ring) {
+      const r = signFromSvg(svg, marks);
+      ok(r.found === marks.length && r.upright && same(r.cols, expectCols(sign)), `${kind}: ring sign ${sign.tipo === "meyi" ? sign.oduId : ""} not upright/unmirrored (found ${r.found}/${marks.length})`);
+    }
+  }
+  // The ring replaces the lume indices; the classic dial has no ring.
+  const lume = (c: WatchConfig) => dialPrimitives(c).filter((p) => p.fill === WATCH_MATERIALS.lume).length;
+  ok(lume(ifa) === 0 && lume(SAMPLES.find(([n]) => n === "eleggua")![1]) === 11, "Ifá: no lume dots/triangle/bars (the Meyis are the indices); classic: 8 dots + triangle + 2 bars");
+  ok(!dialPrimitives(resolvePreset("orula", disp)).some((p) => ringMarks.some((m) => same(p, m))), "a classic dial never prints the ring");
+  ok(validate(ifa).ok && !validate({ ...ifa, esfera: { ...ifa.esfera, signo: { tipo: "meyi", oduId: "ofun-meji" } } }).ok, "an Ifá dial blocks a second (personal) sign on the dial");
+
+  // Collisions, for the layout in use AND the no-date alternative.
+  const slot = prims.find((p): p is RectPrim => p.kind === "rect" && p.id === "aplique")!;
+  const dateBox: Box = (() => {
+    const D = L.date;
+    return [D.cx - D.w / 2 - D.rim, -D.h / 2 - D.rim, D.cx + D.w / 2 + D.rim, D.h / 2 + D.rim];
+  })();
+  const nameBoxes: [string, Box][] = ["IFÁ", "WWWWWWWWWWWW", "MI CAMINO"].map((texto) => {
+    const t = dialPrimitives({ ...ifa, esfera: { ...ifa.esfera, texto } }).find((p): p is TextRun => p.kind === "text")!;
+    return [`texto «${texto}»`, textBox(t)];
+  });
+  const T = L.track;
+  const trackIn = Math.min(T.outerR - T.major.len, T.r - T.beadR * T.accentScale);
+  for (const fecha of [true, false]) {
+    const tag = fecha ? "con fecha" : "sin fecha";
+    const signs = ifaRing(ifa, ifaSignSlots(fecha));
+    const obstacles: [string, Box][] = [["aplique PY", rectBox(slot)], ...nameBoxes, ...(fecha ? [["ventana de fecha", dateBox] as [string, Box]] : [])];
+    for (const { slot: s, box } of signs) {
+      for (const [what, b] of obstacles) ok(boxGap(box, b) >= SIGN_AIR - EPS, `${tag}: ${s.oduId} comes within ${boxGap(box, b).toFixed(2)} mm of the ${what}`);
+      ok(pointGap(0, 0, box) >= HANDS.minute.tail + SIGN_AIR - EPS, `${tag}: ${s.oduId} sits under the hand pinion`);
+      ok(trackIn - boxR(box) >= SIGN_AIR - EPS, `${tag}: ${s.oduId} comes within ${(trackIn - boxR(box)).toFixed(2)} mm of the minute track`);
+    }
+    for (let i = 0; i < signs.length; i++) {
+      for (let j = i + 1; j < signs.length; j++) {
+        const g = boxGap(signs[i].box, signs[j].box);
+        ok(g >= SIGN_AIR - EPS, `${tag}: ${signs[i].slot.oduId} and ${signs[j].slot.oduId} are ${g.toFixed(2)} mm apart`);
+      }
+    }
+  }
+  // The triangle is left off on purpose: at 12 it would sit on Baba Ejiogbe.
+  const triangle: Box = [-L.triangle.halfW, -L.triangle.outerR, L.triangle.halfW, -L.triangle.tipR];
+  ok(boxGap(triangle, ring[0].box) < SIGN_AIR, "the classic triangle would collide with Baba Ejiogbe (that is why Ejiogbe is the 12 marker)");
+
+  // The poster hands at the Ifá pose: no hand covers a Meyi, the text, the
+  // applique or the date (the hour hand never reaches the ring).
+  const pose = handPose(ifa);
+  ok(same(pose, HANDS.poseIfa), "the Ifá poster uses its own pose");
+  const ang = handAngles(pose);
+  const handObstacles: [string, Box][] = [...ring.map((r): [string, Box] => [r.slot.oduId, r.box]), ["aplique PY", rectBox(slot)], nameBoxes[0], ["ventana de fecha", dateBox]];
+  for (const [what, b] of handObstacles) {
+    const sg = secondsGap(ang.seconds, b);
+    ok(sg >= CLEAR - EPS, `Ifá pose: the seconds hand comes within ${sg.toFixed(2)} mm of ${what}`);
+    if (what === "aplique PY" || what.startsWith("texto")) continue; // the hands sit above the applique and the print
+    // The wide hands only need to stay off the ink (they pass over every
+    // sign in use); the thin seconds hand keeps the poster's 0.25 mm of air.
+    const mg = handGap(ang.minute, HANDS.minute.tail, HANDS.minute.tip, bladeHalf(HANDS.minute), b);
+    ok(mg >= 0, `Ifá pose: the minute hand covers ${what} (${mg.toFixed(2)} mm)`);
+    const hg = handGap(ang.hour, HANDS.hour.tail, HANDS.hour.tip, bladeHalf(HANDS.hour), b);
+    ok(hg >= 0, `Ifá pose: the hour hand covers ${what} (${hg.toFixed(2)} mm)`);
+  }
+
+  // Printable at this size: ≥ 0.2 mm bars, a visible gap inside a double mark
+  // and between rows (what we ask the workshop to proof).
+  const u = I.inkH / (ODU_GLYPH.inkBottom - ODU_GLYPH.inkTop);
+  const barW = ODU_GLYPH.markW * I.barScale * u;
+  const doubleGap = (2 * ODU_GLYPH.doubleHalf - ODU_GLYPH.markW * I.barScale) * u;
+  const rowGap = (ODU_GLYPH.rowY[1] - ODU_GLYPH.rowY[0] - ODU_GLYPH.markH) * u;
+  ok(I.inkH >= 1.9 && I.inkH <= 2.3, `ring signs ${I.inkH} mm tall (1.9–2.3)`);
+  ok(barW >= 0.2 - EPS, `ring bars ${barW.toFixed(3)} mm wide (< 0.2 mm)`);
+  ok(doubleGap >= 0.15 - EPS, `gap inside a double mark ${doubleGap.toFixed(3)} mm (< 0.15 mm)`);
+  ok(rowGap >= 0.2 - EPS, `gap between rows ${rowGap.toFixed(3)} mm (< 0.2 mm)`);
+  ok(Math.abs(signInkSize(I.inkH, I.barScale).w - (ring.find((r) => r.slot.oduId === "oyeku-meji")!.box[2] - ring.find((r) => r.slot.oduId === "oyeku-meji")!.box[0])) < 1e-9, "signInkSize is the real worst-case width (Oyeku, all doubles)");
+});
+
+section("production files: text in curves (no <text>), every glyph present, inside its field", () => {
+  // Every character the allow-lists accept (dial ⊂ caseback ⊂ sign names) and
+  // the fixed ring text has an outline in BOTH fonts: nothing ever falls back.
+  const allowed = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÁÉÍÓÚÜÑáéíóúüñ .,'·&/-"];
+  ok(allowed.every((ch) => isValidCasebackLine(ch)), "the glyph alphabet is exactly what CASEBACK_ALLOW accepts");
+  for (const font of ["py-dial", "py-dial-fina"] as const) {
+    const miss = missingGlyphs(allowed.join(""), font);
+    ok(miss.length === 0, `${font}: no outline for ${JSON.stringify(miss.join(""))}`);
+  }
+  ok(textWidthMm("MM", "py-dial", 1.55) > textWidthMm("II", "py-dial", 1.55), "textWidthMm measures real advances");
+
+  const L = DIAL_LAYOUT;
+  const R = CASEBACK_LAYOUT.fieldR;
+  const long: [string, WatchConfig][] = [
+    ...SAMPLES,
+    [
+      "texto largo + tapa llena (clásica)",
+      withPatch(resolvePreset("chango", disp), {
+        esfera: { ...resolvePreset("chango", disp).esfera, texto: "MMMMMMMMMMMM" },
+        tapa: { signo: COMBO, marcas: "barras", linea1: "MMMMMMMMMMMMMMMMMMMM", linea2: "WWWWWWWWWWWWWWWWWWWW", fecha: "2024-12-04", fuente: "clasica" },
+      }),
+    ],
+    [
+      "tapa llena (fina) sin signo",
+      withPatch(resolvePreset("oshun", disp), {
+        tapa: { signo: null, marcas: "barras", linea1: "Ñañá & Tomás O'Neil", linea2: "MMMMMMMMMMMMMMMMMMMM", fecha: "1984-03-15", fuente: "fina" },
+      }),
+    ],
+  ];
+  for (const [name, c] of long) {
+    const laser = laserSvgCurvas(c);
+    const dial = dialPrintSvgCurvas(c);
+    ok(!/<text[\s>]/.test(laser) && !/<text[\s>]/.test(dial), `${name}: a production file still has <text>`);
+    ok(!/font-family/.test(laser) && !/font-family/.test(dial), `${name}: a production file still names a font`);
+    ok(xmlProblem(laser) === null, `${name}: laser (curvas) XML: ${xmlProblem(laser)}`);
+    ok(xmlProblem(dial) === null, `${name}: dial print (curvas) XML: ${xmlProblem(dial)}`);
+    ok(/width="30\.5mm" height="30\.5mm"/.test(dial), `${name}: dial print (curvas) is not 30.5 mm`);
+    ok(new RegExp(`width="${2 * R}mm" height="${2 * R}mm"`).test(laser), `${name}: laser (curvas) is not ${2 * R} mm`);
+    // Every outlined letter stays inside its field: the caseback text inside
+    // the engraving field, the dial text inside the printable radius.
+    const pathsOf = (svg: string) => [...svg.matchAll(/<path[^>]* d="([^"]+)"/g)].map((m) => m[1]);
+    for (const d of pathsOf(laser)) {
+      const reach = pathReach(d);
+      if (reach === null) continue;
+      ok(reach <= R + EPS, `${name}: an engraved outline reaches ${reach.toFixed(2)} mm (field ${R})`);
+    }
+    const printed = dial.slice(dial.indexOf('<g id="impresion">'));
+    for (const d of pathsOf(printed)) {
+      const reach = pathReach(d);
+      if (reach === null) continue;
+      ok(reach <= L.printR + EPS, `${name}: a printed outline reaches ${reach.toFixed(2)} mm (print radius ${L.printR})`);
+    }
+    // The dial name never overflows its line (curves are compressed to maxW).
+    const name6 = dialPrimitives(c).find((p): p is TextRun => p.kind === "text");
+    if (name6?.maxWidth) {
+      const b = pathBounds(textRunToPath(name6).d);
+      ok(b && b[2] - b[0] <= name6.maxWidth + 0.05, `${name}: the dial name is ${(b ? b[2] - b[0] : NaN).toFixed(2)} mm wide (max ${name6.maxWidth})`);
+    }
   }
 });
 

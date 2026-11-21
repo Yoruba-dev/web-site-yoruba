@@ -1,0 +1,235 @@
+/* ==========================================================================
+   COMPOSITOR REALISTA DEL RELOJ — components/watch/WatchFront.tsx
+   Capas absolutas sobre un escenario 3:4 (la plantilla 1200 × 1600). Todas
+   las clases empiezan por .wf para no chocar con el resto del sitio.
+   ========================================================================== */
+
+.wf {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  perspective: 2600px;
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* — Las dos caras (frente / tapa): girar el reloj ------------------------ */
+.wf-flip {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.45, 0.05, 0.2, 1);
+}
+
+.wf[data-vista="tapa"] .wf-flip {
+  transform: rotateY(180deg);
+}
+
+.wf-cara {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.wf-tapa {
+  transform: rotateY(180deg);
+}
+
+/* Por detrás se mira de cerca: el grabado tiene que leerse. */
+.wf-tapa-zoom {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.32);
+}
+
+/* — Capas ---------------------------------------------------------------- */
+.wf-capa {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.wf-foto {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.wf-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: fill;
+}
+
+.wf-espejo {
+  transform: scaleX(-1);
+}
+
+/* La correa (y su sombra) se desvanece en los extremos: sin cortes secos. */
+.wf-correa-mask {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 6%, #000 20%, #000 80%, transparent 94%);
+  mask-image: linear-gradient(to bottom, transparent 6%, #000 20%, #000 80%, transparent 94%);
+}
+
+/* — Fundido de UNA capa al cambiar una opción ---------------------------- */
+.wf-cargando {
+  opacity: 0;
+}
+
+.wf-entra {
+  animation: wf-entra 340ms ease-out both;
+}
+
+/* La de debajo se va un poco después y termina antes que la nueva: nunca se
+   ve el fondo, y al quitarla no salta nada. */
+.wf-sale {
+  animation: wf-sale 260ms ease-in 60ms both;
+}
+
+@keyframes wf-entra {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wf-sale {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* — "Se va armando": la primera entrada --------------------------------- */
+.wf[data-armar="espera"] .wf-part {
+  opacity: 0;
+}
+
+.wf[data-armar="corre"] .wf-part {
+  animation: wf-armar var(--wf-dur, 480ms) cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--wf-d, 0ms) - var(--wf-t, 0ms)) both;
+}
+
+@keyframes wf-armar {
+  from {
+    opacity: 0;
+    transform: var(--wf-desde, none);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wf-p-correa {
+  --wf-d: 0ms;
+  --wf-dur: 520ms;
+  --wf-desde: scale(0.965);
+}
+
+.wf-p-caja {
+  --wf-d: 170ms;
+  --wf-dur: 560ms;
+  --wf-desde: scale(1.07);
+}
+
+.wf-p-sombra {
+  --wf-d: 260ms;
+  --wf-dur: 620ms;
+}
+
+.wf-p-esfera {
+  --wf-d: 430ms;
+  --wf-dur: 480ms;
+  --wf-desde: scale(0.93);
+}
+
+.wf-p-impresion {
+  --wf-d: 680ms;
+  --wf-dur: 420ms;
+}
+
+.wf-p-indices {
+  --wf-d: 840ms;
+  --wf-dur: 400ms;
+  --wf-desde: scale(1.035);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.wf-p-aplique {
+  --wf-d: 980ms;
+  --wf-dur: 400ms;
+  --wf-desde: translateY(-14px) scale(1.12);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Las agujas entran girando sobre el eje (centro de la esfera en la plantilla). */
+.wf-p-agujas {
+  --wf-d: 1080ms;
+  --wf-dur: 460ms;
+  --wf-desde: rotate(-28deg);
+  transform-box: view-box;
+  transform-origin: 600px 800px;
+}
+
+.wf-p-cristal {
+  --wf-d: 1200ms;
+  --wf-dur: 380ms;
+}
+
+/* — Modo noche ------------------------------------------------------------ */
+.wf-noche {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 700ms ease,
+    visibility 0s linear 700ms;
+}
+
+.wf[data-noche] .wf-noche {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 700ms ease;
+}
+
+/* — Sin movimiento: todo instantáneo ------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .wf .wf-part,
+  .wf .wf-entra,
+  .wf .wf-sale {
+    animation: none !important;
+  }
+
+  .wf[data-armar] .wf-part {
+    opacity: 1 !important;
+  }
+
+  .wf-flip,
+  .wf-noche,
+  .wf[data-noche] .wf-noche {
+    transition: none !important;
+  }
+}
+
+/* Sin JavaScript nadie quitaría la espera: se ve el reloj entero. */
+@media (scripting: none) {
+  .wf[data-armar] .wf-part {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}

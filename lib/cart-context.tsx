@@ -26,12 +26,18 @@ export interface CartLine {
   quantity: number;
   /** Personalised engraving attached from the 3D customizer (sent to the workshop). */
   customization?: {
+    /** What `text` is, shown before it in the cart and used as the Shopify
+     *  attribute key ("Grabado" by default; the watch sends "Diseño"). */
+    label?: string;
     text: string;
     font: string;
     metal?: string;
     shape?: string;
-    /** base64 PNG preview of the 3D piece */
+    /** Preview of the design: a base64 PNG (3D customizer) or an SVG data URL
+     *  (ring/coin mockup, watch thumbnail). */
     preview?: string;
+    /** Alt text for `preview` ("Tu diseño de Ifá" by default). */
+    previewAlt?: string;
   };
   /** Custom line-item properties (e.g. the made-to-order Orisha colour). Sent to
    *  the workshop as Shopify line-item attributes so they show in the order. */
@@ -125,7 +131,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines, email, hydrated]);
 
   useEffect(() => {
-    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+    if (!hydrated) return;
+    // A full quota (big previews, private mode) must never take the whole app
+    // down: the cart simply isn't persisted this time.
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+    } catch {
+      /* ignore */
+    }
   }, [lines, hydrated]);
 
   // Después de pagar en Shopify la clienta volvía a la web con el carrito igual

@@ -9,6 +9,7 @@ import {
   isConfigurable,
   isCoinConfigurable,
   isMadeToOrder,
+  isWatchConfigurable,
   isPlaceholderPriced,
   personalizationField,
   publicTags,
@@ -197,14 +198,22 @@ export default function ProductBuyBox({
         />
       )}
 
-      {/* A coin is engraved and a ring is built, so each opens its own editor.
-          Coin wins when a piece somehow matches both. */}
+      {/* A coin is engraved, a watch is assembled and a ring is built, so each
+          opens its own editor. Coin wins, then watch, when a piece somehow
+          matches more than one. */}
       {isCoinConfigurable(product) ? (
         <Link
           href={`/configurador-monedas?moneda=${encodeURIComponent(product.handle)}`}
           className="pyj-design-cta"
         >
           ✦ Diseña esta moneda con tu signo de Ifá →
+        </Link>
+      ) : isWatchConfigurable(product) ? (
+        <Link
+          href={`/creador-de-relojes?reloj=${encodeURIComponent(product.handle)}`}
+          className="pyj-design-cta"
+        >
+          ✦ Diseña este reloj →
         </Link>
       ) : (
         isConfigurable(product) && (

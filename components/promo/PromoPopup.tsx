@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { PromoVM } from "@/lib/promo";
+import { isFocusRoute } from "@/lib/focus-routes";
 
 // ---------------------------------------------------------------------------
 // Popup de la oferta cruzada — "compra el anillo y llévate la moneda".
@@ -22,6 +24,10 @@ import type { PromoVM } from "@/lib/promo";
 const CLAVE = "pyj-promo-anillo-moneda";
 
 export default function PromoPopup({ promo }: { promo: PromoVM }) {
+  // En una ruta de enfoque (el creador de relojes) no sale ni el popup ni la
+  // burbuja: interrumpir un diseño es perderlo. Y NO se marca como visto, así
+  // que sigue pendiente para la próxima página normal.
+  const enfoque = isFocusRoute(usePathname());
   const [abierto, setAbierto] = useState(false);
   const [cerrado, setCerrado] = useState(false);
   // La clave lleva el precio: si el dueño cambia la oferta, se le vuelve a
@@ -47,6 +53,7 @@ export default function PromoPopup({ promo }: { promo: PromoVM }) {
   // navegue sin tocarlo, no vuelve a aparecer. Para volver a verlo está la
   // burbuja, que es una decisión de la clienta y no una interrupción.
   useEffect(() => {
+    if (enfoque) return;
     let visto = false;
     try {
       visto = localStorage.getItem(clave) === "1";
@@ -71,7 +78,7 @@ export default function PromoPopup({ promo }: { promo: PromoVM }) {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [clave, marcarVisto]);
+  }, [clave, marcarVisto, enfoque]);
 
   const cerrar = useCallback(() => {
     setAbierto(false);
@@ -97,6 +104,8 @@ export default function PromoPopup({ promo }: { promo: PromoVM }) {
   const BANNER = "/assets/images/promo/anillo-moneda.webp";
   const foto = BANNER;
   const fotoAlt = promo.gatillo.image ?? promo.regalo.image;
+
+  if (enfoque) return null;
 
   return (
     <>

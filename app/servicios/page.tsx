@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
 import WorkGallery from "@/components/servicios/WorkGallery";
-import { SITE, OG_IMAGE } from "@/lib/site";
+import { SECCION_RELOJES, SITE, OG_IMAGE } from "@/lib/site";
 import { sizedImageUrl } from "@/lib/utils";
 import { breadcrumbSchema, faqPageSchema, serviceSchema } from "@/lib/schema";
 import { SERVICES, WORKSHOP_PHOTOS } from "@/lib/services";
@@ -55,7 +55,11 @@ const FAQS = [
   },
   {
     q: "¿Puedo diseñar mi pieza yo mismo desde la web?",
-    a: "Sí. El configurador de anillos de Ifá y el de monedas te dejan colocar tu signo sobre la pieza real y pagar en la web; la orden llega al taller con la hoja de diseño exacta de lo que armaste.",
+    a:
+      "Sí. El configurador de anillos de Ifá y el de monedas te dejan colocar tu signo sobre la pieza real y pagar en la web; la orden llega al taller con la hoja de diseño exacta de lo que armaste." +
+      (SECCION_RELOJES.activo
+        ? " Y en el creador de relojes armas un reloj en los colores de tu Orisha, con tu signo grabado en la tapa, y lo solicitas por WhatsApp con el enlace de tu diseño: el precio se confirma con el diseño."
+        : ""),
   },
   {
     q: "¿Graban nombres, iniciales o fechas en una joya?",
@@ -181,6 +185,13 @@ export default function ServiciosPage() {
               Mira el proceso completo, paso a paso →
             </Link>
           </p>
+          {SECCION_RELOJES.activo && (
+            <p className="pyj-guide_note">
+              ¿Buscas un reloj? Diseña el tuyo en los colores de tu Orisha, con
+              tu signo grabado en la tapa:{" "}
+              <Link href={SECCION_RELOJES.ruta}>abre el creador de relojes →</Link>
+            </p>
+          )}
         </div>
       </section>
 

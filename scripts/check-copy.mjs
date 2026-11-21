@@ -9,7 +9,10 @@
  *    The bracelet is "Brazalete integrado", never a third-party bracelet name.
  *
  * 2. Spiritual OUTCOME words, in the watch files only (paths containing
- *    "watch" or "reloj"). The watch is sold as heritage and identity ("en los
+ *    "watch" or "reloj", plus the explicit WATCH_GLOBS below: the creator
+ *    page, the watch components, the workshop sheet and the home band — listed
+ *    by name so a future rename can't slip them out of scope; a glob that
+ *    matches nothing yet is fine). The watch is sold as heritage and identity ("en los
  *    colores de…"), never as something that brings an outcome or arrives
  *    consecrated. Etsy (synced via DPL) and the FTC both care. Scoped to the
  *    watch files on purpose: the rest of the site has its own reviewed copy
@@ -53,6 +56,26 @@ const BRANDS = [
 /** Outcome stems (a stem matches any ending: consagrado/a/os…). */
 const OUTCOME = ["protección", "suerte", "consagrad", "bendecid"];
 const WATCH_PATH = /watch|reloj/i;
+
+/** The watch files, by name (POSIX paths relative to the storefront root).
+ *  `**` = any depth, `*` = within one segment. Missing files are tolerated:
+ *  the home band, for instance, may land after this check. */
+const WATCH_GLOBS = [
+  "app/creador-de-relojes/**",
+  "components/watch/**",
+  "components/diseno/WatchSheet.tsx",
+  "components/home/RelojesCreador.tsx",
+];
+const globRe = (g) =>
+  new RegExp(
+    `^${g
+      .split("**")
+      .map((part) => part.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join("[^/]*"))
+      .join(".*")}$`,
+  );
+const watchGlobRes = WATCH_GLOBS.map((g) => [g, globRe(g)]);
+const toPosix = (p) => p.split("\\").join("/");
+const inWatchGlob = (rel) => watchGlobRes.some(([, re]) => re.test(toPosix(rel)));
 
 /** Lower-case and strip accents so "Protección" = "proteccion". */
 const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -127,7 +150,19 @@ const MUST_PASS = [
   "Resistente, en acero 316L",
   "Joya de autor en los colores de Oshún",
 ];
+// The globs must cover the files they name (and nothing outside them).
+const GLOB_IN = [
+  "app/creador-de-relojes/page.tsx",
+  "app/creador-de-relojes/reloj.css",
+  "components/watch/WatchCreator.tsx",
+  "components/watch/steps/StepTapa.tsx",
+  "components/diseno/WatchSheet.tsx",
+  "components/home/RelojesCreador.tsx",
+];
+const GLOB_OUT = ["components/home/MonedasIfa.tsx", "app/configurador/page.tsx", "components/diseno/Other.tsx"];
 const selfTest = [
+  ...GLOB_IN.filter((f) => !inWatchGlob(f)).map((f) => `el alcance del reloj no cubre: "${f}"`),
+  ...GLOB_OUT.filter((f) => inWatchGlob(f)).map((f) => `el alcance del reloj cubre de más: "${f}"`),
   ...MUST_TRIP.filter(([line, isWatch]) => scanLine(line, isWatch).length === 0).map(([line]) => `no detecta: "${line}"`),
   ...MUST_PASS.filter((line) => scanLine(line, true).length > 0).map((line) => `falso positivo: "${line}"`),
 ];
@@ -166,9 +201,11 @@ if (files.length === 0) {
 
 const problems = [];
 let watchFiles = 0;
+const globHits = new Set();
 for (const file of files) {
   const rel = relative(process.cwd(), file);
-  const isWatch = WATCH_PATH.test(rel);
+  for (const [g, re] of watchGlobRes) if (re.test(toPosix(rel))) globHits.add(g);
+  const isWatch = WATCH_PATH.test(rel) || inWatchGlob(rel);
   if (isWatch) watchFiles += 1;
   readFileSync(file, "utf8")
     .split("\n")
@@ -185,6 +222,8 @@ if (problems.length > 0) {
   );
   process.exit(1);
 }
+const missing = WATCH_GLOBS.filter((g) => !globHits.has(g));
 console.log(
-  `check-copy: autoprueba OK (${MUST_TRIP.length} + ${MUST_PASS.length}); ${files.length} archivo(s) sin marcas ajenas; ${watchFiles} archivo(s) del reloj sin palabras de resultado ni afirmaciones`,
+  `check-copy: autoprueba OK (${MUST_TRIP.length} + ${MUST_PASS.length}); ${files.length} archivo(s) sin marcas ajenas; ${watchFiles} archivo(s) del reloj sin palabras de resultado ni afirmaciones` +
+    (missing.length ? ` (aún sin archivos: ${missing.join(", ")})` : ""),
 );

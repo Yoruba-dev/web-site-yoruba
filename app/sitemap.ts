@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getCollections, getProducts } from "@/lib/products";
 import { publishedArticles } from "@/lib/blog-data";
-import { SITE_URL as siteUrl } from "@/lib/site";
+import { SECCION_RELOJES, SITE_URL as siteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -11,6 +11,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/shop-left-sidebar", priority: 0.9 },
     { path: "/configurador", priority: 0.8 },
     { path: "/configurador-monedas", priority: 0.8 },
+    // El creador de relojes es noindex hasta el lanzamiento: una URL noindex en
+    // el sitemap es una señal contradictoria para Google, así que solo entra
+    // cuando SECCION_RELOJES.lanzado (lib/site.ts) pasa a true — el mismo día
+    // en que la página quita su noindex.
+    ...(SECCION_RELOJES.activo && SECCION_RELOJES.lanzado
+      ? [{ path: SECCION_RELOJES.ruta, priority: 0.8 }]
+      : []),
     { path: "/medidor-de-anillos", priority: 0.8 },
     { path: "/ninos", priority: 0.8 },
     { path: "/servicios", priority: 0.8 },

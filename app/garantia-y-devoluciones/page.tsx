@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
-import { SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
+import { SECCION_RELOJES, SITE, SITE_URL as siteUrl, OG_IMAGE } from "@/lib/site";
+import { WATCH_CUSTOM_POLICY } from "@/lib/watch";
 import { breadcrumbSchema as buildBreadcrumbSchema, faqPageSchema } from "@/lib/schema";
 
-const UPDATED = "15 de julio de 2026";
+const UPDATED = "21 de noviembre de 2026";
 
 export const metadata: Metadata = {
   title: "Garantía, devoluciones y reparaciones",
@@ -58,6 +59,11 @@ const POLICY_FAQS = [
     q: "¿Qué pasa si mi pieza llega dañada o me entregan la equivocada?",
     a: "Eso no es una devolución por arrepentimiento: es un error nuestro y lo resolvemos. Si tu pieza llega dañada en el envío o recibes algo distinto a lo que pediste, escríbenos de inmediato por WhatsApp con fotos y lo corregimos.",
   },
+  // Relojes del creador: el texto es WATCH_CUSTOM_POLICY (lib/watch.ts), el
+  // mismo que acepta el cliente en el creador. Nunca se reescribe aquí.
+  ...(SECCION_RELOJES.activo
+    ? [{ q: "¿Puedo devolver un reloj personalizado del creador de relojes?", a: WATCH_CUSTOM_POLICY }]
+    : []),
 ];
 
 export default function GarantiaDevolucionesPage() {
@@ -76,7 +82,7 @@ export default function GarantiaDevolucionesPage() {
       "Políticas de Pedro Yoruba Jewelry: ventas finales, garantía de por vida contra defectos, reparaciones y compra de oro usado como material.",
     url: `${siteUrl}/garantia-y-devoluciones`,
     inLanguage: "es",
-    dateModified: "2026-07-15",
+    dateModified: "2026-11-21",
     about: { "@id": `${siteUrl}/#store` },
     publisher: { "@id": `${siteUrl}/#store` },
   };
@@ -147,6 +153,13 @@ export default function GarantiaDevolucionesPage() {
             informamos esta política <strong>antes</strong> de comprar, la
             exhibimos en la tienda física y la aceptas al pagar.
           </p>
+          {SECCION_RELOJES.activo && (
+            <p id="relojes">
+              <strong>Relojes personalizados</strong> (del{" "}
+              <Link href={SECCION_RELOJES.ruta}>creador de relojes</Link>):{" "}
+              {WATCH_CUSTOM_POLICY}
+            </p>
+          )}
           <p>
             Esto <strong>no</strong> aplica a un error nuestro: si recibes una
             pieza equivocada o llega dañada en el envío, escríbenos de inmediato

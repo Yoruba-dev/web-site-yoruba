@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getPlaceable, type PlacedItem } from "@/lib/symbols";
-import { whatsappRingDesignUrl } from "@/lib/commerce";
+import { CONSULT_PRICE_LABEL, canBuyDirectly, whatsappRingDesignUrl } from "@/lib/commerce";
 import { useCart } from "@/lib/cart-context";
 import { formatMoney } from "@/lib/utils";
 import { designToPreviewDataUrl } from "@/lib/glyph-svg";
@@ -22,12 +22,17 @@ export interface ConfiguratorVariant {
   title: string;
   amount: string;
   currencyCode: string;
+  /** Shopify's availableForSale. Absent = treated as available (the pages that
+   *  build this panel don't read stock yet; the price guard still applies). */
+  availableForSale?: boolean;
 }
 export interface ConfiguratorProduct {
   handle: string;
   title: string;
   image: string;
   optionName?: string;
+  /** Shopify tags — a made-to-order tag routes the panel to WhatsApp. */
+  tags?: string[];
   variants: ConfiguratorVariant[];
 }
 
@@ -76,8 +81,21 @@ export default function ConfiguratorOrderPanel({
   const chosen =
     product?.variants.find((v) => v.id === variantId) ?? product?.variants[0];
 
+  // PURCHASE GUARD (lib/commerce.ts canBuyDirectly): a piece whose price is
+  // still the $0/$1 placeholder, or that is made-to-order, can NEVER be checked
+  // out online — the panel falls back to the WhatsApp consult, exactly like a
+  // design with no product. Same guard as the watch creator.
+  const canBuy =
+    !!product &&
+    !!chosen &&
+    canBuyDirectly({
+      tags: product.tags,
+      availableForSale: chosen.availableForSale ?? true,
+      price: { amount: chosen.amount, currencyCode: chosen.currencyCode },
+    });
+
   function addToCart() {
-    if (!product || !chosen || !ready) return;
+    if (!product || !chosen || !ready || !canBuy) return;
     const metal =
       chosen.title && chosen.title !== "Default Title" ? chosen.title : undefined;
     const santoLabel = santo ? `${santo.name} · ${santo.saint}` : undefined;
@@ -132,9 +150,12 @@ export default function ConfiguratorOrderPanel({
     setCartOpen(true);
   }
 
+  // With a product, the consult names the chosen option (metal / size) too —
+  // that's what the guard sends here when the piece can't be paid online.
+  const chosenLabel = chosen?.title && chosen.title !== "Default Title" ? ` (${chosen.title})` : "";
   const whatsappHref = whatsappRingDesignUrl(
     faces.map((f) => ({ label: f.label, items: f.names })),
-    { piece, ...(product ? { productTitle: product.title } : {}) },
+    { piece, ...(product ? { productTitle: `${product.title}${chosenLabel}` } : {}) },
   );
 
   return (
@@ -145,7 +166,9 @@ export default function ConfiguratorOrderPanel({
           <h2 className="pyj-cfg_order-title">{product.title}</h2>
           {chosen && (
             <span className="pyj-cfg_prod-price">
-              {formatMoney({ amount: chosen.amount, currencyCode: chosen.currencyCode })}
+              {canBuy
+                ? formatMoney({ amount: chosen.amount, currencyCode: chosen.currencyCode })
+                : CONSULT_PRICE_LABEL}
             </span>
           )}
         </div>
@@ -198,7 +221,7 @@ export default function ConfiguratorOrderPanel({
         ))}
       </ul>
 
-      {product ? (
+      {canBuy ? (
         <button
           type="button"
           className={`pyj-btn-gold pyj-cfg_cta${ready ? "" : " is-disabled"}`}
@@ -222,7 +245,7 @@ export default function ConfiguratorOrderPanel({
         </a>
       )}
 
-      {product && (
+      {canBuy && (
         <a className="pyj-cfg_altlink" href={whatsappHref} target="_blank" rel="noreferrer">
           o consultar por WhatsApp
         </a>

@@ -56,7 +56,7 @@ export default function CartView({ promo }: { promo?: PromoVM | null }) {
                     <img
                       className="pyj-cart-design"
                       src={l.customization.preview}
-                      alt="Tu diseño de Ifá"
+                      alt={l.customization.previewAlt ?? "Tu diseño de Ifá"}
                       loading="lazy"
                     />
                   )}
@@ -68,7 +68,7 @@ export default function CartView({ promo }: { promo?: PromoVM | null }) {
                   </Link>
                   {l.customization && (
                     <span className="pyj-cart-note">
-                      ✦ Grabado: «{l.customization.text}»
+                      ✦ {l.customization.label ?? "Grabado"}: «{l.customization.text}»
                       {l.customization.font ? ` · ${l.customization.font}` : ""}
                       {l.customization.metal ? ` · ${l.customization.metal}` : ""}
                     </span>

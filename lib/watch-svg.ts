@@ -10,7 +10,8 @@
 //
 // La esfera y la tapa salen de lib/watch-art.ts (las mismas primitivas en mm que
 // pinta la vista 3D). Lo que se añade aquí es solo "atrezo" del cartel: caja,
-// correa, agujas en HANDS.pose (10:10:40), el aplique PY y el brillo del cristal.
+// correa, agujas en handPose(c) (10:10:40; la Esfera Ifá, 10:09:39), el aplique
+// PY y el brillo del cristal.
 //
 // El aplique PY es un marcador estilizado (máscara dorada con corona de
 // cuentas): el logo vectorizado real lo sustituirá en appliqueMarkup().
@@ -23,11 +24,13 @@ import {
   DIAL_LAYOUT,
   HANDS,
   casebackPrimitives,
+  dialHasDate,
   dialPrimitives,
   escapeXml,
   fmt,
   handAngles,
   handMetalHex,
+  handPose,
   primitivesToSvg,
   toSvg,
   type Primitive,
@@ -221,9 +224,14 @@ function caseBody(p: string, tones: Tones, crownSide: 1 | -1): string {
 
 /** Bisel octagonal: cepillado arriba, filo pulido y chaflán interior pulido. */
 function bezel(p: string, tones: Tones): string {
+  // Pestaña interior: el anillo de metal en sombra entre la ventana de la caja
+  // (DIAL_LAYOUT.visibleR, 14.4) y el chaflán (15.15).
+  const V = DIAL_LAYOUT.visibleR;
+  const chamferIn = 15.15;
   return (
     `<path d="${BEZEL_PATH}" fill="url(#${p}brush)" stroke="${tones.light}" stroke-width="0.55"/>` +
     `<path d="${BEZEL_PATH}" fill="none" stroke="${tones.deep}" stroke-width="0.15" transform="scale(1.018)"/>` +
+    `<circle cx="0" cy="0" r="${f((V + chamferIn) / 2)}" fill="none" stroke="${tones.dark}" stroke-width="${f(chamferIn - V)}"/>` +
     // Chaflán interior pulido (anillo entre la tapa cepillada y el cristal).
     `<circle cx="0" cy="0" r="15.9" fill="none" stroke="url(#${p}polishR)" stroke-width="1.5"/>` +
     `<circle cx="0" cy="0" r="16.65" fill="none" stroke="${tones.deep}" stroke-width="0.1" opacity="0.6"/>`
@@ -261,23 +269,26 @@ export function appliqueMarkup(slot: Pick<RectPrim, "x" | "y" | "w" | "h">, meta
   );
 }
 
-/** Agujas en HANDS.pose (10:10:40) con su sombra. El segundero sale de
- *  HANDS.seconds, las mismas cifras con las que check-watch-data comprueba que
- *  no tapa el nombre, el aplique ni el signo. */
+/** Agujas en handPose(c) (10:10:40; la Esfera Ifá, 10:09:39) con su sombra.
+ *  Las medidas salen de HANDS, las mismas cifras con las que check-watch-data
+ *  comprueba que el segundero no tapa el nombre, el aplique, el signo ni los
+ *  Meyis. */
 function hands(c: WatchConfig): string {
   const metal = handMetalHex(c);
   const edge = shade(metal, -0.45);
   const lume = WATCH_MATERIALS.lume;
   const secHex = WATCH_COLORS[getSecondsPart(c.segundero)?.color ?? "negro"].hex;
   const secEdge = shade(secHex, -0.35);
-  const ang = handAngles();
+  const ang = handAngles(handPose(c));
   const S = HANDS.seconds;
   const neck = S.tip - S.head.len;
+  const blade = (h: { tail: number; tip: number; shoulder: number; halfW: number }) =>
+    `M${-h.halfW} ${h.tail}L${-h.halfW} ${-h.shoulder}L0 ${-h.tip}L${h.halfW} ${-h.shoulder}L${h.halfW} ${h.tail}Z`;
   const hour =
-    `<path d="M-0.8 1.6L-0.8 -6.5L0 -8.1L0.8 -6.5L0.8 1.6Z" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
+    `<path d="${blade(HANDS.hour)}" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
     `<path d="M-0.44 -1.7L-0.44 -6.35L0 -7.3L0.44 -6.35L0.44 -1.7Z" fill="${lume}"/>`;
   const minute =
-    `<path d="M-0.62 1.9L-0.62 -11.3L0 -12.75L0.62 -11.3L0.62 1.9Z" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
+    `<path d="${blade(HANDS.minute)}" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
     `<path d="M-0.32 -2L-0.32 -11.15L0 -11.95L0.32 -11.15L0.32 -2Z" fill="${lume}"/>`;
   const second =
     `<path d="M${-S.halfW} ${S.tail}L${-S.halfW} ${f(-neck)}L${-S.head.halfW} ${f(-neck)}L0 ${-S.tip}` +
@@ -327,7 +338,7 @@ export interface PosterOptions {
 }
 
 /** El reloj de frente: caja octogonal en su acabado, esfera (de las primitivas
- *  en mm), aplique PY, agujas en HANDS.pose y correa arriba y abajo. */
+ *  en mm), aplique PY, agujas en handPose(c) y correa arriba y abajo. */
 export function frontSvg(c: WatchConfig, opts: PosterOptions = {}): string {
   const p = opts.idPrefix ?? "pyw";
   const size = opts.size ?? 600;
@@ -361,7 +372,9 @@ export function frontSvg(c: WatchConfig, opts: PosterOptions = {}): string {
     `<circle cx="0" cy="0" r="${DIAL_LAYOUT.visibleR}" fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="0.35"/>` +
     (slot ? appliqueMarkup(slot, metal, p) : "") +
     // El número del disco de fecha (8, como en las fotos de catálogo).
-    `<text x="${f(D.cx)}" y="0.62" font-family="Helvetica, Arial, sans-serif" font-size="1.7" font-weight="700" text-anchor="middle" fill="#151515">8</text>` +
+    (dialHasDate(c)
+      ? `<text x="${f(D.cx)}" y="0.62" font-family="Helvetica, Arial, sans-serif" font-size="1.7" font-weight="700" text-anchor="middle" fill="#151515">8</text>`
+      : "") +
     hands(c) +
     // Brillo del cristal.
     `<path d="M-13.2 -6.2A14.4 14.4 0 0 1 -2.4 -14.2A15.6 15.6 0 0 0 -13.2 -6.2Z" fill="#fff" opacity="0.16"/>` +
@@ -406,18 +419,27 @@ export function casebackSvg(c: WatchConfig, opts: PosterOptions = {}): string {
   );
 }
 
+/** Opciones de los archivos de producción. `curvas` convierte el texto a
+ *  trazos (lib/watch-curvas.ts → outlinePrimitives): se pasa desde fuera para
+ *  que la tabla de contornos (~116 KB) no entre en este módulo, que también
+ *  usa el navegador (miniatura del carrito). */
+export interface ProductionSvgOptions {
+  curvas?: (prims: readonly Primitive[]) => Primitive[];
+}
+
 /** Archivo láser de la tapa, 1:1 en mm (24 × 24, centro = centro de la tapa):
- *  SOLO el grabado, en negro, SIN espejo y con las 12 arriba. El texto va como
- *  <text> con las fuentes del taller (o se convierte a curvas en el programa
- *  del láser antes de grabar). */
-export function laserSvg(c: WatchConfig): string {
+ *  SOLO el grabado, en negro, SIN espejo y con las 12 arriba. Sin `curvas`, el
+ *  texto va como <text> con la pila de fuentes; la hoja del taller y las
+ *  descargas usan laserSvgCurvas() (lib/watch-curvas.ts): texto en trazos. */
+export function laserSvg(c: WatchConfig, opts: ProductionSvgOptions = {}): string {
   const R = CASEBACK_LAYOUT.fieldR;
-  const prims = casebackPrimitives(c, { ink: "#000000" }).filter((q) => q.capa === "grabado");
+  const grabado = casebackPrimitives(c, { ink: "#000000" }).filter((q) => q.capa === "grabado");
+  const prims = opts.curvas ? opts.curvas(grabado) : grabado;
   return toSvg(prims, {
     viewBox: [-R, -R, 2 * R, 2 * R],
     mirror: false,
     idPrefix: "laser",
-    title: `Tapa ${designCode(c)} · campo Ø${2 * R} mm · vista trasera · sin espejo · 12 arriba`,
+    title: `Tapa ${designCode(c)} · campo Ø${2 * R} mm · vista trasera · sin espejo · 12 arriba${opts.curvas ? " · texto en curvas" : ""}`,
   });
 }
 
@@ -426,10 +448,11 @@ export function laserSvg(c: WatchConfig): string {
  *  marco de fecha, aplique) NO van. Las guías (contorno del disco, agujero
  *  central, hueco de la fecha, zona del aplique) van en un grupo aparte
  *  "guias-no-imprimir", en cian y de 0.05 mm. */
-export function dialPrintSvg(c: WatchConfig): string {
+export function dialPrintSvg(c: WatchConfig, opts: ProductionSvgOptions = {}): string {
   const L = DIAL_LAYOUT;
   const all = dialPrimitives(c);
-  const print = all.filter((q) => q.capa === "impresion");
+  const impresion = all.filter((q) => q.capa === "impresion");
+  const print = opts.curvas ? opts.curvas(impresion) : impresion;
   const win = all.find((q): q is RectPrim => q.kind === "rect" && q.id === "ventana-fecha");
   const app = all.find((q): q is RectPrim => q.kind === "rect" && q.id === "aplique");
   const guide = (q: Primitive): Primitive => ({ ...q, capa: "guia", fill: "none", stroke: "#00a0e0", strokeWidth: 0.05 });
@@ -442,7 +465,7 @@ export function dialPrintSvg(c: WatchConfig): string {
   const [x, y, w] = [-L.r, -L.r, 2 * L.r];
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${f(w)}mm" height="${f(w)}mm" viewBox="${f(x)} ${f(y)} ${f(w)} ${f(w)}">` +
-    `<title>Esfera ${escapeXml(designCode(c))} · Ø${f(w)} mm · impresión 1:1 · 12 arriba</title>` +
+    `<title>Esfera ${escapeXml(designCode(c))} · Ø${f(w)} mm · impresión 1:1 · 12 arriba${opts.curvas ? " · texto en curvas" : ""}</title>` +
     `<g id="guias-no-imprimir">${primitivesToSvg(guides, { idPrefix: "guia" })}</g>` +
     `<g id="impresion">${primitivesToSvg(print, { idPrefix: "imp" })}</g>` +
     `</svg>`

@@ -83,8 +83,20 @@ export function isCoinConfigurable(product?: {
   return COIN_CONFIGURABLE_TAGS.some((t) => tags.includes(t));
 }
 
-/** Internal control tags that steer behaviour but must NEVER be shown to shoppers
- *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
+/** Same idea for the CUSTOM WATCH (/creador-de-relojes). Tag-only, like the coin:
+ *  the watch is one base product whose variants are Acabado × Correa, and the
+ *  tag is what opens the creator tied to it ("✦ Diseña este reloj →").
+ *  Until the owner sets real prices there is NO such product — the creator then
+ *  runs on its own and orders go through WhatsApp with the design link. */
+export const WATCH_CONFIGURABLE_TAGS = ["reloj-personalizable"];
+
+export function isWatchConfigurable(product?: {
+  tags?: readonly string[];
+}): boolean {
+  const tags = (product?.tags ?? []).map((t) => t.toLowerCase().trim());
+  return WATCH_CONFIGURABLE_TAGS.some((t) => tags.includes(t));
+}
+
 /**
  * Pieces the workshop personalises to order: the shopper must SAY what they
  * want before the piece can be added to the cart, and their words ride into the
@@ -168,6 +180,7 @@ export function lineaHechaPorEncargo(
     ...MADE_TO_ORDER_TAGS,
     ...CONFIGURABLE_TAGS,
     ...COIN_CONFIGURABLE_TAGS,
+    ...WATCH_CONFIGURABLE_TAGS,
     ...PERSONALIZATION_FIELDS.map((f) => f.tag),
   ].some((tag) => t.includes(tag));
   const porPropiedad = (propiedades ?? []).some((p) => p.key && !p.key.startsWith("_"));
@@ -178,11 +191,14 @@ export function lineaHechaPorEncargo(
  *  para la web—, así que no tienen por qué salir en la ficha de la clienta. */
 export const PROMO_TAGS = ["promo-24h", "promo-activa", "promo-regalo", "oferta"];
 
+/** Internal control tags that steer behaviour but must NEVER be shown to shoppers
+ *  (as a category, in the "Etiquetas" list, etc.). Case-insensitive. */
 const CONTROL_TAGS = new Set([
   ...MADE_TO_ORDER_TAGS,
   ...PERSONALIZATION_FIELDS.map((f) => f.tag),
   ...CONFIGURABLE_TAGS,
   ...COIN_CONFIGURABLE_TAGS,
+  ...WATCH_CONFIGURABLE_TAGS,
   ...PROMO_TAGS,
 ]);
 
@@ -375,4 +391,50 @@ export function whatsappRingDesignUrl(
   const message = lines.join("\n");
   const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
   return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
+}
+
+/** Label for the watch-creator call-to-action (no product / no real price yet). */
+export const WATCH_ORDER_LABEL = "Solicitar mi reloj";
+
+/** The shop's WhatsApp link with a prefilled message (brand number from SITE). */
+function whatsappWithText(message: string): string {
+  const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
+  return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * WhatsApp link to ORDER a watch designed in /creador-de-relojes. Same brand
+ * number + prefill pattern as the other builders. The message carries the
+ * design code ("PY-R-7K3Q"), the one-line summary and the link to the printable
+ * sheet (SITE_URL/diseno?d=…), which rebuilds the whole watch — so the workshop
+ * never has to ask "¿cuál era?". Prices are confirmed in the chat (there is no
+ * Shopify product yet), and the proof promise is repeated in the customer's own
+ * words so both sides start from the same expectation.
+ */
+export function whatsappWatchDesignUrl(code: string, url: string, summary: string): string {
+  const lines: string[] = [
+    "Hola 👋 Diseñé un *reloj personalizado* en el Creador de relojes de Pedro Yoruba Jewelry y quiero solicitarlo.",
+    "",
+    `⌚ Diseño: ${code.trim()}`,
+  ];
+  if (summary.trim()) lines.push(`📝 ${summary.trim()}`);
+  if (url.trim()) lines.push("", `🔗 Ver mi diseño: ${url.trim()}`);
+  lines.push(
+    "",
+    "¿Me confirman el precio y el plazo? Entiendo que antes de producirlo me envían una prueba para mi OK.",
+  );
+  return whatsappWithText(lines.join("\n"));
+}
+
+/**
+ * WhatsApp SHARE link (no recipient: the customer picks the contact — their
+ * padrino, madrina, family) to show a watch design before ordering it. It is a
+ * plain wa.me link, so it never goes to the shop's number.
+ */
+export function whatsappShareDesignUrl(code: string, url: string): string {
+  const message = [
+    `Mira el reloj que diseñé en Pedro Yoruba Jewelry (${code.trim()}):`,
+    url.trim(),
+  ].join("\n");
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }

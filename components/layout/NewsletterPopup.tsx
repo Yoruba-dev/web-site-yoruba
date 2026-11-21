@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
+import { isFocusRoute } from "@/lib/focus-routes";
 import { subscribeToMarketing } from "@/lib/subscribe";
 import type { FeaturedOfferVM } from "@/lib/featured-offer";
 
@@ -20,6 +22,9 @@ export default function NewsletterPopup({
   offer?: FeaturedOfferVM | null;
 }) {
   const { setEmail } = useCart();
+  // Never on a focus route (the watch creator): a popup in the middle of a
+  // design is a design lost. Not shown there ≠ seen, so nothing is remembered.
+  const focus = isFocusRoute(usePathname());
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
   const [dontShow, setDontShow] = useState(false);
@@ -32,11 +37,19 @@ export default function NewsletterPopup({
   const fin = offer?.hasta ? Date.parse(offer.hasta) : NaN;
 
   useEffect(() => {
-    if (localStorage.getItem(storageKey)) return;
+    if (focus) {
+      setVisible(false);
+      return;
+    }
+    try {
+      if (localStorage.getItem(storageKey)) return;
+    } catch {
+      /* storage blocked: show it, it just won't be remembered */
+    }
     if (Number.isFinite(fin) && Date.now() > fin) return;
     const t = setTimeout(() => setVisible(true), 5000);
     return () => clearTimeout(t);
-  }, [storageKey, fin]);
+  }, [storageKey, fin, focus]);
 
   function remember() {
     try {
@@ -69,7 +82,7 @@ export default function NewsletterPopup({
     setTimeout(startClose, 2600);
   }
 
-  if (!visible) return null;
+  if (!visible || focus) return null;
 
   const wrapperStyle = {
     opacity: closing ? 0 : 1,

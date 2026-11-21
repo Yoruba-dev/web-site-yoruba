@@ -34,6 +34,12 @@ export const WATCH_SPECS = {
   caseMm: 40,
   thicknessMm: 9.95,
   dialMm: 30.5,
+  /** Diámetro de la esfera que deja ver la ventana de la caja (la pestaña tapa
+   *  el resto del disco de 30.5). De la plantilla de capas fotográficas
+   *  (public/assets/images/reloj/capas/plantilla.json): R_ABERTURA 236 px a
+   *  16.39 px/mm = 14.4 mm de radio. Marcador hasta la Fase 0. Todo lo impreso
+   *  y lo aplicado queda 0.25 mm por dentro (DIAL_LAYOUT.printR). */
+  aberturaVisibleMm: 28.8,
   crystalMm: 31.5,
   /** Alto del aplique PY (máscara + letras), según el plano del proveedor. */
   appliqueMm: 6,
@@ -576,6 +582,62 @@ export type DialSignPos = "nueve" | "seis";
 export const DIAL_SIGN_DEFAULT_POS: DialSignPos = "nueve";
 
 // ===========================================================================
+// MODELO DE ESFERA — qué se imprime y qué índices lleva, sobre el color base.
+//   'clasica' = índices luminosos (puntos, triángulo a las 12, barras a las 6
+//               y a las 9) + el texto a las 6 + el signo opcional.
+//   'ifa'     = la Esfera Ifá (decisión del dueño §12): los 16 Meyis impresos
+//               alrededor de la esfera en su orden tradicional (ODU_MEJI:
+//               Baba Ejiogbe a las 12 y después en sentido horario, uno cada
+//               22.5°), cada uno DERECHO respecto a las 12. Son los índices: no
+//               lleva puntos, ni triángulo, ni barras. "IFÁ" a las 6. El signo
+//               personal va en la tapa, no en la esfera (regla
+//               'signo-esfera-ifa'). Medidas en DIAL_LAYOUT.ifa (watch-art).
+// Un enlace viejo sin `modelo` se lee como 'clasica' (normalize).
+// ===========================================================================
+export type DialModelId = "clasica" | "ifa";
+
+export interface DialModel {
+  id: DialModelId;
+  /** Nombre en la interfaz y en el pedido. */
+  label: string;
+  /** Lo que lleva, en una línea (ficha y hoja del taller). */
+  nota: string;
+  /** ¿Lleva ventana de fecha a las 3? false = disco SIN ventana (otro disco
+   *  del proveedor, por verificar en la Fase 0). */
+  ventanaFecha: boolean;
+}
+
+export const DIAL_MODELS: Readonly<Record<DialModelId, DialModel>> = {
+  clasica: {
+    id: "clasica",
+    label: "Clásica",
+    nota: "Índices luminosos, tu texto a las 6 y, si quieres, tu signo.",
+    ventanaFecha: true,
+  },
+  ifa: {
+    id: "ifa",
+    label: "Esfera Ifá",
+    nota: "Los 16 Meyis en su orden tradicional alrededor de la esfera, con Baba Ejiogbe a las 12, e IFÁ a las 6.",
+    // PENDIENTE DEL DUEÑO (por defecto SIN fecha): sin ventana, los 16 Meyis
+    // quedan en un anillo perfecto a 10.75 mm, como pide §12 ("alrededor de la
+    // esfera"). Con fecha (true), Iroso Meyi (las 3) tiene que meterse hacia
+    // el centro (≈ 7.8 mm) para dejar ver la ventana y el anillo se rompe en
+    // la pieza estrella. Sin fecha hace falta el disco sin ventana del
+    // proveedor (Fase 0); la hoja del taller lo dice. Para volver a la
+    // ventana basta con poner true: todo lo demás (anillo, agujas, archivos,
+    // check-watch-data) ya contempla las dos opciones. Ver DIAL_LAYOUT.ifa.
+    ventanaFecha: false,
+  },
+};
+
+export function isDialModelId(id: unknown): id is DialModelId {
+  return id === "clasica" || id === "ifa";
+}
+
+/** Texto de la Esfera Ifá a las 6 (canónico; el cliente puede editarlo). */
+export const DIAL_TEXT_IFA = "IFÁ";
+
+// ===========================================================================
 // TEXTOS — listas permitidas y límites (una sola fuente para la UI y validate).
 // ===========================================================================
 export const DIAL_TEXT_MAX = 12;
@@ -621,6 +683,14 @@ export const isValidCasebackLine = (s: string) => s.length <= CASEBACK_MAX && CA
 export const isValidSignName = (s: string) =>
   s.trim().length > 0 && s.length <= SIGN_NAME_MAX && SIGN_NAME_ALLOW.test(s);
 
+/** "1984-03-15" → "15 · 03 · 1984": la fecha tal como se graba, y como se
+ *  escribe en todo lo que lee una persona (resumen, WhatsApp, pedido, hoja del
+ *  taller). El valor ISO solo viaja dentro de ?d=. */
+export function formatFecha(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d} · ${m} · ${y}`;
+}
+
 /** Fecha de la tapa: AAAA-MM-DD y un día que exista (no 2025-02-30). */
 export function isValidFecha(s: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -646,6 +716,8 @@ export interface Tapa {
 }
 
 export interface Esfera {
+  /** Qué se imprime: 'clasica' o 'ifa' (ver DIAL_MODELS). */
+  modelo: DialModelId;
   base: DialBaseId;
   /** 'cuentas' necesita un Orisha (de él salen los colores). 'rayas' con
    *  Orisha = rayas en sus colores; sin Orisha = rayas lisas. */
@@ -656,7 +728,12 @@ export interface Esfera {
   signoPos: DialSignPos;
 }
 
-export type PresetId = OrishaId | "cero";
+/** 'ifa' = la pieza estrella: Esfera Ifá con la pista de Orula (§12). */
+export type PresetId = OrishaId | "cero" | "ifa";
+
+export function isPresetId(id: unknown): id is PresetId {
+  return id === "cero" || id === "ifa" || isOrishaId(id);
+}
 
 export interface WatchConfig {
   v: 1;
@@ -728,9 +805,14 @@ const isUsable = (cat: PartCategory, id: string, disp: Availability) =>
 // ===========================================================================
 export interface WatchPreset {
   id: PresetId;
-  /** Nombre en la interfaz ("Oshún", "Desde cero"). */
+  /** Nombre en la interfaz ("Oshún", "Ifá", "Desde cero"). */
   label: string;
+  /** De qué Orisha son los colores de la pista (Ifá → Orula). */
   orisha: OrishaId | null;
+  /** Modelo de esfera con el que abre. */
+  modelo: DialModelId;
+  /** Texto a las 6 con el que abre; sin él, el nombre canónico del Orisha. */
+  texto?: string;
   prefer: {
     acabado: readonly FinishId[];
     base: readonly DialBaseId[];
@@ -751,6 +833,7 @@ const orishaPreset = (
   id: orisha,
   label: orishaName(orisha),
   orisha,
+  modelo: "clasica",
   prefer: {
     acabado: ["acero"],
     base: [...base, "blanco"],
@@ -769,10 +852,30 @@ export const ORISHA_WATCH_PRESETS: Readonly<Record<PresetId, WatchPreset>> = {
   oshun: orishaPreset("oshun", ["blanco"], ["amarillo"], ["caucho-amarillo", "caucho-blanco"]),
   orula: orishaPreset("orula", ["verde"], ["amarillo"], ["caucho-verde"]),
   oya: orishaPreset("oya", ["blanco"], ["marron", "negro"], ["caucho-vino", "caucho-tan"]),
+  // La pieza estrella (§12): esfera verde sol con los 16 Meyis, pista de cuentas
+  // verde y amarillo (las de Orula), aplique oro, segundero amarillo, caucho
+  // verde, caja de acero. El signo personal del cliente va en la tapa.
+  ifa: {
+    id: "ifa",
+    label: "Ifá",
+    orisha: "orula",
+    modelo: "ifa",
+    texto: DIAL_TEXT_IFA,
+    prefer: {
+      acabado: ["acero"],
+      base: ["verde", "negro"],
+      pista: ["cuentas", "rayas"],
+      aplique: ["oro", "plata"],
+      segundero: ["amarillo", "negro"],
+      correa: ["caucho-verde", "caucho-negro"],
+      cierre: ["puas"],
+    },
+  },
   cero: {
     id: "cero",
     label: "Desde cero",
     orisha: null,
+    modelo: "clasica",
     prefer: {
       acabado: ["acero"],
       base: ["blanco"],
@@ -785,8 +888,16 @@ export const ORISHA_WATCH_PRESETS: Readonly<Record<PresetId, WatchPreset>> = {
   },
 };
 
-/** Orden de las fichas de preset en la interfaz. */
-export const PRESET_ORDER: readonly PresetId[] = ["eleggua", "chango", "yemaya", "oshun", "orula", "oya", "cero"];
+/** Orden de las fichas de preset en la interfaz: Ifá primero (la pieza
+ *  estrella, §12), luego los Orishas y al final "Desde cero". */
+export const PRESET_ORDER: readonly PresetId[] = ["ifa", "eleggua", "chango", "yemaya", "oshun", "orula", "oya", "cero"];
+
+/** Texto canónico a las 6 para esta esfera: "IFÁ" en la Esfera Ifá, el nombre
+ *  del Orisha de la pista en la clásica; undefined sin Orisha. */
+export function canonicalDialText(e: Pick<Esfera, "modelo" | "pista">): string | undefined {
+  if (e.modelo === "ifa") return DIAL_TEXT_IFA;
+  return e.pista.orisha ? DIAL_NAMES[e.pista.orisha] : undefined;
+}
 
 /** Primera pieza utilizable de la lista; si ninguna lo es, la primera utilizable
  *  del catálogo; y si todo estuviera agotado, la primera que se ofrece. */
@@ -806,9 +917,10 @@ export function resolvePreset(id: PresetId, disp: Availability = availability())
     caja: "octogonal-40",
     acabado: firstUsable("acabado", p.prefer.acabado, disp),
     esfera: {
+      modelo: p.modelo,
       base: firstUsable("esfera", p.prefer.base, disp),
       pista: p.orisha ? { estilo, orisha: p.orisha } : { estilo: estilo === "cuentas" ? "rayas" : estilo },
-      texto: p.orisha ? DIAL_NAMES[p.orisha] : "",
+      texto: p.texto ?? (p.orisha ? DIAL_NAMES[p.orisha] : ""),
       signo: null,
       signoPos: DIAL_SIGN_DEFAULT_POS,
     },
@@ -867,6 +979,7 @@ export function dialInk(base: DialBaseId): { id: "oro" | "oro-oscuro"; hex: stri
 export type WatchField =
   | "caja"
   | "acabado"
+  | "esfera.modelo"
   | "esfera.base"
   | "esfera.pista"
   | "esfera.texto"
@@ -921,6 +1034,7 @@ export const RULES: readonly Rule[] = [
     campos: (c) => {
       const bad = PART_FIELDS.filter((f) => !getPart(f.cat, f.get(c))).map((f) => f.campo);
       if (c.esfera.pista.orisha !== undefined && !isOrishaId(c.esfera.pista.orisha)) bad.push("esfera.pista");
+      if (!isDialModelId(c.esfera.modelo)) bad.push("esfera.modelo");
       return bad;
     },
   },
@@ -966,9 +1080,14 @@ export const RULES: readonly Rule[] = [
     motivo: "Por ahora la esfera solo lleva el nombre del Orisha.",
     campos: (c, _d, flags) => {
       if (flags.DIAL_FREE_TEXT || c.esfera.texto === "") return [];
-      const o = c.esfera.pista.orisha;
-      return o && c.esfera.texto === DIAL_NAMES[o] ? [] : ["esfera.texto"];
+      return c.esfera.texto === canonicalDialText(c.esfera) ? [] : ["esfera.texto"];
     },
+  },
+  {
+    id: "signo-esfera-ifa",
+    nivel: "bloqueo",
+    motivo: "La Esfera Ifá ya lleva los 16 Meyis: tu signo va grabado en la tapa.",
+    campos: (c) => (c.esfera.modelo === "ifa" && c.esfera.signo ? ["esfera.signo"] : []),
   },
   {
     id: "signo-esfera-apagado",
@@ -1016,6 +1135,14 @@ export const RULES: readonly Rule[] = [
     nivel: "bloqueo",
     motivo: "Escribe una fecha válida (día, mes y año).",
     campos: (c) => (c.tapa.fecha && !isValidFecha(c.tapa.fecha) ? ["tapa.fecha"] : []),
+  },
+  {
+    // §12: la pieza estrella lleva el signo personal al dorso. No bloquea
+    // (se puede pedir con la tapa lisa), pero se avisa con "Corregir" → Tu tapa.
+    id: "ifa-sin-signo",
+    nivel: "aviso",
+    motivo: "La Esfera Ifá lleva tu signo al dorso: elígelo en Tu tapa.",
+    campos: (c) => (c.esfera.modelo === "ifa" && !c.tapa.signo ? ["tapa.signo"] : []),
   },
   {
     id: "contraste-segundero",
@@ -1072,6 +1199,24 @@ export function validate(c: WatchConfig, disp: Availability = availability(), fl
  *  ficha del catálogo), estréchalo antes con isPartId(cat, id). */
 export function withPart<K extends PartCategory>(c: WatchConfig, cat: K, id: PartIdMap[K]): WatchConfig {
   return getPart(cat, id) ? setPart(c, cat, id) : c;
+}
+
+/** Cambia el modelo de esfera (inmutable). Si el texto a las 6 era el canónico
+ *  del modelo anterior ("ORULA"), pasa al del nuevo ("IFÁ") y al revés; un
+ *  texto escrito por el cliente se respeta. Pasar a 'ifa' quita el signo de la
+ *  esfera (la Esfera Ifá ya lleva los 16; el personal va en la tapa). */
+export function withDialModel(c: WatchConfig, modelo: DialModelId): WatchConfig {
+  if (!isDialModelId(modelo) || c.esfera.modelo === modelo) return c;
+  const next = { ...c.esfera, modelo };
+  const wasCanon = c.esfera.texto === (canonicalDialText(c.esfera) ?? "");
+  return {
+    ...c,
+    esfera: {
+      ...next,
+      texto: wasCanon ? canonicalDialText(next) ?? "" : c.esfera.texto,
+      signo: modelo === "ifa" ? null : c.esfera.signo,
+    },
+  };
 }
 
 /** El cambio sin comprobar: solo para ids que ya se sabe que existen. */
@@ -1207,6 +1352,11 @@ export function normalizeWithReport(raw: unknown): NormalizeReport {
     estilo = "rayas";
   }
 
+  // Enlaces anteriores a la Esfera Ifá no traen `modelo`: son la clásica.
+  let modelo: DialModelId = "clasica";
+  if (isDialModelId(e.modelo)) modelo = e.modelo;
+  else if (e.modelo !== undefined) log.push({ campo: "esfera.modelo", valor: String(e.modelo), usado: "clasica" });
+
   const fechaRaw = str(t.fecha).trim();
   const fecha = fechaRaw && isValidFecha(fechaRaw) ? fechaRaw : undefined;
   if (fechaRaw && !fecha) log.push({ campo: "tapa.fecha", valor: fechaRaw, usado: "sin fecha" });
@@ -1216,6 +1366,7 @@ export function normalizeWithReport(raw: unknown): NormalizeReport {
     caja: pick<CaseId>("caja", "caja", r.caja, d.caja),
     acabado: pick<FinishId>("acabado", "acabado", r.acabado, d.acabado),
     esfera: {
+      modelo,
       base: pick<DialBaseId>("esfera.base", "esfera", e.base, d.esfera.base),
       pista: orisha ? { estilo, orisha } : { estilo },
       texto: text("esfera.texto", e.texto, cleanDialText),
@@ -1235,7 +1386,7 @@ export function normalizeWithReport(raw: unknown): NormalizeReport {
       fuente: t.fuente === "fina" ? "fina" : "clasica",
     },
   };
-  if (typeof r.preset === "string" && (r.preset === "cero" || isOrishaId(r.preset))) config.preset = r.preset;
+  if (isPresetId(r.preset)) config.preset = r.preset;
   return { config, descontinuado: log };
 }
 
@@ -1328,9 +1479,10 @@ function strapLabel(c: WatchConfig): string {
 export function summary(c: WatchConfig): string {
   const fin = getFinish(c.acabado)?.label ?? c.acabado;
   const base = getDialBase(c.esfera.base)?.label ?? c.esfera.base;
+  const ifa = c.esfera.modelo === "ifa" ? " Ifá con los 16 Meyis" : "";
   const bits = [
     `Reloj octogonal 40 mm en ${lower(fin)}`,
-    `esfera ${lower(base)}, ${describeTrack(c)}`,
+    `esfera ${lower(base)}${ifa}, ${describeTrack(c)}`,
     c.esfera.texto ? `«${c.esfera.texto}»` : "sin texto",
   ];
   if (c.esfera.signo) bits.push(`signo ${signName(c.esfera.signo)} ${posLabel(c.esfera.signoPos)}`);
@@ -1339,9 +1491,12 @@ export function summary(c: WatchConfig): string {
     `segundero ${lower(getSecondsPart(c.segundero)?.label ?? c.segundero)}`,
     lower(strapLabel(c)),
   );
-  const tapa = [c.tapa.signo ? signName(c.tapa.signo) : "", c.tapa.linea1, c.tapa.linea2, c.tapa.fecha ?? ""].filter(
-    Boolean,
-  );
+  const tapa = [
+    c.tapa.signo ? signName(c.tapa.signo) : "",
+    c.tapa.linea1,
+    c.tapa.linea2,
+    c.tapa.fecha ? formatFecha(c.tapa.fecha) : "",
+  ].filter(Boolean);
   bits.push(tapa.length ? `tapa: ${tapa.join(" · ")}` : "tapa lisa");
   return bits.join(" · ");
 }
@@ -1361,14 +1516,16 @@ export function lineProperties(
   url: string,
   opts: { politicaAceptada?: string } = {},
 ): LineProperty[] {
-  const orisha = c.esfera.pista.orisha ?? (c.preset && c.preset !== "cero" ? c.preset : undefined);
+  const fromPreset = c.preset ? ORISHA_WATCH_PRESETS[c.preset]?.orisha ?? undefined : undefined;
+  const orisha = c.esfera.pista.orisha ?? fromPreset;
   const texto = c.esfera.texto;
-  const canon = c.esfera.pista.orisha ? DIAL_NAMES[c.esfera.pista.orisha] : undefined;
+  const canon = canonicalDialText(c.esfera);
+  const modelo = c.esfera.modelo === "ifa" ? `${DIAL_MODELS.ifa.label} (los 16 Meyis) · ` : "";
   const props: LineProperty[] = [
     { key: "Diseño", value: code },
     { key: "Orisha", value: orisha ? orishaName(orisha) : "Personalizado" },
     { key: "Caja", value: `Octogonal 40 mm · ${getFinish(c.acabado)?.shopifyValue ?? c.acabado}` },
-    { key: "Esfera", value: `${getDialBase(c.esfera.base)?.label ?? c.esfera.base} · ${describeTrack(c)}` },
+    { key: "Esfera", value: `${getDialBase(c.esfera.base)?.label ?? c.esfera.base} · ${modelo}${describeTrack(c)}` },
     {
       key: "Esfera · texto",
       value: texto ? `«${texto}»${canon && texto !== canon ? " · escrito por el cliente" : ""}` : "(sin texto)",
@@ -1389,7 +1546,7 @@ export function lineProperties(
   if (c.tapa.signo) props.push({ key: "Tapa · marcas", value: c.tapa.marcas === "libreta" ? "Libreta I / 0" : "Barras I / II" });
   if (c.tapa.linea1) props.push({ key: "Tapa · línea 1", value: `«${c.tapa.linea1}»` });
   if (c.tapa.linea2) props.push({ key: "Tapa · línea 2", value: `«${c.tapa.linea2}»` });
-  if (c.tapa.fecha) props.push({ key: "Tapa · fecha", value: c.tapa.fecha });
+  if (c.tapa.fecha) props.push({ key: "Tapa · fecha", value: formatFecha(c.tapa.fecha) });
   if (c.tapa.signo || c.tapa.linea1 || c.tapa.linea2 || c.tapa.fecha) {
     props.push({ key: "Tapa · fuente", value: c.tapa.fuente === "fina" ? "Fina" : "Clásica" });
   }
@@ -1463,26 +1620,17 @@ export function priceDelta(
 
 // ===========================================================================
 // COPY — una sola fuente para cada texto. Solo herencia e identidad.
+// Vive en lib/watch-copy.ts (módulo hoja, sin imports) para que /faq pueda
+// usar una frase sin cargar todo el modelo del reloj en el navegador.
 // ===========================================================================
-/** El texto de la política: el mismo en la casilla del resumen, la ficha del
- *  producto, las preguntas frecuentes y /garantia-y-devoluciones. */
-export const WATCH_CUSTOM_POLICY =
-  "Cada reloj se ensambla y se personaliza a mano solo para ti, así que es una venta final: no admite devoluciones, reembolsos ni cambios. Antes de producirlo te enviamos una prueba para tu OK; nada se imprime ni se graba sin tu aprobación.";
-
-export const WATCH_RENDER_NOTE = "Vista previa digital: el brillo y el tono reales varían con la luz.";
-
-export const WATCH_ODU_NOTE = "Elige tu signo como identidad; su lectura la da tu babaláwo.";
-
-export const WATCH_PROOF_NOTE = "Antes de producir te enviamos una prueba para tu OK.";
-
-/** Días de taller. null = todavía sin fijar → se muestra "a confirmar". */
-export const WATCH_LEAD_TIME_DAYS: number | null = null;
-
-export function watchLeadTimeLabel(days: number | null = WATCH_LEAD_TIME_DAYS): string {
-  return days === null ? "a confirmar" : `${days} días hábiles`;
-}
-
-export const WATCH_ORIGIN = "Ensamblado y personalizado a mano en Miami con componentes importados";
-
-/** Mientras no haya producto ni precios en Shopify (decisión del dueño §1). */
-export const WATCH_PRICE_TBD = "Precio por confirmar";
+export {
+  WATCH_CUSTOM_POLICY,
+  WATCH_RENDER_NOTE,
+  WATCH_ODU_NOTE,
+  WATCH_PROOF_NOTE,
+  WATCH_IFA_NOTE,
+  WATCH_LEAD_TIME_DAYS,
+  watchLeadTimeLabel,
+  WATCH_ORIGIN,
+  WATCH_PRICE_TBD,
+} from "./watch-copy";

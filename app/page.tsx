@@ -13,6 +13,7 @@ import CategoryCircles from "@/components/home/CategoryCircles";
 import WholesaleBanner from "@/components/home/WholesaleBanner";
 import KidsBanner from "@/components/home/KidsBanner";
 import MonedasIfa from "@/components/home/MonedasIfa";
+import RelojesCreador from "@/components/home/RelojesCreador";
 import { getCollections } from "@/lib/products";
 
 const SHIPPING = [
@@ -36,7 +37,7 @@ function topCategories(products: Product[], limit: number): string[] {
     .map((d) => d.tipo);
 }
 
-// Home Two layout: hero → shipping → Orishas → Novedades → banner → category
+// Home Two layout: hero → creador de relojes → Novedades → banner → category
 // rows (organized by piece type, biggest first) with promo banners interleaved.
 export default async function HomePage() {
   // Attach real Judge.me review stars to every card on the home page. `all`
@@ -87,6 +88,12 @@ export default async function HomePage() {
       <PromoVentana variante="portada" />
 
       <HeroSlider />
+
+      {/* Creador de relojes — el protagonista nuevo de la portada, justo bajo el
+          carrusel. Servidor y solo imágenes estáticas (sin WebGL ni JS en el
+          cliente): el LCP sigue siendo el banner. Se apaga con
+          SECCION_RELOJES.activo (lib/site.ts). */}
+      <RelojesCreador />
 
       {/* Recién llegado — front-and-center right under the hero so a new piece
           (like the Virgen de la Caridad) is seen without any searching. */}

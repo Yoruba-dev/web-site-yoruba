@@ -14,6 +14,8 @@
 // contenido son datos y no JSX incrustado.
 // ---------------------------------------------------------------------------
 import type { Block } from "./blog-data";
+import { SECCION_RELOJES } from "./site";
+import { WATCH_PROOF_NOTE } from "./watch";
 
 export interface WorkPhoto {
   /** URL del CDN de Shopify (la foto del producto). */
@@ -112,6 +114,14 @@ export const SERVICES: ServicePage[] = [
       {
         p: "También puedes diseñar tú mismo desde la web: [el configurador de anillos de Ifá](/configurador) y [el de monedas](/configurador-monedas) te dejan colocar tus signos sobre la pieza real y pagar en línea. La orden llega al taller con la hoja de diseño exacta de lo que armaste — lo que apruebas es lo que se fabrica.",
       },
+      // El creador de relojes (se apaga con SECCION_RELOJES.activo, lib/site.ts).
+      ...(SECCION_RELOJES.activo
+        ? [
+            {
+              p: `Y si buscas un reloj, [el creador de relojes](${SECCION_RELOJES.ruta}) te deja armarlo en los colores de tu Orisha —la esfera con su pista de cuentas, la correa y tu signo grabado en la tapa— y solicitarlo por WhatsApp con el enlace de tu diseño. El precio se confirma con el diseño. ${WATCH_PROOF_NOTE}`,
+            },
+          ]
+        : []),
       {
         p: "¿Quieres ver cómo va un encargo de principio a fin? Lo contamos paso a paso en [cómo trabajamos](/servicios/como-trabajamos).",
       },
@@ -194,6 +204,14 @@ export const SERVICES: ServicePage[] = [
         head: "Diseña tu moneda",
         text: "Coloca tu signo sobre la moneda real y págala en la web — [abrir el configurador](/configurador-monedas).",
       },
+      ...(SECCION_RELOJES.activo
+        ? [
+            {
+              head: "Tu signo en un reloj",
+              text: `Tu Odù grabado a láser en la tapa del reloj que diseñas, con tu nombre o una fecha — [abrir el creador de relojes](${SECCION_RELOJES.ruta}).`,
+            },
+          ]
+        : []),
     ],
     cover: REMOS,
     photos: [

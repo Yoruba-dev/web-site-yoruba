@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { decodeDesign } from "@/lib/design-code";
+import { decodeWatchDesign } from "@/lib/watch";
+// The watch sheet is a Server Component; the watch compositor and reloj.css it
+// needs are split into their own client bundle inside it (WatchSheetViews), so
+// a ring or coin link never downloads anything of the watch.
+import WatchSheet from "@/components/diseno/WatchSheet";
 import { getPlaceable, MOTIFS, type PlacedItem } from "@/lib/symbols";
 import { getOdu } from "@/lib/odu";
 import { COIN_FACES, COIN_SPECS } from "@/lib/coin";
@@ -8,10 +13,20 @@ import { designToPreviewDataUrl } from "@/lib/glyph-svg";
 import { SITE } from "@/lib/site";
 import PrintButton from "./PrintButton";
 
-export const metadata: Metadata = {
-  title: "Hoja de diseño — Ifá",
-  robots: { index: false, follow: false },
-};
+// Never indexed (it's a private order sheet). The title names the piece: a
+// watch link reads "Hoja de taller — Reloj"; ring and coin keep the old one.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ d?: string }>;
+}): Promise<Metadata> {
+  const { d } = await searchParams;
+  const reloj = d ? decodeDesign(d)?.piece === "reloj" : false;
+  return {
+    title: reloj ? "Hoja de taller — Reloj" : "Hoja de diseño — Ifá",
+    robots: { index: false, follow: false },
+  };
+}
 
 // The faces to spell out depend on the piece. A design encoded before the coin
 // editor existed has no `piece`, so ring stays the default and old order links
@@ -52,10 +67,38 @@ export default async function DisenoPage({
   const { d } = await searchParams;
   const payload = d ? decodeDesign(d) : null;
 
-  // A watch link (piece "reloj") must never fall through to the ring sheet
-  // below. Its own WatchSheet lands with the creador de relojes; until then it
-  // gets the same "can't read" card.
-  if (!payload || payload.piece === "reloj") {
+  // A watch link (piece "reloj") branches EARLY to its own workshop sheet and
+  // never falls through to the ring/coin sheet below (which stays untouched).
+  // decodeWatchDesign() = decode + normalize: the sheet never reads the raw
+  // payload. A "reloj" payload without a readable watch gets the can't-read
+  // card, pointing to the watch creator.
+  if (payload?.piece === "reloj") {
+    const report = d ? decodeWatchDesign(d) : null;
+    if (report && d) {
+      return (
+        <WatchSheet
+          report={report}
+          d={d}
+          pieza={payload.ring ? { title: payload.ring.title, variant: payload.ring.variant } : undefined}
+          actions={<PrintButton />}
+        />
+      );
+    }
+    return (
+      <section className="pyj-sheet-page">
+        <div className="pyj-sheet">
+          <p className="pyj-sheet_none">
+            No pudimos leer este diseño — el enlace puede estar incompleto.
+          </p>
+          <Link href="/creador-de-relojes" className="pyj-btn-gold">
+            Ir al creador de relojes
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  if (!payload) {
     return (
       <section className="pyj-sheet-page">
         <div className="pyj-sheet">

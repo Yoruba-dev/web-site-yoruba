@@ -3,7 +3,7 @@ import Link from "next/link";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
 import BackLink from "@/components/ui/BackLink";
-import { SITE, OG_IMAGE } from "@/lib/site";
+import { SECCION_RELOJES, SITE, OG_IMAGE } from "@/lib/site";
 import { breadcrumbSchema } from "@/lib/schema";
 import { SERVICES } from "@/lib/services";
 
@@ -127,8 +127,14 @@ export default function ComoTrabajamosPage() {
                   {i === 2 && (
                     <p className="pyj-guide_stepbody">
                       Cuando el encargo se arma en{" "}
-                      <Link href="/configurador">los configuradores de la web</Link>,
-                      este paso lo haces tú: la pieza que compones en pantalla es
+                      <Link href="/configurador">los configuradores de la web</Link>
+                      {SECCION_RELOJES.activo && (
+                        <>
+                          {" "}o en{" "}
+                          <Link href={SECCION_RELOJES.ruta}>el creador de relojes</Link>
+                        </>
+                      )}
+                      , este paso lo haces tú: la pieza que compones en pantalla es
                       la pieza real, y tu pedido llega al taller con esa hoja de
                       diseño.
                     </p>

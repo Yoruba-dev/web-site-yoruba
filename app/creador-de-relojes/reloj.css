@@ -1,0 +1,1513 @@
+/* ===========================================================================
+   CREADOR DE RELOJES (/creador-de-relojes) + HOJA DEL TALLER DEL RELOJ (/diseno)
+
+   Hoja global importada por app/creador-de-relojes/page.tsx y app/diseno/
+   page.tsx; vive bajo app/ para que scripts/check-css.mjs (guardia de llaves)
+   la revise. Next no descarga una hoja global al navegar, así que TODO va con
+   el prefijo .pyj-reloj (nada de selectores sueltos como body o img).
+
+   Lo redondo: la web tiene `* { border-radius: 0 !important }`; las muestras
+   redondas son SVG, y aquí no se redondea nada con CSS.
+=========================================================================== */
+
+.pyj-reloj-page {
+  padding: 14px 0 56px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(227, 178, 60, 0.08), transparent 60%),
+    var(--dk-base, #14100a);
+}
+
+/* Cabecera fina de la ruta de enfoque (en lugar del banner de Breadcrumb):
+   migas + h1 en una franja, para que el escenario quede arriba. */
+.pyj-reloj_top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 18px;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.14);
+}
+.pyj-reloj_crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_crumbs li + li::before {
+  content: "›";
+  margin: 0 8px;
+  color: rgba(227, 178, 60, 0.6);
+}
+.pyj-reloj_crumbs a {
+  color: var(--dk-text, #d6cbb2);
+  text-decoration: none;
+}
+.pyj-reloj_crumbs a:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_h1 {
+  order: -1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.2vw, 26px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dk-head, #f1e7d2);
+}
+/* La presentación va DEBAJO del creador. */
+.pyj-reloj_intro {
+  margin: 30px auto 0;
+}
+
+.pyj-reloj {
+  --pyj-reloj-top: 0px;
+  /* Al traerlo a la vista (?preset= / ?d=), queda justo bajo el header fijo. */
+  scroll-margin-top: calc(var(--pyj-reloj-top, 0px) + 6px);
+  --pyj-reloj-line: rgba(227, 178, 60, 0.26);
+  --pyj-reloj-surface: var(--dk-surface, #221a10);
+  --pyj-reloj-raised: var(--dk-raised, #2c2114);
+  color: var(--dk-text, #d6cbb2);
+  font-family: var(--font-body);
+}
+
+/* Solo para lectores de pantalla. */
+.pyj-reloj_sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pyj-reloj :focus-visible {
+  outline: 2px solid var(--pyj-gold, #e3b23c);
+  outline-offset: 2px;
+}
+
+.pyj-reloj_h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(21px, 2.6vw, 28px);
+  letter-spacing: 0.04em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_h2:focus {
+  outline: none;
+}
+.pyj-reloj_lead {
+  margin: 6px 0 16px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj_note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_note--odu {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_micro {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--pyj-gold, #e3b23c);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pyj-reloj_link:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid var(--pyj-reloj-line, rgba(227, 178, 60, 0.26));
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f2d896);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pyj-reloj_ghost:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.08);
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.07);
+  font-size: 14px;
+}
+.pyj-reloj_callout p {
+  margin: 0;
+  flex: 1 1 240px;
+}
+
+/* ---------------------------------------------------------------------------
+   ENTRADA — "Empieza con tu Orisha"
+--------------------------------------------------------------------------- */
+.pyj-reloj_entry {
+  padding: 4px 0 8px;
+}
+.pyj-reloj_entryhead {
+  text-align: center;
+  margin: 0 auto 22px;
+  max-width: 640px;
+}
+.pyj-reloj_continue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto 18px;
+  padding: 12px 16px;
+  border: 1px dashed var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.06);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--pyj-gold-light, #f2d896);
+  cursor: pointer;
+}
+
+.pyj-reloj_ifa {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 8px 28px;
+  margin: 0 auto 22px;
+  padding: 18px 24px;
+  border: 1px solid rgba(227, 178, 60, 0.5);
+  background:
+    radial-gradient(80% 90% at 25% 50%, rgba(31, 122, 61, 0.22), transparent 65%),
+    linear-gradient(135deg, #1a140c, #100c07);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.pyj-reloj_ifa:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+  color: inherit;
+  transform: translateY(-2px);
+}
+.pyj-reloj_ifawatch {
+  display: block;
+  max-width: 300px;
+  width: 100%;
+  margin: 0 auto;
+  aspect-ratio: 3 / 4;
+}
+.pyj-reloj_ifawatch .pyj-reloj_watch {
+  width: 100%;
+  height: 100%;
+}
+.pyj-reloj_ifatext {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pyj-reloj_badge {
+  padding: 4px 10px;
+  border: 1px solid var(--pyj-gold, #e3b23c);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_ifatitle {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6vw, 58px);
+  line-height: 1;
+  letter-spacing: 0.16em;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_ifanote {
+  max-width: 460px;
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_cardcta {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #e3b23c);
+}
+
+.pyj-reloj_cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pyj-reloj_card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--pyj-reloj-line, rgba(227, 178, 60, 0.26));
+  background: var(--pyj-reloj-surface, #221a10);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.pyj-reloj_card:hover {
+  border-color: var(--pyj-gold, #e3b23c);
+  color: inherit;
+  transform: translateY(-2px);
+}
+.pyj-reloj_cardimg {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #0d0a07;
+}
+.pyj-reloj_cardimg img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pyj-reloj_micro--img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 3px 7px;
+  background: rgba(13, 10, 7, 0.66);
+  color: rgba(241, 231, 210, 0.85);
+}
+.pyj-reloj_cardbody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+}
+.pyj-reloj_cardtitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_cardnote {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_card--cero {
+  justify-content: center;
+  border-style: dashed;
+}
+.pyj-reloj_cerosign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_beads {
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   EDITOR — escenario + panel de pasos
+--------------------------------------------------------------------------- */
+.pyj-reloj_layout {
+  display: grid;
+  grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+  gap: 32px;
+  align-items: start;
+}
+.pyj-reloj_stagecol {
+  position: sticky;
+  top: calc(var(--pyj-reloj-top, 0px) + 12px);
+  align-self: start;
+}
+.pyj-reloj_stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 14px 10px;
+  border: 1px solid rgba(227, 178, 60, 0.16);
+  background:
+    radial-gradient(60% 55% at 50% 42%, rgba(255, 244, 220, 0.1), transparent 70%),
+    radial-gradient(120% 90% at 50% 100%, rgba(227, 178, 60, 0.06), transparent 60%),
+    #0e0b07;
+}
+.pyj-reloj_stagebox {
+  position: relative;
+  height: min(calc(100svh - var(--pyj-reloj-top, 0px) - 150px), 760px);
+  min-height: 360px;
+  aspect-ratio: 3 / 4;
+  max-width: 100%;
+}
+.pyj-reloj_watch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pyj-reloj_code {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 3px 8px;
+  border: 1px solid rgba(227, 178, 60, 0.3);
+  background: rgba(13, 10, 7, 0.7);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_views {
+  margin-top: 8px;
+}
+.pyj-reloj_views .pyj-reloj_group {
+  margin: 0;
+}
+.pyj-reloj_rendernote {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  text-align: center;
+  color: var(--dk-muted, #a99d83);
+}
+
+.pyj-reloj_panel {
+  min-width: 0;
+}
+.pyj-reloj_steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.pyj-reloj_stepbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid rgba(227, 178, 60, 0.18);
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dk-muted, #a99d83);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pyj-reloj_stepbtn.is-done {
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj_stepbtn.is-on {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.1);
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_stepnum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+}
+.pyj-reloj_stephead {
+  margin-bottom: 6px;
+}
+.pyj-reloj_stephead .pyj-reloj_h2 {
+  scroll-margin-top: calc(var(--pyj-reloj-top, 0px) + 16px);
+}
+.pyj-reloj_stepcount {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_stepbody {
+  min-height: 300px;
+}
+
+.pyj-reloj_nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(227, 178, 60, 0.16);
+}
+.pyj-reloj_navprice {
+  font-size: 13px;
+  color: var(--dk-muted, #a99d83);
+  text-align: center;
+}
+.pyj-reloj_next {
+  padding: 12px 20px;
+}
+
+/* ---------------------------------------------------------------------------
+   GRUPOS DE OPCIONES (OptionGroup)
+--------------------------------------------------------------------------- */
+.pyj-reloj_group {
+  margin: 18px 0 0;
+}
+.pyj-reloj_grouphead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-bottom: 8px;
+}
+.pyj-reloj_grouplabel {
+  display: block;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_grouphint {
+  font-size: 12.5px;
+  color: var(--dk-muted, #a99d83);
+}
+
+.pyj-reloj_rail {
+  display: grid;
+  gap: 8px;
+}
+.pyj-reloj_rail--tiles {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+.pyj-reloj_rail--chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.pyj-reloj_opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 8px;
+  border: 1px solid rgba(227, 178, 60, 0.2);
+  background: var(--pyj-reloj-surface, #221a10);
+  font: inherit;
+  color: var(--dk-text, #d6cbb2);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+.pyj-reloj_opt:hover {
+  border-color: rgba(227, 178, 60, 0.55);
+}
+.pyj-reloj_opt.is-on {
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.1);
+  box-shadow: inset 0 0 0 1px var(--pyj-gold, #e3b23c);
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_opt.is-off {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.pyj-reloj_opt.is-off .pyj-reloj_optvis,
+.pyj-reloj_opt.is-off .pyj-reloj_optlabel {
+  opacity: 0.42;
+  filter: grayscale(0.85);
+}
+.pyj-reloj_rail--chips .pyj-reloj_opt {
+  flex-direction: row;
+  padding: 8px 14px;
+  text-align: left;
+}
+.pyj-reloj_optvis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+}
+.pyj-reloj_opttxt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pyj-reloj_optlabel {
+  font-size: 13px;
+  line-height: 1.25;
+}
+.pyj-reloj_optdet {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_optwhy {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #e6b17a;
+}
+.pyj-reloj_opt.is-warn .pyj-reloj_optwhy {
+  color: #f0c96b;
+}
+.pyj-reloj_star {
+  font-size: 22px;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_logo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+/* Fotos recortadas de las capas (plantilla 600 × 800, esfera en el centro). */
+.pyj-reloj_thumb {
+  display: block;
+  width: 64px;
+  height: 64px;
+  background-repeat: no-repeat;
+}
+.pyj-reloj_thumb--caja {
+  background-size: 222% auto;
+  background-position: 50% 50%;
+}
+.pyj-reloj_thumb--esfera {
+  background-size: 240% auto;
+  background-position: 50% 50%;
+}
+.pyj-reloj_thumb--correa {
+  background-size: 460% auto;
+  background-position: 50% 100%;
+}
+
+/* Campos de texto */
+.pyj-reloj_field {
+  margin: 18px 0 0;
+}
+.pyj-reloj_fieldlabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_opt-tag {
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(227, 178, 60, 0.35);
+  background: var(--pyj-reloj-raised, #2c2114);
+  font-family: var(--font-body);
+  font-size: 16px; /* 16px: iOS no hace zoom al enfocar */
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_input::placeholder {
+  color: rgba(169, 157, 131, 0.7);
+}
+.pyj-reloj_input[aria-invalid="true"] {
+  border-color: #e6896b;
+}
+.pyj-reloj_input--dial {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pyj-reloj_input--date {
+  max-width: 240px;
+  color-scheme: dark;
+}
+.pyj-reloj_fieldhelp {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.pyj-reloj_inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+/* Pestañas de la correa */
+.pyj-reloj_tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 6px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.2);
+}
+.pyj-reloj_tab {
+  position: relative;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dk-muted, #a99d83);
+  cursor: pointer;
+}
+.pyj-reloj_tab.is-on {
+  border-bottom-color: var(--pyj-gold, #e3b23c);
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_tabdot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_tabpanel .pyj-reloj_group {
+  margin-top: 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   TABLA DE LOS MEYIS + COMBINACIÓN (OduPicker)
+--------------------------------------------------------------------------- */
+.pyj-reloj_odu {
+  min-width: 0;
+  margin: 22px 0 0;
+  padding: 14px 14px 16px;
+  border: 1px solid rgba(227, 178, 60, 0.18);
+  background: rgba(13, 10, 7, 0.35);
+}
+.pyj-reloj_odu > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.pyj-reloj_odu > legend + * {
+  clear: both;
+}
+/* La tabla y las piernas son rejillas fijas también en el móvil (no carril). */
+.pyj-reloj_odu .pyj-reloj_rail--tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+}
+.pyj-reloj_meyis .pyj-reloj_opt {
+  padding: 8px 4px 9px;
+}
+.pyj-reloj_meyi {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.pyj-reloj_meyinum {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_meyiglyph {
+  display: block;
+  width: auto;
+  height: 46px;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_meyis .pyj-reloj_optlabel {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_meyis .pyj-reloj_optdet {
+  font-size: 10.5px;
+}
+.pyj-reloj_combo {
+  margin-top: 12px;
+}
+.pyj-reloj_combocols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "prev prev"
+    "izq der";
+  gap: 12px 14px;
+}
+.pyj-reloj_combocol--der {
+  grid-area: der;
+}
+.pyj-reloj_combocol--izq {
+  grid-area: izq;
+}
+.pyj-reloj_combopreview {
+  grid-area: prev;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 96px;
+  justify-content: center;
+}
+.pyj-reloj_comboglyph {
+  display: block;
+  height: 76px;
+  width: auto;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_combolegs {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_combocol .pyj-reloj_group {
+  margin-top: 0;
+}
+.pyj-reloj_combocol .pyj-reloj_opt {
+  padding: 6px 2px;
+  gap: 3px;
+}
+.pyj-reloj_combocol .pyj-reloj_optlabel {
+  font-size: 10.5px;
+}
+.pyj-reloj_legglyph {
+  display: block;
+  height: 30px;
+  width: auto;
+  color: var(--pyj-gold-light, #f2d896);
+}
+
+/* ---------------------------------------------------------------------------
+   RESUMEN + PEDIDO
+--------------------------------------------------------------------------- */
+.pyj-reloj_sum {
+  margin: 8px 0 0;
+}
+.pyj-reloj_sumrow {
+  display: grid;
+  grid-template-columns: minmax(96px, 34%) 1fr auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.12);
+}
+.pyj-reloj_sumrow dt {
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_sumrow dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_sumedit {
+  text-align: right;
+}
+.pyj-reloj_warns,
+.pyj-reloj_blocks {
+  margin: 12px 0 0;
+  padding: 10px 12px 10px 28px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.pyj-reloj_warns {
+  border-left: 3px solid #f0c96b;
+  background: rgba(240, 201, 107, 0.07);
+}
+.pyj-reloj_blocks {
+  border-left: 3px solid #e6896b;
+  background: rgba(230, 137, 107, 0.08);
+}
+.pyj-reloj_share {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid rgba(227, 178, 60, 0.2);
+  background: rgba(13, 10, 7, 0.35);
+}
+.pyj-reloj_sharecode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pyj-reloj_bigcode {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_sharebtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.pyj-reloj_order {
+  margin-top: 20px;
+}
+.pyj-reloj_price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.pyj-reloj_price span {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_price small {
+  font-size: 13px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_policy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(227, 178, 60, 0.2);
+  font-size: 13.5px;
+  line-height: 1.55;
+  cursor: pointer;
+}
+/* Camino de WhatsApp: la política se lee (no hay casilla; se acepta en el chat
+   y con la prueba). */
+.pyj-reloj_policy--nota {
+  cursor: default;
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj_policymark {
+  flex: none;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_policy input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  text-align: center;
+  cursor: pointer;
+}
+.pyj-reloj_cta--big {
+  min-height: 54px;
+  font-size: 14px;
+}
+.pyj-reloj_cta.is-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+  transform: none;
+}
+.pyj-reloj_proof {
+  margin: 10px 0 0;
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 17px;
+  text-align: center;
+  color: var(--pyj-gold-light, #f2d896);
+}
+
+/* Pie fijo del móvil (oculto en escritorio). */
+.pyj-reloj_mbar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   CÓMO FUNCIONA
+--------------------------------------------------------------------------- */
+.pyj-reloj_guide {
+  padding: 54px 0 64px;
+  border-top: 1px solid rgba(227, 178, 60, 0.14);
+  background: var(--dk-bg, #18120b);
+  color: var(--dk-text, #d6cbb2);
+  scroll-margin-top: 90px;
+}
+.pyj-reloj_guidesteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+.pyj-reloj_guidesteps li {
+  padding: 18px 16px;
+  border: 1px solid rgba(227, 178, 60, 0.18);
+  background: var(--dk-surface, #221a10);
+}
+.pyj-reloj_guidenum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--pyj-gold, #e3b23c);
+  font-family: var(--font-display);
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_guidesteps h3 {
+  margin: 10px 0 6px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_guidesteps p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pyj-reloj_facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 28px;
+  margin: 0;
+}
+.pyj-reloj_facts dt {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_facts dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------------------
+   MÓVIL Y TABLETA (< 1024 px): escenario fijo arriba, carriles horizontales,
+   pie fijo con el botón (la barra de pestañas no se pinta en esta ruta).
+--------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .pyj-reloj-page {
+    padding-top: 10px;
+  }
+  .pyj-reloj_top {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+  .pyj-reloj_crumbs ol {
+    font-size: 11.5px;
+  }
+  /* El escenario fijo deja sitio a DOS carriles de fichas entre él y el pie
+     fijo también a 375 × 667 (spec editor_flow; medido en el paso Esfera, con
+     una ayuda de dos líneas): 35svh y no 52svh. Lo usan la altura y el
+     destino del desplazamiento al cambiar de paso. */
+  .pyj-reloj {
+    --pyj-reloj-stage-h: clamp(210px, 35svh, 400px);
+  }
+  .pyj-reloj_layout {
+    display: block;
+  }
+  .pyj-reloj_stagecol {
+    top: var(--pyj-reloj-top, 0px);
+    z-index: 20;
+    margin: 0 -15px;
+    height: var(--pyj-reloj-stage-h);
+    background: #0e0b07;
+    border-bottom: 1px solid rgba(227, 178, 60, 0.2);
+  }
+  .pyj-reloj_stage {
+    position: relative;
+    height: 100%;
+    padding: 6px 8px 4px;
+    border: 0;
+  }
+  .pyj-reloj_stagebox {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: calc(100% - 22px);
+  }
+  .pyj-reloj_views {
+    position: absolute;
+    left: 8px;
+    bottom: 22px;
+    margin: 0;
+  }
+  .pyj-reloj_views .pyj-reloj_opt {
+    min-height: 32px;
+    padding: 4px 10px;
+    background: rgba(13, 10, 7, 0.78);
+    font-size: 12px;
+  }
+  .pyj-reloj_views .pyj-reloj_rail--chips {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .pyj-reloj_rendernote {
+    margin: 2px 0 0;
+    font-size: 10.5px;
+  }
+
+  .pyj-reloj_panel {
+    padding-top: 12px;
+  }
+  .pyj-reloj_steps ol {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -15px 12px;
+    padding: 0 15px 2px;
+  }
+  .pyj-reloj_steps ol::-webkit-scrollbar {
+    display: none;
+  }
+  /* Al cambiar de paso se desplaza a las PRIMERAS OPCIONES (WatchCreator):
+     quedan justo bajo el escenario. "Paso N de 6" sobra (lo dice el pie fijo)
+     y las frases de ayuda pasan al final del paso. */
+  .pyj-reloj_stepbody {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .pyj-reloj_stepbody > *,
+  .pyj-reloj_stephead .pyj-reloj_h2 {
+    scroll-margin-top: calc(var(--pyj-reloj-top, 0px) + var(--pyj-reloj-stage-h, 253px) + 6px);
+  }
+  .pyj-reloj_stepbody > .pyj-reloj_lead {
+    order: 10;
+    margin: 16px 0 0;
+    font-size: 14px;
+  }
+  .pyj-reloj_stepcount {
+    display: none;
+  }
+  .pyj-reloj_stephead {
+    margin-bottom: 2px;
+  }
+  .pyj-reloj_h2 {
+    font-size: 19px;
+  }
+  .pyj-reloj_group {
+    margin-top: 12px;
+  }
+  .pyj-reloj_grouphead {
+    margin-bottom: 5px;
+  }
+  .pyj-reloj_grouplabel {
+    font-size: 11.5px;
+  }
+  .pyj-reloj_grouphint {
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  /* Fichas → carril horizontal con desplazamiento por fichas, compactas (≈ 88–
+     96 px de alto: muestra de 48 px con el nombre debajo). */
+  .pyj-reloj_rail--tiles {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    margin: 0 -15px;
+    padding: 2px 15px 6px;
+  }
+  .pyj-reloj_rail--tiles > .pyj-reloj_opt {
+    flex: 0 0 96px;
+    gap: 4px;
+    padding: 6px 5px 5px;
+    scroll-snap-align: start;
+  }
+  .pyj-reloj_rail--tiles .pyj-reloj_thumb {
+    width: 48px;
+    height: 48px;
+  }
+  .pyj-reloj_rail--tiles .pyj-reloj_optvis {
+    min-height: 0;
+  }
+  .pyj-reloj_rail--tiles .pyj-reloj_logo {
+    width: 36px;
+    height: 36px;
+  }
+  .pyj-reloj_rail--tiles .pyj-reloj_optlabel {
+    font-size: 12px;
+  }
+  .pyj-reloj_rail--tiles .pyj-reloj_optdet,
+  .pyj-reloj_rail--tiles .pyj-reloj_optwhy {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 10.5px;
+  }
+  .pyj-reloj_odu .pyj-reloj_rail--tiles {
+    margin: 0;
+    padding: 0;
+  }
+  .pyj-reloj_odu .pyj-reloj_rail--tiles > .pyj-reloj_opt {
+    flex: initial;
+  }
+  .pyj-reloj_combocols {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "prev"
+      "der"
+      "izq";
+  }
+
+  .pyj-reloj_nav {
+    display: none;
+  }
+  .pyj-reloj_mbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(227, 178, 60, 0.3);
+    background: var(--pyj-glass-bg, rgba(32, 24, 14, 0.94));
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+  }
+  .pyj-reloj_mbtn {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(227, 178, 60, 0.3);
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--pyj-gold-light, #f2d896);
+    cursor: pointer;
+  }
+  .pyj-reloj_mstep {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .pyj-reloj_mstep strong {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: var(--dk-head, #f1e7d2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pyj-reloj_mstep small {
+    font-size: 11px;
+    color: var(--dk-muted, #a99d83);
+  }
+  .pyj-reloj_mnext,
+  .pyj-reloj_mbar .pyj-reloj_cta {
+    flex: none;
+    width: auto;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .pyj-reloj_ifa {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px 14px 18px;
+    text-align: left;
+  }
+  .pyj-reloj_ifawatch {
+    max-width: 220px;
+  }
+  .pyj-reloj_guidesteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575px) {
+  .pyj-reloj_cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .pyj-reloj_guidesteps,
+  .pyj-reloj_facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pyj-reloj_sumrow {
+    grid-template-columns: 1fr auto;
+  }
+  .pyj-reloj_sumrow dt {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-reloj_card,
+  .pyj-reloj_ifa,
+  .pyj-reloj_opt {
+    transition: none;
+  }
+  .pyj-reloj_card:hover,
+  .pyj-reloj_ifa:hover {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   HOJA DEL TALLER DEL RELOJ (/diseno?d=… — components/diseno/WatchSheet.tsx)
+   Se apoya en .pyj-sheet (globals.css) y añade lo propio del reloj.
+--------------------------------------------------------------------------- */
+.pyj-reloj_sheet {
+  max-width: 920px;
+}
+.pyj-reloj_sheetcode {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj_sheetcode strong {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_sheetalert {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-left: 3px solid #e6896b;
+  background: rgba(230, 137, 107, 0.1);
+  font-size: 14px;
+}
+.pyj-reloj_sheetalert ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.pyj-reloj_sheetviews,
+.pyj-reloj_sheetfiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 18px;
+}
+/* Los archivos van en UNA columna a cualquier ancho: la vista ×4 de la esfera
+   (4 × 30.5 mm ≈ 461 px) no cabía en media hoja y se cortaba. */
+.pyj-reloj_sheetfiles {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pyj-reloj_sheetviews figure,
+.pyj-reloj_sheetfiles figure {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid rgba(227, 178, 60, 0.18);
+  background: var(--dk-base, #14100a);
+  break-inside: avoid;
+}
+.pyj-reloj_sheetwatch {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 3 / 4;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.pyj-reloj_sheetviews figcaption,
+.pyj-reloj_sheetfiles figcaption {
+  margin-top: 6px;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_sheetart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px;
+  background: #ffffff;
+}
+.pyj-reloj_sheetart img {
+  display: block;
+  max-width: none;
+  flex: none;
+}
+.pyj-reloj_spec {
+  width: 100%;
+  margin: 0 0 18px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.pyj-reloj_spec caption {
+  caption-side: top;
+  padding: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_spec th,
+.pyj-reloj_spec td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(227, 178, 60, 0.14);
+  text-align: left;
+  vertical-align: top;
+}
+.pyj-reloj_spec th {
+  width: 32%;
+  font-weight: 600;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_spec td {
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_specnote th,
+.pyj-reloj_specnote td {
+  font-size: 12.5px;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj_checks {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(227, 178, 60, 0.25);
+}
+.pyj-reloj_checks legend {
+  padding: 0 6px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_checks label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_checks input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pyj-gold, #e3b23c);
+}
+
+@media (max-width: 767px) {
+  .pyj-reloj_sheetviews {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media print {
+  .pyj-reloj_sheet {
+    max-width: 100%;
+    padding: 0;
+  }
+  .pyj-reloj_sheetviews figure,
+  .pyj-reloj_sheetfiles figure {
+    border-color: #bbb;
+    background: #fff;
+  }
+  .pyj-reloj_sheetcode,
+  .pyj-reloj_spec td,
+  .pyj-reloj_checks label,
+  .pyj-reloj_sheetalert,
+  .pyj-reloj_sheetviews figcaption,
+  .pyj-reloj_sheetfiles figcaption {
+    color: #222;
+  }
+  .pyj-reloj_sheetcode strong,
+  .pyj-reloj_spec caption,
+  .pyj-reloj_spec th,
+  .pyj-reloj_checks legend {
+    color: #7a5a12;
+  }
+  .pyj-reloj_spec th,
+  .pyj-reloj_spec td {
+    border-bottom-color: #ddd;
+  }
+  .pyj-reloj_spec tr,
+  .pyj-reloj_checks {
+    break-inside: avoid;
+  }
+  .pyj-reloj_mbar {
+    display: none !important;
+  }
+}

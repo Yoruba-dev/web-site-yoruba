@@ -29,12 +29,17 @@ interface CartCreateResponse {
 }
 
 /** Map a customized line's engraving into Shopify line-item attributes, so the
- *  order in the Shopify admin shows exactly what (and how) to engrave. */
+ *  order in the Shopify admin shows exactly what (and how) to engrave. The key
+ *  is the customization's own label ("Grabado" unless the piece says otherwise
+ *  — the watch sends "Diseño"). A label that a `properties` entry already uses
+ *  is skipped here, so the order never shows the same key twice. */
 function lineAttributes(l: CartLine): { key: string; value: string }[] {
   const c = l.customization;
   if (!c) return [];
   const attrs: { key: string; value: string }[] = [];
-  if (c.text) attrs.push({ key: "Grabado", value: c.text });
+  const label = c.label?.trim() || "Grabado";
+  const taken = new Set((l.properties ?? []).map((p) => p.key));
+  if (c.text && !taken.has(label)) attrs.push({ key: label, value: c.text });
   if (c.font) attrs.push({ key: "Tipografía", value: c.font });
   if (c.metal) attrs.push({ key: "Metal", value: c.metal });
   if (c.shape) attrs.push({ key: "Forma", value: c.shape });

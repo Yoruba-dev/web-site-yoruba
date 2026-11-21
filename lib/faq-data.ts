@@ -1,4 +1,12 @@
-import { SITE } from "./site";
+import { SECCION_RELOJES, SITE } from "./site";
+// De la hoja de textos (no de ./watch): FaqAccordion corre en el navegador y
+// así /faq no carga el catálogo ni los signos del reloj.
+import {
+  WATCH_CUSTOM_POLICY,
+  WATCH_ODU_NOTE,
+  WATCH_PROOF_NOTE,
+  watchLeadTimeLabel,
+} from "./watch-copy";
 
 // The store's FAQ — single source of truth, rendered by FaqAccordion (visible
 // accordion) AND serialized as schema.org FAQPage JSON-LD on /faq so Google
@@ -98,4 +106,27 @@ export const FAQS = [
     answer:
       "Depende de la pieza y del diseño; algunos encargos toman alrededor de un mes. Escríbenos por WhatsApp y te damos un tiempo estimado según lo que necesites.",
   },
+  // El creador de relojes. Los textos de política y de signo salen de
+  // lib/watch.ts (una sola fuente: la misma frase en el creador, la hoja del
+  // taller, /garantia-y-devoluciones y aquí). Se apagan con el creador
+  // (SECCION_RELOJES.activo en lib/site.ts).
+  ...(SECCION_RELOJES.activo
+    ? ([
+        {
+          id: "RelojPlazo",
+          question: "¿Cuánto tarda un reloj del creador de relojes y cómo lo pido?",
+          answer: `Plazo de taller: ${watchLeadTimeLabel()}. Diseñas tu reloj en el creador de relojes y nos lo envías por WhatsApp con el enlace de tu diseño; con él te confirmamos el precio y la fecha de entrega. ${WATCH_PROOF_NOTE}`,
+        },
+        {
+          id: "RelojDevolucion",
+          question: "¿Puedo devolver o cambiar un reloj personalizado?",
+          answer: WATCH_CUSTOM_POLICY,
+        },
+        {
+          id: "RelojSigno",
+          question: "¿Qué signo de Ifá pongo en mi reloj?",
+          answer: `El de tu libreta —el que salió en tu Itá o en tu Mano de Orula—: uno de los 16 Meyis o tu combinación, grabado en la tapa con tu nombre o una fecha, siempre derecho como se escribe. El creador no calcula signos. ${WATCH_ODU_NOTE}`,
+        },
+      ] as const)
+    : []),
 ] as const;

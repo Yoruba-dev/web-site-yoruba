@@ -35,6 +35,69 @@ export const SECCION_MONEDAS = {
   coleccion: "monedas",
 };
 
+// El CREADOR DE RELOJES — interruptor único de todas sus entradas en el sitio.
+//   • activo   → la banda de la portada (components/home/RelojesCreador.tsx),
+//                la diapositiva del carrusel, "Crea tu reloj" en el menú de
+//                Servicios y en el pie (lib/menu.ts → SERVICE_LINKS) y las
+//                menciones en /servicios. false = todo eso desaparece en UNA
+//                línea; la página /creador-de-relojes sigue existiendo.
+//   • lanzado  → la página es noindex hasta el lanzamiento. Mientras sea false
+//                NO entra al sitemap (app/sitemap.ts) y la página lleva
+//                noindex (CREATOR_INDEXABLE en app/creador-de-relojes/page.tsx
+//                lee este mismo valor). El día del lanzamiento: true aquí y,
+//                en public/llms.txt (archivo estático, no lee este valor),
+//                añadir estas dos líneas — hasta entonces NO van, para no
+//                mandar a los rastreadores de IA a una página noindex:
+//                  en la lista de páginas, tras "Cómo trabajamos":
+//                  - [Creador de relojes](https://pedrojewelryyoruba.com/creador-de-relojes): diseña un reloj en los colores de tu Orisha — la esfera con su pista de cuentas, la correa y tu signo de Ifá grabado en la tapa — y solicítalo por WhatsApp con el enlace de tu diseño. El precio se confirma con el diseño y, antes de producir, el taller envía una prueba para tu OK. Ensamblado y personalizado a mano en Miami con componentes importados
+//                  en la lista del catálogo, tras "Anillos y esclavas…":
+//                  - Relojes personalizados en los colores de cada Orisha, con el signo de Ifá grabado en la tapa (creador de relojes en la web)
+//   • ruta     → la dirección del creador; los presets son ?preset=<id>.
+// Sin producto ni precios en Shopify todavía (DECISIONES-DUENO §1 y §11): nada
+// de esto lee Shopify, así que la banda funciona hoy tal cual.
+export const SECCION_RELOJES: {
+  readonly activo: boolean;
+  readonly lanzado: boolean;
+  readonly ruta: string;
+} = {
+  activo: true,
+  lanzado: false,
+  ruta: "/creador-de-relojes",
+};
+
+/** La diapositiva del carrusel para el creador de relojes. Mismo contrato que
+ *  las demás (ver SITE.heroSlides): banner compuesto 1376×768 con el texto ya
+ *  en la imagen (sin botón) en hero/banner/reloj-creador-{828,1100,1376}.{avif,webp}
+ *  y la foto recortada a la pieza para teléfonos en hero/movil/reloj-creador.
+ *  Se compuso del render M1 (design-assets/creador-relojes/meshy/renders/
+ *  M1-hero-orula-v1.png, el mismo que home/orula-marmol) con la tipografía de
+ *  los banners del dueño. Va de segunda; para el lanzamiento se sube a la
+ *  primera moviendo su línea en heroSlides. Se apaga con SECCION_RELOJES.activo. */
+const HERO_RELOJES = {
+  banner: "reloj-creador",
+  // El arte es un render de Meshy (ilustrativo): la diapositiva lo dice a la
+  // vista, como la banda de la portada y las fichas del creador (HeroSlider).
+  etiqueta: "Render ilustrativo",
+  // frases que el arte pinta en oro dentro del subtitulo
+  oro: ["tu Orisha"],
+  artAlt: "Render ilustrativo de un reloj octogonal de acero con esfera verde, pista de cuentas verde y amarilla y correa de caucho verde, sobre mármol negro",
+  title: "Crea tu reloj de Orisha",
+  text: "Elige tu Orisha, tu correa y tu signo — y míralo armarse frente a ti",
+  cta: "Diseñar mi reloj",
+  href: SECCION_RELOJES.ruta,
+  align: "left",
+  // CTA anclado bajo el subtitulo, en el hueco que el arte deja libre
+  ctaTop: "69%",
+  ctaX: "5.8%",
+} as const;
+
+/** El enlace al creador abierto en un preset (?preset=ifa, ?preset=oshun, …). */
+export function rutaCreadorRelojes(preset?: string): string {
+  return preset
+    ? `${SECCION_RELOJES.ruta}?preset=${encodeURIComponent(preset)}`
+    : SECCION_RELOJES.ruta;
+}
+
 export const SITE = {
   name: "Pedro Yoruba Jewelry",
   tagline:
@@ -123,6 +186,8 @@ export const SITE = {
       ctaTop: "70%",
       ctaX: "6.8%",
     },
+    // El creador de relojes (ver HERO_RELOJES arriba).
+    ...(SECCION_RELOJES.activo ? [HERO_RELOJES] : []),
     {
       banner: "diseno-personalizado",
       // frases que el arte original pinta en oro dentro del subtitulo

@@ -105,7 +105,7 @@ export default function CheckoutView({ promo }: { promo?: PromoVM | null }) {
                 <strong className="product-quantity"> × {l.quantity}</strong>
                 {l.customization && (
                   <span className="cart-customization">
-                    ✦ Grabado: «{l.customization.text}»
+                    ✦ {l.customization.label ?? "Grabado"}: «{l.customization.text}»
                     {l.customization.font ? ` · ${l.customization.font}` : ""}
                   </span>
                 )}

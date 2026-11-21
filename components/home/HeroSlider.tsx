@@ -195,6 +195,13 @@ export default function HeroSlider() {
                 {/* the frame mirrors the banner's own box (see globals.css), so
                     the button stays glued to the artwork instead of to the stage */}
                 <div className="pyj-hero_frame">
+                  {/* A slide whose art is an illustrative render says so on the
+                      picture itself, not only in the alt text (the watch
+                      creator's slide: SITE.heroSlides → `etiqueta`). Styled in
+                      app/relojes-creador.css, which only ships with that band. */}
+                  {"etiqueta" in slide && slide.etiqueta && (
+                    <span className="pyj-hero_tag">{slide.etiqueta}</span>
+                  )}
                   <Link
                     href={slide.href}
                     className="pyj-btn-gold pyj-hero_cta"

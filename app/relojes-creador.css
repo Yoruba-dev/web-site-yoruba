@@ -1,0 +1,577 @@
+/* ===========================================================================
+   CREADOR DE RELOJES — la banda de la portada (components/home/RelojesCreador).
+   Mismo lenguaje que las bandas de la casa (.pyj-promoP, .pyj-newarrivals):
+   fondo casi negro cálido, filetes dorados, Cinzel para títulos y botones,
+   Cormorant en cursiva para antetítulos y subtítulos, Lato para el resto.
+   Todo lo redondo es SVG: el reset global `* { border-radius: 0 !important }`
+   cuadra cualquier círculo hecho con CSS (es parte del diseño del sitio).
+   Vive en app/ para que scripts/check-css.mjs vigile sus llaves.
+   =========================================================================== */
+
+.pyj-rc {
+  --rc-bg: #070603;
+  --rc-line: rgba(227, 178, 60, 0.2);
+  --rc-line-strong: rgba(227, 178, 60, 0.42);
+  --rc-text: #d9ccb0;
+  --rc-muted: #a99d83;
+  position: relative;
+  /* La fila de fichas sale hasta el borde de la pantalla: `clip` evita el
+     desplazamiento horizontal de la página sin crear un contenedor de scroll. */
+  overflow-x: clip;
+  padding: 0 0 64px;
+  background:
+    radial-gradient(90% 60% at 78% 8%, rgba(31, 122, 61, 0.1), transparent 62%),
+    radial-gradient(70% 50% at 12% 100%, rgba(227, 178, 60, 0.07), transparent 60%),
+    var(--rc-bg);
+  /* sin filete abajo: Novedades, que va justo después, ya trae el suyo arriba */
+  color: var(--rc-text);
+}
+
+/* ---- 1. La entrada: texto + la foto grande ------------------------------- */
+.pyj-rc_intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  grid-template-areas: "copy hero";
+  align-items: center;
+  gap: 24px 40px;
+}
+.pyj-rc_copy {
+  grid-area: copy;
+  padding: 56px 0 24px;
+}
+.pyj-rc_hero {
+  grid-area: hero;
+  position: relative;
+  align-self: stretch;
+  min-height: 0;
+}
+.pyj-rc_hero picture {
+  display: block;
+}
+.pyj-rc_hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  /* El render ya cae a negro: un velo radial lo funde con el fondo, sin costura. */
+  -webkit-mask-image: radial-gradient(closest-side, #000 74%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 74%, transparent 100%);
+}
+.pyj-rc_tag {
+  position: absolute;
+  right: 6%;
+  bottom: 7%;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(240, 231, 210, 0.62);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.pyj-rc_eyebrow {
+  margin-bottom: 4px;
+}
+.pyj-rc_tit {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.5vw, 46px);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  margin: 8px 0 14px;
+  color: var(--pyj-gold-light);
+  background: linear-gradient(177deg, #fff4cf 0%, #f5d77a 30%, #e3b23c 55%, #a8781f 78%, #f2cf6b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.55));
+}
+.pyj-rc_sub {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: clamp(19px, 1.7vw, 22px);
+  line-height: 1.45;
+  color: #efe4c9;
+  max-width: 34ch;
+  margin: 0 0 22px;
+}
+
+/* Los tres pasos: número dorado, palabra en Cinzel, aclaración en Lato. */
+.pyj-rc_pasos {
+  counter-reset: rcpaso;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 26px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rc-line);
+  border-bottom: 1px solid var(--rc-line);
+}
+.pyj-rc_pasos li {
+  counter-increment: rcpaso;
+  padding: 0 14px;
+  border-left: 1px solid var(--rc-line);
+}
+.pyj-rc_pasos li:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.pyj-rc_pasos li::before {
+  content: counter(rcpaso, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--pyj-gold);
+  margin-bottom: 2px;
+}
+.pyj-rc_pasos b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f1e7d2;
+}
+.pyj-rc_pasos span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--rc-muted);
+}
+
+.pyj-rc_ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 26px;
+}
+.pyj-rc_link {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light);
+  text-decoration: none;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rc-line-strong);
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.pyj-rc_link:hover,
+.pyj-rc_link:focus-visible {
+  color: #fff4cf;
+  border-color: var(--pyj-gold);
+}
+.pyj-rc_letra {
+  margin: 18px 0 0;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--rc-muted);
+}
+
+/* ---- 2. La fila de fichas por Orisha -------------------------------------- */
+.pyj-rc_railhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  margin: 28px 0 16px;
+  padding-top: 26px;
+  border-top: 1px solid var(--rc-line);
+}
+.pyj-rc_railhead h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f1e7d2;
+}
+.pyj-rc_railhead p {
+  margin: 0;
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--rc-muted);
+}
+
+.pyj-rc_rail {
+  --rc-card: 224px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--rc-card);
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  /* sale hasta el borde derecho de la pantalla (el contenedor está centrado) */
+  margin-right: calc(50% - 50vw);
+  padding: 4px 24px 14px 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(227, 178, 60, 0.45) transparent;
+}
+.pyj-rc_rail::-webkit-scrollbar {
+  height: 4px;
+}
+.pyj-rc_rail::-webkit-scrollbar-thumb {
+  background: rgba(227, 178, 60, 0.45);
+}
+.pyj-rc_card {
+  scroll-snap-align: start;
+}
+.pyj-rc_card a {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  background: #120e09;
+  border: 1px solid var(--rc-line);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.pyj-rc_card a:hover,
+.pyj-rc_card a:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--pyj-gold);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.pyj-rc_media {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #efe9df;
+}
+.pyj-rc_media picture,
+.pyj-rc_media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.pyj-rc_media img {
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.pyj-rc_card a:hover .pyj-rc_media img {
+  transform: scale(1.04);
+}
+.pyj-rc_label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--rc-line);
+}
+.pyj-rc_name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #f1e7d2;
+}
+.pyj-rc_cuentas {
+  display: block;
+  width: 49px;
+  height: 7px;
+}
+.pyj-rc_nota {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--pyj-gold);
+}
+
+/* La ficha de Ifá: tipográfica (no hay render), en oro sobre negro. */
+.pyj-rc_media--ifa {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(closest-side, rgba(227, 178, 60, 0.16), transparent 72%),
+    #0b0906;
+}
+.pyj-rc_emblema {
+  display: block;
+  width: 86%;
+  height: auto;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.6));
+  transition: transform 0.6s ease;
+}
+.pyj-rc_card a:hover .pyj-rc_emblema {
+  transform: rotate(-4deg) scale(1.02);
+}
+.pyj-rc_card--ifa .pyj-rc_name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pyj-rc_estrella {
+  padding: 3px 7px 2px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0d0a07;
+  background: linear-gradient(135deg, #e4c89d, #cda557 55%, #98662e);
+}
+.pyj-rc_card--ifa a {
+  border-color: var(--rc-line-strong);
+}
+
+.pyj-rc_micro {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(169, 157, 131, 0.85);
+}
+
+/* ---- 3. Las tres funciones --------------------------------------------------- */
+.pyj-rc_feats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  list-style: none;
+  margin: 36px 0 0;
+  padding: 0;
+}
+.pyj-rc_feat {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0));
+  border: 1px solid var(--rc-line);
+}
+.pyj-rc_featmedia {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #0b0906;
+}
+/* El render es cuadrado; este cuadro interior lo centra en el marco 3:2 para
+   que el grabado de la tapa, colocado en % del cuadrado, siga en su sitio. */
+.pyj-rc_sq {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  transform: translateY(-50%);
+}
+.pyj-rc_sq picture,
+.pyj-rc_sq img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.pyj-rc_grabado {
+  position: absolute;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+}
+.pyj-rc_grabado svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* El láser de fibra oscurece el acero: tinta negra multiplicada sobre la luz
+     de la foto, más un filo de luz debajo de cada trazo (el surco). */
+  mix-blend-mode: multiply;
+  opacity: 0.66;
+  filter: drop-shadow(0 0.6px 0 rgba(255, 255, 255, 0.55));
+}
+.pyj-rc_feattxt {
+  padding: 18px 20px 20px;
+}
+.pyj-rc_feattxt h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #f1e7d2;
+}
+.pyj-rc_feattxt p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--rc-text);
+}
+.pyj-rc_feattxt small {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--pyj-gold);
+}
+
+/* ---- Tableta ------------------------------------------------------------------ */
+@media (max-width: 991px) {
+  .pyj-rc_intro {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "hero"
+      "copy";
+    gap: 0;
+  }
+  .pyj-rc_hero {
+    /* a sangre, de borde a borde, y fundida hacia el texto */
+    margin: 0 -15px;
+  }
+  .pyj-rc_hero img {
+    aspect-ratio: 5 / 4;
+    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+  }
+  .pyj-rc_tag {
+    top: 14px;
+    bottom: auto;
+    right: 15px;
+  }
+  .pyj-rc_copy {
+    margin-top: -36px;
+    position: relative;
+    padding: 0 0 8px;
+  }
+  .pyj-rc_feats {
+    gap: 16px;
+  }
+}
+
+/* ---- Teléfono ------------------------------------------------------------------ */
+@media (max-width: 767px) {
+  .pyj-rc {
+    padding-bottom: 44px;
+  }
+  .pyj-rc_hero img {
+    aspect-ratio: 1 / 1;
+  }
+  .pyj-rc_copy {
+    margin-top: -84px;
+  }
+  .pyj-rc_tit {
+    font-size: clamp(27px, 7.6vw, 34px);
+  }
+  .pyj-rc_sub {
+    font-size: 19px;
+    margin-bottom: 18px;
+  }
+  .pyj-rc_pasos {
+    margin-bottom: 22px;
+  }
+  .pyj-rc_pasos li {
+    padding: 0 10px;
+  }
+  .pyj-rc_pasos b {
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+  }
+  .pyj-rc_pasos span {
+    font-size: 12px;
+  }
+  .pyj-rc_ctas {
+    gap: 12px 22px;
+  }
+  .pyj-rc_railhead {
+    margin-top: 24px;
+    padding-top: 22px;
+  }
+  .pyj-rc_railhead h3 {
+    font-size: 17px;
+  }
+  .pyj-rc_railhead p {
+    font-size: 16px;
+  }
+  /* la fila sale a sangre por los dos lados, alineada con el texto */
+  .pyj-rc_rail {
+    --rc-card: 62vw;
+    gap: 12px;
+    margin: 0 -15px;
+    padding: 4px 15px 12px;
+    scroll-padding-inline: 15px;
+  }
+  .pyj-rc_name {
+    font-size: 15px;
+  }
+  /* las funciones en lista compacta: foto pequeña a la izquierda */
+  .pyj-rc_feats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .pyj-rc_feat {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: center;
+  }
+  .pyj-rc_featmedia {
+    aspect-ratio: 1 / 1;
+  }
+  .pyj-rc_feattxt {
+    padding: 12px 14px;
+  }
+  .pyj-rc_feattxt h3 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .pyj-rc_feattxt p {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .pyj-rc_feattxt small {
+    font-size: 14px;
+    margin-top: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-rc_card a,
+  .pyj-rc_media img,
+  .pyj-rc_emblema {
+    transition: none;
+  }
+  .pyj-rc_card a:hover,
+  .pyj-rc_card a:hover .pyj-rc_media img,
+  .pyj-rc_card a:hover .pyj-rc_emblema {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   "Render ilustrativo" sobre la diapositiva del carrusel (HeroSlider, campo
+   `etiqueta` de HERO_RELOJES en lib/site.ts): el mismo sello discreto que
+   .pyj-rc_tag. En escritorio va dentro del marco que sigue al arte
+   (.pyj-hero_frame); en el teléfono ese marco es display: contents y la
+   etiqueta se apoya en la esquina de la foto.
+--------------------------------------------------------------------------- */
+.pyj-hero_tag {
+  position: absolute;
+  right: 2.6%;
+  bottom: 5%;
+  z-index: 3;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(240, 231, 210, 0.66);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .pyj-hero_tag {
+    top: 12px;
+    right: 14px;
+    bottom: auto;
+    font-size: 10px;
+  }
+}

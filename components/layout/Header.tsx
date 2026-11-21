@@ -258,7 +258,7 @@ export default function Header({
                         <img
                           className="pyj-cart-design"
                           src={l.customization.preview}
-                          alt="Tu diseño de Ifá"
+                          alt={l.customization.previewAlt ?? "Tu diseño de Ifá"}
                           loading="lazy"
                         />
                       )}

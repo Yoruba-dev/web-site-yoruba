@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
+import { isFocusRoute } from "@/lib/focus-routes";
 
 // App-style bottom navigation for phones/tablets — a frosted-glass bar fixed to
 // the bottom (Liquid Glass), shown only ≤991px.
@@ -89,6 +90,11 @@ export default function MobileTabBar() {
 
   // The pill follows the finger mid-slide, otherwise the active tab.
   const pillIndex = dragIndex ?? activeIndex;
+
+  // Focus routes (lib/focus-routes.ts — the watch creator) bring their own
+  // fixed footer with the main CTA; two bars stacked at the bottom of a phone
+  // would bury it. All hooks above still run, so their order never changes.
+  if (isFocusRoute(pathname)) return null;
 
   return (
     <nav

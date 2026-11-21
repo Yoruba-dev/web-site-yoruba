@@ -22,6 +22,7 @@
 // ---------------------------------------------------------------------------
 import {
   ODU_GLYPH,
+  ODU_MEJI,
   oduLibretaMarks,
   oduMarks,
   oduSignBoxes,
@@ -30,6 +31,7 @@ import {
 } from "./odu";
 import {
   DIAL_BASES,
+  DIAL_MODELS,
   TRACK_SEQUENCES,
   WATCH_COLORS,
   WATCH_MATERIALS,
@@ -37,6 +39,7 @@ import {
   beadAt,
   contrastRatio,
   dialInk,
+  formatFecha,
   getDialBase,
   getFinish,
   signColumns,
@@ -183,28 +186,38 @@ export function fitTextSize(text: string, font: DialFont, size: number, maxWidth
 // ESFERA — medidas en mm (marcadores de posición hasta la Fase 0). La 3D lee
 // las mismas cifras de aquí.
 // ===========================================================================
+/** Radio que deja ver la ventana de la caja (WATCH_SPECS.aberturaVisibleMm). */
+const VISIBLE_R = WATCH_SPECS.aberturaVisibleMm / 2;
+/** Aire entre lo impreso / aplicado y el borde de la ventana de la caja. */
+const PRINT_MARGIN = 0.25;
+
 export const DIAL_LAYOUT = {
   /** Radio del disco (Ø30.5). */
   r: WATCH_SPECS.dialMm / 2,
-  /** Lo que deja ver la pestaña de la caja (para el cartel). */
-  visibleR: 14.95,
+  /** Lo que deja ver la ventana de la caja (14.4): el cartel recorta aquí y
+   *  el compositor de capas muestra exactamente esto (R_ABERTURA). */
+  visibleR: VISIBLE_R,
+  /** Radio máximo de TODO lo impreso y lo aplicado (14.15): la pista, los
+   *  índices, el texto y los signos nunca se meten bajo la pestaña de la caja.
+   *  check-watch-data lo mide en cada preset. */
+  printR: VISIBLE_R - PRINT_MARGIN,
   track: {
-    /** Centro de las cuentas. */
-    r: 14.05,
+    /** Centro de las cuentas (la de acento de Oyá acaba en 14.07). */
+    r: 13.5,
     beadR: 0.42,
     /** La cuenta de acento (Oyá) es más grande, para que la raya se vea. */
     accentScale: 1.35,
     /** Borde exterior de las rayas. */
-    outerR: 14.6,
+    outerR: 14.05,
     minor: { len: 0.75, w: 0.17 },
     major: { len: 1.3, w: 0.36 },
   },
   /** Puntos luminosos aplicados a las 1, 2, 4, 5, 7, 8, 10, 11. */
-  dots: { r: 11.6, dotR: 1.0, rimW: 0.2 },
+  dots: { r: 11.15, dotR: 1.0, rimW: 0.2 },
   /** Triángulo invertido a las 12 (radios del borde de arriba y de la punta). */
-  triangle: { outerR: 13.05, tipR: 10.25, halfW: 1.4, rimW: 0.2 },
+  triangle: { outerR: 12.45, tipR: 9.65, halfW: 1.4, rimW: 0.2 },
   /** Barras a las 6 y a las 9 (centro, largo radial, ancho). */
-  bar: { r: 11.4, len: 2.9, w: 1.15, rimW: 0.2 },
+  bar: { r: 10.95, len: 2.9, w: 1.15, rimW: 0.2 },
   /** Ventana de fecha a las 3 (WATCH_SPECS) y su marco. */
   date: { cx: WATCH_SPECS.dateWindow.centerMm, w: WATCH_SPECS.dateWindow.wMm, h: WATCH_SPECS.dateWindow.hMm, rim: 0.24 },
   /** Hueco del aplique PY (6 mm de alto bajo las 12, plano del proveedor). */
@@ -222,6 +235,31 @@ export const DIAL_LAYOUT = {
   /** Franjas horizontales (solo con FLAGS.STRIPE_DIALS): paso y ancho de la
    *  franja clara, y cuánto se aclara sobre el color base. */
   stripes: { pitch: 1.0, band: 0.5, lighten: 0.07 },
+  /** Esfera Ifá: el anillo de los 16 Meyis, que son los índices.
+   *  • ringR 10.75: a medio camino entre el aplique PY (1.0 mm de aire a Baba
+   *    Ejiogbe, que hace de marca de las 12: el triángulo no cabe, chocaría) y
+   *    la pista (0.8 mm a las rayas). La ventana de fecha (centro a 10.55)
+   *    queda dentro del anillo. Con 10.75 las agujas del cartel caben entre
+   *    dos signos (HANDS.poseIfa); a 10.55 el minutero rozaba Iwori y Odi.
+   *  • El signo de las 3 (Iroso Meyi) cae justo sobre la ventana de fecha: con
+   *    el aplique a las 12 y la fecha a las 3 no existe un radio único que
+   *    sirva (las 12 piden ≥ 10.05 y las 3 ≤ 7.85), así que ese signo se mete
+   *    hacia el centro por su mismo radio hasta despejar la ventana (≈ 7.8).
+   *    Sin ventana (DIAL_MODELS.ifa.ventanaFecha = false) el anillo es
+   *    perfecto: los 16 a 10.75. Lo decide el dueño (ver la carpeta
+   *    design-assets/creador-relojes/review/stage2-ifa).
+   *  • inkH 2.3 con barras 1.6× (0.20 × 0.38 mm; hueco de una doble 0.15 mm):
+   *    con las barras del tablero (0.13 mm) el signo se leía como una línea
+   *    de puntos. Las POSICIONES siguen siendo las de oduMarks().
+   *  • "IFÁ" a las 6, más espaciado que un nombre (son tres letras). */
+  ifa: {
+    ringR: 10.75,
+    inkH: 2.3,
+    barScale: 1.6,
+    /** Aire mínimo de un signo del anillo a la ventana de fecha y su marco. */
+    air: 0.3,
+    name: { baseline: 7.75, size: 1.75, trackEm: 0.32, maxW: 11.5, weight: 600 },
+  },
 } as const;
 
 /** Las agujas en mm, dibujadas apuntando a las 12 desde el eje (y hacia abajo =
@@ -233,6 +271,16 @@ export const HANDS = {
    *  render 13 del dueño) y no toca el nombre, el aplique, el signo ni la
    *  fecha: scripts/check-watch-data.ts lo mide. */
   pose: { h: 10, m: 10, s: 40 },
+  /** El "10:10" de la Esfera Ifá: cada aguja en el CENTRO de un hueco entre
+   *  Meyis — minutero a 56.25° (entre Iwori y Odi), segundero a 236.25° (entre
+   *  Ika y Otrupon); la horaria no llega al anillo. No es una hora exacta
+   *  (minutero de las 10:09:22, segundero en :39): es un cartel. Ver
+   *  handPose(); check-watch-data mide que el minutero y el segundero no tocan
+   *  ningún signo. */
+  poseIfa: { h: 10, m: 9.375 - 39.375 / 60, s: 39.375 },
+  /** Hora y minuto: cola, punta, hombro (donde empieza la punta) y medio ancho. */
+  hour: { tail: 1.6, tip: 8.1, shoulder: 6.5, halfW: 0.8 },
+  minute: { tail: 1.9, tip: 12.75, shoulder: 11.3, halfW: 0.62 },
   seconds: {
     /** Punta, desde el eje. */
     tip: 13.95,
@@ -247,6 +295,11 @@ export const HANDS = {
     counter: { at: 1.95, r: 0.74 },
   },
 } as const;
+
+/** La hora del cartel para este reloj (la Esfera Ifá tiene la suya). */
+export function handPose(c: Pick<WatchConfig, "esfera">): { h: number; m: number; s: number } {
+  return c.esfera.modelo === "ifa" ? HANDS.poseIfa : HANDS.pose;
+}
 
 /** Ángulos (grados, horario, 0 = las 12) de las tres agujas para una hora. */
 export function handAngles(pose: { h: number; m: number; s: number } = HANDS.pose): {
@@ -299,18 +352,25 @@ export function signPrimitives(
   fill: string,
   capa: Capa,
   notation: "barras" | "libreta" = "barras",
+  /** `barScale` ensancha cada barra alrededor de SU centro (las posiciones
+   *  siguen siendo las de oduMarks): más tinta para un signo pequeño. */
+  opts: { barScale?: number } = {},
 ): Primitive[] {
   const cols = signColumns(sign);
   if (!cols) return [];
   const g = ODU_GLYPH;
   const u = inkH / (g.inkBottom - g.inkTop);
+  const k = opts.barScale ?? 1;
   // La caja del tablero (100 × 106) cuyo centro coincide con el de la tinta.
   const box: OduBox = { x: cx - (g.signW / 2) * u, y: cy - (g.colH / 2) * u, w: g.signW * u, h: g.colH * u };
   const cells = oduSignBoxes(box);
   const out: Primitive[] = [];
   const column = (marks: readonly Mark[], cell: OduBox) => {
     if (notation === "barras") {
-      for (const r of oduMarks(marks, cell)) out.push({ kind: "rect", capa, x: r.x, y: r.y, w: r.w, h: r.h, rx: r.rx, fill });
+      for (const r of oduMarks(marks, cell)) {
+        const w = r.w * k;
+        out.push({ kind: "rect", capa, x: r.x + (r.w - w) / 2, y: r.y, w, h: r.h, rx: r.rx * k, fill });
+      }
       return;
     }
     for (const m of oduLibretaMarks(marks, cell)) {
@@ -333,10 +393,59 @@ function ringPath(cx: number, cy: number, rx: number, ry: number, t: number): st
   return e(rx, ry) + e(rx - t, ry - t);
 }
 
-/** Todo lo que lleva la esfera, de abajo arriba: disco, pista, texto, signo,
- *  ventana de fecha y piezas aplicadas (con el hueco 'aplique' para el logo). */
+/** Un Meyi del anillo de la Esfera Ifá: su ángulo (0 = las 12, horario) y el
+ *  centro de su tinta en mm. */
+export interface IfaSlot {
+  oduId: string;
+  deg: number;
+  cx: number;
+  cy: number;
+}
+
+/** Caja de la tinta de un signo de `inkH` de alto en el peor caso (columnas de
+ *  marcas dobles), con las barras ensanchadas `barScale` veces. */
+export function signInkSize(inkH: number, barScale = 1): { w: number; h: number } {
+  const g = ODU_GLYPH;
+  const u = inkH / (g.inkBottom - g.inkTop);
+  const halfW = g.doubleHalf + (g.markW * barScale) / 2;
+  return { w: 2 * (g.colOffset + halfW) * u, h: inkH };
+}
+
+/** ¿La esfera de este reloj tiene ventana de fecha? (DIAL_MODELS.ventanaFecha) */
+export function dialHasDate(c: Pick<WatchConfig, "esfera">): boolean {
+  return DIAL_MODELS[c.esfera.modelo]?.ventanaFecha ?? true;
+}
+
+/** Los 16 Meyis de la Esfera Ifá en el orden de ODU_MEJI: Baba Ejiogbe a las
+ *  12 y después uno cada 22.5° en sentido horario, a DIAL_LAYOUT.ifa.ringR.
+ *  Cada uno va DERECHO (solo se traslada: nunca se gira con el anillo ni se
+ *  refleja). Con ventana de fecha, el signo que cae sobre ella (el de las 3)
+ *  se mete hacia el centro por su mismo radio, en pasos de 0.01 mm, hasta
+ *  quedar a `air` de la ventana y su marco: el orden y el ángulo no cambian.
+ *  `fecha` solo se pasa para probar la otra opción (check-watch-data). */
+export function ifaSignSlots(fecha: boolean = DIAL_MODELS.ifa.ventanaFecha): IfaSlot[] {
+  const I = DIAL_LAYOUT.ifa;
+  const D = DIAL_LAYOUT.date;
+  const ink = signInkSize(I.inkH, I.barScale);
+  // La ventana con su marco (el trazo del marco sobresale `rim` del hueco) y el aire.
+  const win = { x0: D.cx - D.w / 2 - D.rim - I.air, x1: D.cx + D.w / 2 + D.rim + I.air, y: D.h / 2 + D.rim + I.air };
+  const hits = (p: { x: number; y: number }) =>
+    fecha && p.x + ink.w / 2 > win.x0 && p.x - ink.w / 2 < win.x1 && Math.abs(p.y) - ink.h / 2 < win.y;
+  return ODU_MEJI.map((o, k) => {
+    const deg = k * (360 / ODU_MEJI.length);
+    let steps = Math.round(I.ringR * 100);
+    while (steps > 0 && hits(polar(steps / 100, deg))) steps--;
+    const p = polar(steps / 100, deg);
+    return { oduId: o.id, deg, cx: p.x, cy: p.y };
+  });
+}
+
+/** Todo lo que lleva la esfera, de abajo arriba: disco, pista, texto, signo
+ *  (o los 16 Meyis de la Esfera Ifá), ventana de fecha y piezas aplicadas (con
+ *  el hueco 'aplique' para el logo). */
 export function dialPrimitives(c: WatchConfig): Primitive[] {
   const L = DIAL_LAYOUT;
+  const ifa = c.esfera.modelo === "ifa";
   const base = getDialBase(c.esfera.base) ?? DIAL_BASES[0];
   const baseHex = WATCH_COLORS[base.color].hex;
   const ink = dialInk(base.id).hex;
@@ -405,55 +514,75 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   // 3 · El texto sobre las 6.
   const texto = c.esfera.texto.trim();
   if (texto) {
-    const size = fitTextSize(texto, "py-dial", L.name.size, L.name.maxW, L.name.trackEm);
+    const N = ifa ? L.ifa.name : L.name;
+    const size = fitTextSize(texto, "py-dial", N.size, N.maxW, N.trackEm);
     out.push({
       kind: "text",
       capa: "impresion",
       text: texto,
       x: 0,
-      y: L.name.baseline,
+      y: N.baseline,
       font: "py-dial",
       size,
       anchor: "middle",
-      letterSpacing: size * L.name.trackEm,
-      weight: L.name.weight,
-      maxWidth: L.name.maxW,
+      letterSpacing: size * N.trackEm,
+      weight: N.weight,
+      maxWidth: N.maxW,
       fill: ink,
     });
   }
 
-  // 4 · El signo Odù (derecho, nunca girado ni reflejado).
-  if (c.esfera.signo) {
+  // 4 · El signo Odù (derecho, nunca girado ni reflejado). En la Esfera Ifá,
+  //     los 16 Meyis son los índices; el signo personal va en la tapa.
+  if (ifa) {
+    for (const s of ifaSignSlots()) {
+      out.push(
+        ...signPrimitives({ tipo: "meyi", oduId: s.oduId }, s.cx, s.cy, L.ifa.inkH, ink, "impresion", "barras", {
+          barScale: L.ifa.barScale,
+        }),
+      );
+    }
+  } else if (c.esfera.signo) {
     const s = L.sign[c.esfera.signoPos];
     out.push(...signPrimitives(c.esfera.signo, s.cx, s.cy, s.inkH, ink, "impresion"));
   }
 
   // 5 · Ventana de fecha (el disco blanco se ve a través del hueco).
   const D = L.date;
-  out.push({
-    kind: "rect",
-    id: "ventana-fecha",
-    capa: "ventana",
-    x: D.cx - D.w / 2,
-    y: -D.h / 2,
-    w: D.w,
-    h: D.h,
-    fill: WATCH_MATERIALS.fecha,
-  });
+  const fecha = dialHasDate(c);
+  if (fecha) {
+    out.push({
+      kind: "rect",
+      id: "ventana-fecha",
+      capa: "ventana",
+      x: D.cx - D.w / 2,
+      y: -D.h / 2,
+      w: D.w,
+      h: D.h,
+      fill: WATCH_MATERIALS.fecha,
+    });
+  }
 
   // 6 · Piezas aplicadas: marco de fecha, puntos, triángulo, barras, aplique.
-  out.push({
-    kind: "rect",
-    capa: "aplicado",
-    x: D.cx - D.w / 2 - D.rim / 2,
-    y: -D.h / 2 - D.rim / 2,
-    w: D.w + D.rim,
-    h: D.h + D.rim,
-    rx: 0.12,
-    fill: "none",
-    stroke: rim,
-    strokeWidth: D.rim,
-  });
+  if (fecha) {
+    out.push({
+      kind: "rect",
+      capa: "aplicado",
+      x: D.cx - D.w / 2 - D.rim / 2,
+      y: -D.h / 2 - D.rim / 2,
+      w: D.w + D.rim,
+      h: D.h + D.rim,
+      rx: 0.12,
+      fill: "none",
+      stroke: rim,
+      strokeWidth: D.rim,
+    });
+  }
+  if (ifa) {
+    const A = L.applique;
+    out.push({ kind: "rect", id: "aplique", capa: "aplicado", x: A.cx - A.w / 2, y: A.cy - A.h / 2, w: A.w, h: A.h, fill: "none" });
+    return out;
+  }
   for (const h of HOURS_WITH_DOTS) {
     const p = polar(L.dots.r, h * 30);
     out.push({ kind: "circle", capa: "aplicado", cx: p.x, cy: p.y, r: L.dots.dotR, fill: lume, stroke: rim, strokeWidth: L.dots.rimW });
@@ -503,11 +632,9 @@ export const CASEBACK_LAYOUT = {
   gap: 0.6,
 } as const;
 
-/** "1984-03-15" → "15 · 03 · 1984" (como se graba). */
-export function formatFecha(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d} · ${m} · ${y}`;
-}
+/** "1984-03-15" → "15 · 03 · 1984" (como se graba). Vive en lib/watch.ts (el
+ *  resumen y el pedido la usan también); se reexporta aquí por compatibilidad. */
+export { formatFecha };
 
 /** Todo lo que se graba en la tapa (más la guía del campo, capa 'guia').
  *  `ink` = color de lo grabado: negro para el láser, gris acero para la vista. */
