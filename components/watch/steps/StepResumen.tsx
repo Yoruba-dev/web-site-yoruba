@@ -8,6 +8,7 @@ import {
   WATCH_CUSTOM_POLICY,
   WATCH_ORIGIN,
   WATCH_PROOF_NOTE,
+  WATCH_RENDER_NOTE,
   describeTrack,
   getAppliquePart,
   getClasp,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/watch";
 import { formatFecha } from "@/lib/watch-art";
 import { lucumiLeg } from "@/lib/odu";
+import WatchStage3D, { useWebGL } from "../WatchStage3D";
 
 /** Paso 6 · Resumen: cada elección con "Editar", el código, compartir y pedir. */
 export default function StepResumen({
@@ -33,6 +35,7 @@ export default function StepResumen({
   onAddToCart,
   added,
   descontinuado,
+  escritorio,
 }: {
   config: WatchConfig;
   goTo: (s: StepId) => void;
@@ -42,8 +45,11 @@ export default function StepResumen({
   onAddToCart: () => void;
   added: boolean;
   descontinuado: readonly Descontinuado[];
+  /** null mientras no se sabe (no se monta ninguna 3D hasta saberlo). */
+  escritorio: boolean | null;
 }) {
   const uid = useId();
+  const webgl = useWebGL();
   const [copiado, setCopiado] = useState<"" | "ok" | "manual">("");
   const rows = resumenRows(config);
   const bloqueos = order.validation.issues.filter((i) => i.nivel === "bloqueo");
@@ -61,6 +67,26 @@ export default function StepResumen({
 
   return (
     <>
+      {/* — "Terminar diseño": el reloj exacto del cliente en 3D. En el móvil
+          va aquí (el escenario fijo se oculta en el resumen); en el escritorio
+          lo muestra el escenario grande de la izquierda (una sola 3D por
+          página). Sin WebGL, la vista de frente. */}
+      {escritorio === false && (
+        <section className="pyj-reloj_3d" aria-labelledby={`${uid}-3d`}>
+          <h3 id={`${uid}-3d`} className="pyj-reloj_3dtitle">
+            {webgl === false ? "Así quedará tu reloj" : "Tu reloj en 3D"}
+          </h3>
+          <WatchStage3D config={config} className="pyj-reloj3d--resumen" />
+          <p className="pyj-reloj_rendernote">{WATCH_RENDER_NOTE}</p>
+        </section>
+      )}
+      {escritorio === true && webgl === true && (
+        <p className="pyj-reloj_3dnota">
+          A la izquierda, tu reloj en 3D: gíralo para verlo por todos lados. Con «Foto» te llevas una foto de
+          estudio del frente y de la tapa.
+        </p>
+      )}
+
       <dl className="pyj-reloj_sum">
         {rows.map((r) => (
           <div className="pyj-reloj_sumrow" key={r.k}>

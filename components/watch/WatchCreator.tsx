@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import WatchStage, { type StageView } from "./WatchStage";
+import { useWebGL } from "./WatchStage3D";
 import WatchEntry from "./WatchEntry";
 import StepCaja from "./steps/StepCaja";
 import StepEsfera from "./steps/StepEsfera";
@@ -63,6 +64,22 @@ export interface CreatorInitial {
   descontinuado: Descontinuado[];
 }
 
+/** El mismo corte que el CSS del creador (escenario fijo a la izquierda). */
+const MQ_ESCRITORIO = "(min-width: 1024px)";
+
+/** true / false según la media query; null en el servidor y al hidratar. */
+function useEscritorio(): boolean | null {
+  return useSyncExternalStore<boolean | null>(
+    (cb) => {
+      const mq = window.matchMedia(MQ_ESCRITORIO);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(MQ_ESCRITORIO).matches,
+    () => null,
+  );
+}
+
 const todayIso = () => {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
@@ -93,6 +110,8 @@ export default function WatchCreator({
   /** La entrada actual del historial la añadió el creador (entrada → editor). */
   const pushed = useRef(false);
   const { addLine, setCartOpen } = useCart();
+  const escritorio = useEscritorio();
+  const webgl = useWebGL();
 
   // El reloj tal como se pide y se comparte: normalizado (sin espacios sueltos,
   // y exactamente lo que se reconstruye desde el enlace).
@@ -203,10 +222,31 @@ export default function WatchCreator({
     return () => window.clearTimeout(t);
   }, [screen, final, step, order.d]);
 
-  // — El escenario sigue al paso: la tapa se ve en "Tu tapa"; el resto, de frente.
+  // — El escenario sigue al paso: la tapa se ve en "Tu tapa"; el resto, de
+  //   frente. "Terminar diseño" (resumen) abre el reloj EN 3D, y solo UNA
+  //   vista 3D por página: en el escritorio, en el escenario grande (que pasa
+  //   solo a "3D" y vuelve al frente al salir del resumen); en el móvil, en el
+  //   propio resumen (el escenario fijo se oculta y no monta la suya).
+  const auto3d = useRef(false);
+  const prevStep = useRef(step);
   useEffect(() => {
-    setView((v) => (step === "tapa" ? "tapa" : v === "tapa" ? "frente" : v));
-  }, [step]);
+    const changed = prevStep.current !== step;
+    prevStep.current = step;
+    if (step === "resumen") {
+      if (escritorio === true && webgl === true) {
+        if (changed || !auto3d.current) {
+          auto3d.current = true;
+          setView("3d");
+        }
+      } else if (changed || escritorio === false) {
+        setView((v) => (v === "3d" || v === "tapa" ? "frente" : v));
+      }
+      return;
+    }
+    if (!changed) return;
+    setView((v) => (step === "tapa" ? "tapa" : v === "tapa" || (auto3d.current && v === "3d") ? "frente" : v));
+    auto3d.current = false;
+  }, [step, escritorio, webgl]);
 
   // — Al cambiar de paso: anunciarlo y llevar el foco al título (sin robarlo
   //   en la primera carga). En el móvil se desplaza para que las PRIMERAS
@@ -223,9 +263,14 @@ export default function WatchCreator({
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const behavior: ScrollBehavior = reduce ? "auto" : "smooth";
     if (window.matchMedia("(max-width: 1023px)").matches) {
-      const first = bodyRef.current?.querySelector<HTMLElement>(
-        ":scope > .pyj-reloj_group, :scope > .pyj-reloj_field, :scope > fieldset, :scope > .pyj-reloj_tabs, :scope > .pyj-reloj_sum, :scope > .pyj-reloj_callout",
-      );
+      // En el resumen no hay escenario fijo encima: se lleva a la cabecera
+      // del paso ("Paso 6 de 6 · Tu reloj"), con el reloj 3D justo debajo.
+      const first =
+        step === "resumen"
+          ? bodyRef.current?.querySelector<HTMLElement>(":scope > .pyj-reloj_stephead")
+          : bodyRef.current?.querySelector<HTMLElement>(
+              ":scope > .pyj-reloj_group, :scope > .pyj-reloj_field, :scope > fieldset, :scope > .pyj-reloj_tabs, :scope > .pyj-reloj_sum, :scope > .pyj-reloj_callout",
+            );
       (first ?? h).scrollIntoView({ block: "start", behavior });
       return;
     }
@@ -356,14 +401,22 @@ export default function WatchCreator({
   const stepProps = { config, dispatch, goTo };
 
   return (
-    <div ref={rootRef} className="pyj-reloj pyj-reloj--editor">
+    <div ref={rootRef} className="pyj-reloj pyj-reloj--editor" data-paso={step}>
       <p className="pyj-reloj_sr" aria-live="polite" role="status">
         {announce}
       </p>
 
       <div className="pyj-reloj_layout">
         <div className="pyj-reloj_stagecol">
-          <WatchStage config={final} view={view} onView={setView} armar={armar} code={order.code} />
+          <WatchStage
+            config={final}
+            view={view}
+            onView={setView}
+            armar={armar}
+            code={order.code}
+            sin3d={step === "resumen" && escritorio !== true}
+            compacto={escritorio === false}
+          />
         </div>
 
         <div className="pyj-reloj_panel">
@@ -424,6 +477,7 @@ export default function WatchCreator({
                 onAddToCart={addToCart}
                 added={added}
                 descontinuado={descontinuado}
+                escritorio={escritorio}
               />
             )}
           </section>
@@ -441,7 +495,7 @@ export default function WatchCreator({
             <span className="pyj-reloj_navprice">{order.priceLabel}</span>
             {next && (
               <button type="button" className="pyj-btn-gold pyj-reloj_next" onClick={() => goTo(next.id)}>
-                {next.id === "resumen" ? "Ver resumen" : `Siguiente: ${next.label}`} ›
+                {next.id === "resumen" ? "Terminar diseño" : `Siguiente: ${next.label}`} ›
               </button>
             )}
           </div>
@@ -466,7 +520,7 @@ export default function WatchCreator({
         </span>
         {next ? (
           <button type="button" className="pyj-btn-gold pyj-reloj_mnext" onClick={() => goTo(next.id)}>
-            {next.id === "resumen" ? "Resumen" : next.label} ›
+            {next.id === "resumen" ? "Terminar" : next.label} ›
           </button>
         ) : (
           <OrderCta

@@ -112,8 +112,8 @@ const head = `// ---------------------------------------------------------------
 //
 // Contornos de las letras del reloj (unidades de la fuente, y hacia ARRIBA) y
 // el interletraje de cada pareja, para convertir el texto de los archivos de
-// producción a curvas (lib/watch-curvas.ts). Solo lo importa el servidor (la
-// hoja del taller): no viaja al navegador.
+// producción a curvas (lib/watch-curvas.ts). Lo importan el servidor (la
+// hoja del taller) y el trozo diferido de la vista 3D; nunca la carga inicial.
 //
 //   py-dial      → ${fonts["py-dial"].family} ${fonts["py-dial"].style} (${fonts["py-dial"].version})
 //   py-dial-fina → ${fonts["py-dial-fina"].family} ${fonts["py-dial-fina"].style} (${fonts["py-dial-fina"].version})

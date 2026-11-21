@@ -1511,3 +1511,325 @@
     display: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   VISTA 3D — components/watch/WatchStage3D.tsx: el "Terminar diseño" del
+   resumen y el chip "3D" del escenario. La escena (three) se descarga solo
+   cuando se pide; mientras tanto se ve el reloj de frente debajo.
+--------------------------------------------------------------------------- */
+.pyj-reloj_3d {
+  margin: 0 0 20px;
+}
+.pyj-reloj_3dtitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_3d .pyj-reloj_rendernote {
+  margin-top: 8px;
+}
+/* Escritorio: el resumen recuerda que el reloj 3D está en el escenario. */
+.pyj-reloj_3dnota {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.06);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dk-text, #d6cbb2);
+}
+
+.pyj-reloj3d {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  /* Las etiquetas de los botones se eligen por el ancho del visor. */
+  container-type: inline-size;
+}
+.pyj-reloj3d_box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid rgba(227, 178, 60, 0.16);
+  background:
+    radial-gradient(60% 55% at 50% 42%, rgba(255, 244, 220, 0.1), transparent 70%),
+    radial-gradient(120% 90% at 50% 100%, rgba(227, 178, 60, 0.06), transparent 60%),
+    #0e0b07;
+}
+/* El compositor de frente (3:4) centrado en la caja mientras llega la 3D. */
+.pyj-reloj3d_box .wf.pyj-reloj3d_front {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  margin: 0 auto;
+}
+.pyj-reloj3d_stage {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.pyj-reloj3d[data-listo] .pyj-reloj3d_stage {
+  opacity: 1;
+}
+.pyj-reloj3d_canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+/* El gesto VERTICAL es del navegador (desplazar la página); el horizontal
+   gira el reloj y el pellizco lo acerca. OrbitControls pone touch-action:
+   none EN LÍNEA en el div de eventos de fiber (.pyj-reloj3d_canvas): el
+   !important de la hoja le gana, y se repite en el lienzo de dentro. */
+.pyj-reloj3d_canvas,
+.pyj-reloj3d_canvas canvas {
+  touch-action: pan-y !important;
+}
+.pyj-reloj3d_stage:focus-visible {
+  outline: 2px solid var(--pyj-gold, #e3b23c);
+  outline-offset: -2px;
+}
+.pyj-reloj3d_canvas:active {
+  cursor: grabbing;
+}
+.pyj-reloj3d_loading,
+.pyj-reloj3d_hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid rgba(227, 178, 60, 0.3);
+  background: rgba(13, 10, 7, 0.84);
+  font-size: 12.5px;
+  color: var(--dk-head, #f1e7d2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pyj-reloj3d_hint {
+  padding: 4px 10px;
+  border-color: transparent;
+  background: rgba(13, 10, 7, 0.55);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--dk-muted, #a99d83);
+}
+.pyj-reloj3d_spin {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(227, 178, 60, 0.25);
+  border-top-color: var(--pyj-gold, #e3b23c);
+  animation: pyj-reloj3d-spin 0.9s linear infinite;
+}
+@keyframes pyj-reloj3d-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.pyj-reloj3d_msg {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--pyj-gold, #e3b23c);
+  background: rgba(13, 10, 7, 0.9);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj3d_msg p {
+  margin: 0;
+}
+
+/* Barra de controles: 3/4 · Frente · Tapa | Modo noche | Descargar foto. */
+.pyj-reloj3d_bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.pyj-reloj3d_group {
+  display: inline-flex;
+}
+.pyj-reloj3d_group .pyj-reloj3d_btn + .pyj-reloj3d_btn {
+  margin-left: -1px;
+}
+.pyj-reloj3d_btn {
+  position: relative;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid rgba(227, 178, 60, 0.28);
+  background: var(--pyj-reloj-surface, #221a10);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dk-text, #d6cbb2);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.pyj-reloj3d_btn:hover:not(:disabled) {
+  border-color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj3d_btn.is-on {
+  z-index: 1;
+  border-color: var(--pyj-gold, #e3b23c);
+  background: rgba(227, 178, 60, 0.14);
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj3d_btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pyj-reloj3d_aviso {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj3d_aviso:empty {
+  display: none;
+}
+
+/* En el escenario del editor: llena la caja 3:4 y la barra flota arriba (a la
+   derecha queda el código del diseño). */
+.pyj-reloj_stagebox.is-3d .pyj-reloj3d--stage {
+  position: absolute;
+  inset: 0;
+  gap: 0;
+}
+.pyj-reloj3d--stage .pyj-reloj3d_box {
+  height: 100%;
+  aspect-ratio: auto;
+  border: 0;
+  background: transparent;
+}
+.pyj-reloj3d--stage .pyj-reloj3d_bar {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  z-index: 3;
+}
+/* En 3D la barra ocupa todo el ancho de arriba: el código del diseño baja a
+   la esquina de abajo (en el móvil se retira; ver abajo). */
+.pyj-reloj_stagebox.is-3d .pyj-reloj_code {
+  top: auto;
+  bottom: 6px;
+  z-index: 3;
+}
+.pyj-reloj3d--stage .pyj-reloj3d_btn {
+  min-height: 32px;
+  padding: 4px 9px;
+  background: rgba(13, 10, 7, 0.78);
+  font-size: 10.5px;
+}
+.pyj-reloj3d--stage .pyj-reloj3d_aviso {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 3;
+}
+
+/* Móvil en horizontal: la caja cuadrada del resumen no pasa del alto de la
+   pantalla (en vertical mide ~350 px y no le afecta). */
+@media (orientation: landscape) and (max-height: 600px) {
+  .pyj-reloj3d--resumen .pyj-reloj3d_box {
+    max-height: 82svh;
+  }
+}
+/* Etiquetas según el ancho del visor: completas ("Descargar foto"), medias
+   ("Foto") o cortas ("3/4", "Lado") en un móvil, para que quepan en una fila. */
+.pyj-reloj3d_l--media,
+.pyj-reloj3d_l--corta {
+  display: none;
+}
+@container (max-width: 599px) {
+  .pyj-reloj3d_l--larga {
+    display: none;
+  }
+  .pyj-reloj3d_l--media {
+    display: inline;
+  }
+}
+@container (max-width: 399px) {
+  .pyj-reloj3d_l--media {
+    display: none;
+  }
+  .pyj-reloj3d_l--corta {
+    display: inline;
+  }
+  .pyj-reloj3d_bar {
+    gap: 4px;
+  }
+  .pyj-reloj3d_btn {
+    padding-left: 7px;
+    padding-right: 7px;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+  }
+}
+.pyj-reloj3d--stage .pyj-reloj3d_hint,
+.pyj-reloj3d--stage .pyj-reloj3d_loading {
+  top: 44px;
+  bottom: auto;
+}
+@media (max-width: 1023px) {
+  /* En el móvil el 3D usa todo el ancho del escenario (no la caja 3:4). */
+  .pyj-reloj_stagebox.is-3d {
+    width: 100%;
+    aspect-ratio: auto;
+  }
+  .pyj-reloj3d--stage .pyj-reloj3d_bar {
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pyj-reloj3d--stage .pyj-reloj3d_btn {
+    flex: 0 0 auto;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  /* En el escenario pequeño del móvil, en 3D, el código (que el resumen
+     muestra en grande) se retira: abajo están los chips de las vistas. */
+  .pyj-reloj_stagebox.is-3d .pyj-reloj_code {
+    display: none;
+  }
+  /* "Terminar diseño": en el resumen el reloj 3D es el protagonista; el
+     escenario fijo de arriba (el mismo reloj de frente) se retira. */
+  .pyj-reloj[data-paso="resumen"] .pyj-reloj_stagecol {
+    display: none;
+  }
+  .pyj-reloj[data-paso="resumen"] .pyj-reloj_stepbody > *,
+  .pyj-reloj[data-paso="resumen"] .pyj-reloj_stephead,
+  .pyj-reloj[data-paso="resumen"] .pyj-reloj_stephead .pyj-reloj_h2 {
+    scroll-margin-top: calc(var(--pyj-reloj-top, 0px) + 12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pyj-reloj3d_spin {
+    animation: none;
+  }
+  .pyj-reloj3d_stage {
+    transition: none;
+  }
+}

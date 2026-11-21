@@ -12,8 +12,11 @@
 // cada letra (arcGlyphs). El resultado no lleva ni un <text>: lo que se ve en
 // la hoja es exactamente lo que se imprime y se graba.
 //
-// Solo para el servidor (la hoja del taller y los chequeos): la tabla de
-// contornos pesa ~116 KB y no debe viajar al navegador.
+// Lo usan el servidor (la hoja del taller y los chequeos) y la vista 3D, que
+// pinta con estos contornos las texturas de la esfera y de la tapa
+// (components/watch/three/tex/paint.ts). La tabla de contornos pesa ~116 KB:
+// solo viaja en ese trozo DIFERIDO (next/dynamic), nunca en la carga inicial
+// de ninguna página. Puro: sin DOM, funciona igual en el navegador.
 // ---------------------------------------------------------------------------
 import { GLYPH_FONTS, type GlyphFont } from "./watch-glyphs";
 import { arcGlyphs, fmt, type ArcText, type DialFont, type PathPrim, type Primitive, type TextRun } from "./watch-art";
