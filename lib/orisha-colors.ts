@@ -5,7 +5,11 @@
 // honor the wearer's Orisha as identity — the piece is a joya de autor, not a
 // consecrated collar. Variations exist between casas de santo.
 
-const HEX: Record<string, string> = {
+// THE colour table of the shop. Exported so lib/watch.ts reads the same values
+// (one table, no drift). The eleke colours come first; the watch-only part
+// colours at the end are physical tones (strap rubber, dial lacquer) that no
+// Orisha palette below uses, so adding them changes nothing for the rings.
+export const HEX: Record<string, string> = {
   rojo: "#c1272d",
   negro: "#1c1c1c",
   blanco: "#efe7d4",
@@ -21,6 +25,12 @@ const HEX: Record<string, string> = {
   coral: "#e8836b",
   rosa: "#dd8aa8",
   lila: "#b48ad9",
+  // — watch-only part colours (lib/watch.ts WATCH_COLORS) —
+  plateado: "#e9eaea",
+  gris: "#7d8186",
+  "azul-marino": "#1c2b4d",
+  naranja: "#e8702a",
+  tan: "#c49a6c",
 };
 
 export interface OrishaPalette {

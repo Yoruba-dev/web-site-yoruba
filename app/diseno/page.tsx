@@ -52,7 +52,10 @@ export default async function DisenoPage({
   const { d } = await searchParams;
   const payload = d ? decodeDesign(d) : null;
 
-  if (!payload) {
+  // A watch link (piece "reloj") must never fall through to the ring sheet
+  // below. Its own WatchSheet lands with the creador de relojes; until then it
+  // gets the same "can't read" card.
+  if (!payload || payload.piece === "reloj") {
     return (
       <section className="pyj-sheet-page">
         <div className="pyj-sheet">

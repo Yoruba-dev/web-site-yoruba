@@ -2,24 +2,21 @@
 // shows as a thumbnail in the cart. Mirrors the shapes in components/configurator/
 // OduGlyph + MotifGlyph as plain strings (the React glyphs can't be rendered to a
 // string off-screen). Gold on a dark signet. Front-face composition (the hero).
-import { getOdu, type Mark } from "./odu";
+import { getOdu, oduMarks, ODU_GLYPH, type Mark } from "./odu";
 import { getPlaceable, type MotifId, type PlacedItem } from "./symbols";
 
 const GOLD = "#e3b23c";
 
-// One Odù column at horizontal center `cx`.
+// One Odù column at horizontal center `cx`, in the chart's 106-tall cell. The
+// bars come from oduMarks() (lib/odu.ts), the geometry every surface shares.
 function colInner(marks: readonly Mark[], cx: number): string {
-  const rowY = [8, 33, 58, 83];
-  const h = 15;
-  const half = 7;
-  let s = "";
-  marks.forEach((m, r) => {
-    const xs = m === 2 ? [cx - half, cx + half] : [cx];
-    xs.forEach((x) => {
-      s += `<rect x="${x - 2.5}" y="${rowY[r]}" width="5" height="${h}" rx="2" fill="${GOLD}"/>`;
-    });
-  });
-  return s;
+  const box = { x: cx - ODU_GLYPH.colW / 2, y: 0, w: ODU_GLYPH.colW, h: ODU_GLYPH.colH };
+  return oduMarks(marks, box)
+    .map(
+      (r) =>
+        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="${r.rx}" fill="${GOLD}"/>`,
+    )
+    .join("");
 }
 
 // A motif in a 100×100 box (mirrors MotifGlyph).
