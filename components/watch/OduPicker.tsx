@@ -1,5 +1,6 @@
 "use client";
 
+import "@/app/creador-de-relojes/odu-picker.css";
 import { useEffect, useId, useRef, useState } from "react";
 import OduGlyph from "@/components/configurator/OduGlyph";
 import ComposedInput from "./ComposedInput";
@@ -145,7 +146,8 @@ export default function OduPicker({
                 dibuja el signo. En el DOM va primero la derecha: se lee primero. */}
             <div className="pyj-reloj_combocol pyj-reloj_combocol--der">
               <LegPicker
-                label="Derecha (se lee primero)"
+                label="Derecha"
+                hint="Se lee primero"
                 value={derecha}
                 onChange={(id) => {
                   setDerecha(id);
@@ -170,6 +172,7 @@ export default function OduPicker({
             <div className="pyj-reloj_combocol pyj-reloj_combocol--izq">
               <LegPicker
                 label="Izquierda"
+                hint="Se lee después"
                 value={izquierda}
                 onChange={(id) => {
                   setIzquierda(id);
@@ -234,11 +237,14 @@ export default function OduPicker({
 /** Las 16 piernas, cada una dibujada como UNA columna (la "torre"). */
 function LegPicker({
   label,
+  hint,
   value,
   onChange,
   columna,
 }: {
   label: string;
+  /** Misma estructura en las dos piernas para que las cabeceras queden parejas. */
+  hint: string;
   value: string | null;
   onChange: (id: string) => void;
   columna: "left" | "right";
@@ -246,6 +252,7 @@ function LegPicker({
   return (
     <OptionGroup<string>
       label={label}
+      hint={hint}
       variant="tiles"
       value={value}
       onChange={onChange}

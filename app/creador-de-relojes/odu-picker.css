@@ -1,0 +1,55 @@
+/* ---------------------------------------------------------------------------
+   "Mi signo es una combinación": las dos piernas, PAREJAS.
+
+   En escritorio las dos columnas van lado a lado (~168 px cada una). Antes la
+   cabecera de la derecha ("Derecha (se lee primero)") ocupaba dos líneas y la
+   de la izquierda una, así que las dos rejillas quedaban a distinta altura; y
+   las fichas de 4 × 4 medían ~37 px, donde "Otrupon" u "Oyekun" no caben.
+   Ahora: cabeceras con la misma estructura y la misma altura, y cada pierna
+   es una lista de 2 columnas con el signo a la izquierda y el nombre entero.
+   En el móvil (< 1024 px) las columnas van una debajo de otra a todo el ancho
+   y la rejilla de 4 × 4 de reloj.css se queda como está.
+--------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .pyj-reloj_combo .pyj-reloj_combocols {
+    align-items: start;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_grouphead {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 2px;
+    min-height: 38px;
+    margin-bottom: 8px;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_grouphint {
+    font-size: 11.5px;
+    line-height: 1.3;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_rail--tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 6px;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_opt {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_optvis {
+    flex: 0 0 14px;
+    min-height: 0;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_legglyph {
+    height: 28px;
+  }
+  .pyj-reloj_combo .pyj-reloj_combocol .pyj-reloj_optlabel {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}
