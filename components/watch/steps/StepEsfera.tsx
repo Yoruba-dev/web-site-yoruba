@@ -8,6 +8,7 @@ import OduPicker from "../OduPicker";
 import { BeadRow, GradientDial, LayerThumb, swatchHex } from "../Swatches";
 import { layerUrl } from "../creator-state";
 import { preloadWatchLayers } from "../WatchFront";
+import { preloadImage } from "../front/preload";
 import { lostChars, tileState, type StepProps } from "./types";
 import { previewPart } from "./preview";
 import {
@@ -62,6 +63,7 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
   const [rechazado, setRechazado] = useState(false);
   const issues = validate(config).issues;
   const motivoDe = (campo: string) => issues.find((i) => i.campo === campo && i.nivel === "bloqueo")?.motivo;
+  const avisoSigno = issues.find((i) => i.regla === "contraste-signo")?.motivo;
   const bases = visibleParts(DIAL_BASES);
   const lisas = bases.filter((b) => !b.degradado);
   const degradados = bases.filter((b) => b.degradado);
@@ -115,10 +117,12 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
               ...baseTile(b),
               label: g.orisha,
               detalle: `${g.nombres[0]} → ${g.nombres[1]}`,
+              // Solo la elegida sigue el paso; las demás, el del medio (así mover
+              // el ajuste no recarga las 11 fotos a la vez).
               visual: (
                 <LayerThumb
                   crop="esfera"
-                  layers={[layerUrl(`esfera-degradado-${g.key}-p${paso ?? 3}`)]}
+                  layers={[layerUrl(`esfera-degradado-${g.key}-p${b.id === e.base && paso ? paso : 3}`)]}
                   fallbackHex={swatchHex(b.swatch)}
                 />
               ),
@@ -138,7 +142,11 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
             }}
             onPreview={(id) => {
               const n = Number(id);
-              if (isGradientStep(n)) void preloadWatchLayers(withGradientStep(config, n));
+              if (!isGradientStep(n)) return;
+              void preloadWatchLayers(withGradientStep(config, n));
+              // …y la miniatura de su ficha en ese paso.
+              const thumb = layerUrl(`esfera-degradado-${grad.key}-p${n}`);
+              if (thumb) void preloadImage(thumb);
             }}
             options={DIAL_GRADIENT_STEPS.map((n) => ({
               id: String(n),
@@ -269,6 +277,11 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
                   { id: "seis", label: "A las 6", detalle: "Sobre el texto" },
                 ]}
               />
+            )}
+            {avisoSigno && (
+              <p className="pyj-reloj_note" role="status">
+                {avisoSigno}
+              </p>
             )}
           </>
         ))}

@@ -46,6 +46,8 @@ async function main() {
   const W = await import("../lib/watch");
   const C = await import("../lib/watch-capas");
   const { default: WatchFront } = await import("../components/watch/WatchFront");
+  // Las letras en curvas, como la imprenta y la vista previa (front/curvas.ts).
+  await (await import("../components/watch/front/curvas")).loadOutline();
 
   // ------------------------------------------------------------------------
   // 1 · Comprobaciones de capas

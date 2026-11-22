@@ -37,10 +37,10 @@ import {
   WATCH_MATERIALS,
   WATCH_SPECS,
   beadAt,
-  DIAL_NAME_Y,
-  contrastRatio,
+  DIAL_NAME_SPAN,
   dialColorAt,
-  dialInkAt,
+  dialInkOver,
+  dialMinContrast,
   formatFecha,
   getDialBase,
   getFinish,
@@ -225,7 +225,9 @@ export const DIAL_LAYOUT = {
   /** Hueco del aplique PY (6 mm de alto bajo las 12, plano del proveedor). */
   applique: { cx: 0, cy: -5.6, w: 5.0, h: WATCH_SPECS.appliqueMm },
   /** Texto sobre las 6: línea base, tamaño, espaciado (em) y ancho máximo. */
-  name: { baseline: 7.6, size: 1.55, trackEm: 0.09, maxW: 12.5, weight: 600 },
+  // weight 400 = Cinzel Regular, el de los contornos de imprenta (dueño
+  // 2026-11-22). La vista previa pinta esos contornos (components/watch/front/curvas).
+  name: { baseline: 7.6, size: 1.55, trackEm: 0.09, maxW: 12.5, weight: 400 },
   /** Signo Odù: centro y alto de la TINTA (de la primera a la última fila).
    *  'seis' es lo más grande que cabe entre el eje (1.95) y la tilde del nombre
    *  (≈ 6.05) con 0.3 mm de aire: 3.8 mm → barras de 0.21 mm (requiere la
@@ -260,7 +262,7 @@ export const DIAL_LAYOUT = {
     barScale: 1.6,
     /** Aire mínimo de un signo del anillo a la ventana de fecha y su marco. */
     air: 0.3,
-    name: { baseline: 7.75, size: 1.75, trackEm: 0.32, maxW: 11.5, weight: 600 },
+    name: { baseline: 7.75, size: 1.75, trackEm: 0.32, maxW: 11.5, weight: 400 },
   },
 } as const;
 
@@ -452,8 +454,9 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   // Color de la esfera y tinta a una altura (mm, + hacia abajo): fijos en una
   // esfera lisa; en un degradado, los que quedan DEBAJO de cada pieza impresa
   // (lib/watch.ts dialInkAt: dorada clara, dorada oscura o negra).
+  // Cada pieza se mide en TODA su altura (y0–y1), no solo en su centro.
   const bgAt = (y: number) => dialColorAt(c.esfera, y);
-  const inkAt = (y: number) => dialInkAt(c.esfera, y).hex;
+  const inkOver = (y0: number, y1: number) => dialInkOver(c.esfera, y0, y1).hex;
   const baseHex = base.degradado ? bgAt(0) : WATCH_COLORS[base.color].hex;
   const rim = rimMetalHex(c);
   const lume = WATCH_MATERIALS.lume;
@@ -477,7 +480,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   const seq = orisha ? TRACK_SEQUENCES[orisha] : undefined;
   // Un color que casi desaparece sobre la esfera lleva un filo de tinta (cuentas)
   // o se imprime en tinta (rayas): blanco sobre blanco, rojo sobre rojo…
-  const lowContrast = (hex: string, y: number) => contrastRatio(hex, bgAt(y)) < 1.6;
+  const lowContrast = (hex: string, y0: number, y1: number) => dialMinContrast(c.esfera, hex, y0, y1) < 1.6;
   for (let i = 0; i < 60; i++) {
     const deg = i * 6;
     if (estilo === "cuentas" && seq) {
@@ -492,7 +495,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
         cy: p.y,
         r,
         fill: hex,
-        ...(lowContrast(hex, p.y) ? { stroke: inkAt(p.y), strokeWidth: 0.07 } : {}),
+        ...(lowContrast(hex, p.y - r, p.y + r) ? { stroke: inkOver(p.y - r, p.y + r), strokeWidth: 0.07 } : {}),
       });
       if (b.raya) {
         // La cuenta rayada: una banda a lo ancho, tangente a la pista.
@@ -511,9 +514,12 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
       const major = i % 5 === 0;
       const t = major ? L.track.major : L.track.minor;
       const p = polar(L.track.outerR - t.len / 2, deg);
-      const ink = inkAt(p.y);
+      // Media altura de la raya girada (su eje largo apunta al centro).
+      const rad = (deg * Math.PI) / 180;
+      const hy = Math.abs((t.len / 2) * Math.cos(rad)) + Math.abs((t.w / 2) * Math.sin(rad));
+      const ink = inkOver(p.y - hy, p.y + hy);
       const want = seq ? WATCH_COLORS[beadAt(seq, i).color].hex : ink;
-      const hex = lowContrast(want, p.y) ? ink : want;
+      const hex = lowContrast(want, p.y - hy, p.y + hy) ? ink : want;
       out.push({ kind: "rect", capa: "impresion", x: p.x - t.w / 2, y: p.y - t.len / 2, w: t.w, h: t.len, rotate: deg, fill: hex });
     }
   }
@@ -535,7 +541,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
       letterSpacing: size * N.trackEm,
       weight: N.weight,
       maxWidth: N.maxW,
-      fill: inkAt(DIAL_NAME_Y),
+      fill: inkOver(...DIAL_NAME_SPAN),
     });
   }
 
@@ -544,14 +550,16 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   if (ifa) {
     for (const s of ifaSignSlots()) {
       out.push(
-        ...signPrimitives({ tipo: "meyi", oduId: s.oduId }, s.cx, s.cy, L.ifa.inkH, inkAt(s.cy), "impresion", "barras", {
+        ...signPrimitives({ tipo: "meyi", oduId: s.oduId }, s.cx, s.cy, L.ifa.inkH, inkOver(s.cy - L.ifa.inkH / 2, s.cy + L.ifa.inkH / 2), "impresion", "barras", {
           barScale: L.ifa.barScale,
         }),
       );
     }
   } else if (c.esfera.signo) {
     const s = L.sign[c.esfera.signoPos];
-    out.push(...signPrimitives(c.esfera.signo, s.cx, s.cy, s.inkH, inkAt(s.cy), "impresion"));
+    // Una sola tinta para todo el signo (la mejor en toda su altura; si ni
+    // así llega a 3:1, la regla 'contraste-signo' avisa al cliente).
+    out.push(...signPrimitives(c.esfera.signo, s.cx, s.cy, s.inkH, inkOver(s.cy - s.inkH / 2, s.cy + s.inkH / 2), "impresion"));
   }
 
   // 5 · Ventana de fecha (el disco blanco se ve a través del hueco).
@@ -662,7 +670,7 @@ export function casebackPrimitives(c: WatchConfig, opts: { ink?: string } = {}):
     spanDeg: 360,
     font: "py-dial",
     size: L.ring.size,
-    weight: 600,
+    weight: 400,
     fill: ink,
   };
   const brand = CASEBACK_RING_TEXT.indexOf(" ·");
@@ -684,6 +692,9 @@ export function casebackPrimitives(c: WatchConfig, opts: { ink?: string } = {}):
   // Ancho útil a la altura y (cuerda del círculo central menos el margen).
   const chord = (y: number) => 2 * Math.sqrt(Math.max(0, L.centerR ** 2 - y ** 2)) - 2 * L.margin;
 
+  // El grosor de los contornos del láser (dueño 2026-11-22: igual que imprenta):
+  // Cinzel Regular (400) o Cormorant Light (300).
+  const regular = font === "py-dial-fina" ? 300 : 400;
   const textItem = (text: string, spec: { size: number; trackEm: number }, weight: number) => {
     const capH = spec.size * 0.72;
     items.push({
@@ -717,12 +728,12 @@ export function casebackPrimitives(c: WatchConfig, opts: { ink?: string } = {}):
       draw: (top) => out.push(...signPrimitives(sign, 0, top + inkH / 2, inkH, ink, "grabado", c.tapa.marcas)),
     });
     const name = signName(sign);
-    if (name) textItem(name, L.name, 600);
+    if (name) textItem(name, L.name, regular);
   }
   // Sin signo, el texto es lo único del centro: se graba más grande.
   const big = c.tapa.signo ? 1 : 1.3;
-  for (const line of lines) textItem(line, { ...L.line, size: L.line.size * big }, 500);
-  if (fecha) textItem(fecha, { ...L.fecha, size: L.fecha.size * big }, 500);
+  for (const line of lines) textItem(line, { ...L.line, size: L.line.size * big }, regular);
+  if (fecha) textItem(fecha, { ...L.fecha, size: L.fecha.size * big }, regular);
 
   if (items.length) {
     const total = items.reduce((s, it) => s + it.h, 0) + L.gap * (items.length - 1);

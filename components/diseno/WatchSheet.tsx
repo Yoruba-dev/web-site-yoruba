@@ -14,11 +14,10 @@ import {
   DIAL_GRADIENT_CENTERS,
   DIAL_GRADIENT_WIDTH,
   DIAL_INK_NOMBRE,
-  DIAL_NAME_Y,
+  DIAL_NAME_SPAN,
   WATCH_MATERIALS,
   designCode,
-  dialColorAt,
-  dialInkAt,
+  dialInkOver,
   getAppliquePart,
   getClasp,
   getDialBase,
@@ -85,15 +84,18 @@ export default function WatchSheet({
   const finish = getFinish(c.acabado);
   const base = getDialBase(c.esfera.base);
   const strap = getStrap(c.correa);
-  const ink = dialInkAt(c.esfera, DIAL_NAME_Y);
+  const ink = dialInkOver(c.esfera, ...DIAL_NAME_SPAN);
+  const conNombre = c.esfera.texto.trim() !== "";
   const grad = base?.degradado;
   const paso = gradientStepOf(c.esfera);
   // Las tintas que de verdad lleva la impresión (en un degradado, cada pieza la
   // suya según el color que tiene debajo), en el orden en que aparecen.
-  const tintas = (["oro", "oro-oscuro", "negra"] as const).filter((id) => {
-    const hex = WATCH_MATERIALS[id === "oro" ? "tinta-oro" : id === "oro-oscuro" ? "tinta-oro-oscuro" : "tinta-negra"];
-    return dialPrimitives(c).some((q) => q.capa === "impresion" && (q.fill === hex || q.stroke === hex));
-  });
+  const tintaHex = (id: "oro" | "oro-oscuro" | "negra") =>
+    WATCH_MATERIALS[id === "oro" ? "tinta-oro" : id === "oro-oscuro" ? "tinta-oro-oscuro" : "tinta-negra"];
+  const impresion = dialPrimitives(c).filter((q) => q.capa === "impresion");
+  const tintas = (["oro", "oro-oscuro", "negra"] as const).filter((id) =>
+    impresion.some((q) => q.fill === tintaHex(id) || q.stroke === tintaHex(id)),
+  );
   const seq = c.esfera.pista.orisha ? TRACK_SEQUENCES[c.esfera.pista.orisha] : null;
 
   // La ficha: las mismas propiedades que lleva el pedido (lineProperties: una
@@ -123,11 +125,13 @@ export default function WatchSheet({
     {
       key: "Tinta del texto",
       value: grad
-        ? `Por zonas (degradado): cada pieza impresa en la tinta que contrasta con el color que tiene debajo. Nombre a las 6: ${DIAL_INK_NOMBRE[
-            ink.id
-          ].toLowerCase()} ${ink.hex} · ${ink.contraste.toFixed(1)}:1 sobre ${dialColorAt(c.esfera, DIAL_NAME_Y)}. Tintas en esta esfera: ${tintas
-            .map((t) => DIAL_INK_NOMBRE[t].toLowerCase())
-            .join(", ")}.`
+        ? `Por zonas (degradado): cada pieza impresa en la tinta que llega a 3:1 sobre TODO el color que tiene debajo (ver el archivo de impresión). Tintas en esta esfera: ${tintas
+            .map((t) => `${DIAL_INK_NOMBRE[t].toLowerCase()} ${tintaHex(t)}`)
+            .join(", ")}.${
+            conNombre
+              ? ` Nombre a las 6: ${DIAL_INK_NOMBRE[ink.id].toLowerCase()} ${ink.hex} · mínimo ${ink.contraste.toFixed(1)}:1.`
+              : ""
+          }`
         : `${DIAL_INK_NOMBRE[ink.id]} ${ink.hex} · contraste ${ink.contraste.toFixed(1)}:1 sobre ${lower(
             WATCH_COLORS[base?.color ?? "blanco"].nombre,
           )}`,

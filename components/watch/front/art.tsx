@@ -9,8 +9,11 @@
 // y las agujas son HANDS en handPose(c). Aquí solo se añade cómo se VEN: tinta
 // con un relieve mínimo, metal pulido con su sombra, lume, cristal.
 //
-// Sin hooks: lo pinta igual el servidor, el cliente y el arnés
-// (scripts/render-watchfront.tsx). Los filtros van en px de la plantilla (se
+// Un solo hook (useOutline, ./curvas): las letras de PrintArt y CasebackArt
+// salen con los MISMOS contornos que el archivo de imprenta en cuanto carga
+// la tabla; antes (y al hidratar), con la fuente de la web. El arnés
+// (scripts/render-watchfront.tsx) la carga antes de pintar, así que sus
+// capturas ya salen en curvas. Los filtros van en px de la plantilla (se
 // aplican a un <g> exterior al MM_TRANSFORM), así que las sombras miden lo
 // mismo en cualquier tamaño de pantalla.
 //
@@ -38,6 +41,7 @@ import {
 } from "@/lib/watch-art";
 import { WATCH_COLORS, WATCH_MATERIALS, getDialBase, getSecondsPart, type FinishId, type WatchConfig } from "@/lib/watch";
 import { MM_TRANSFORM, PLANTILLA, R_VENTANA_PX, TAPA_FOTO, tapaUrl } from "@/lib/watch-capas";
+import { useOutline } from "./curvas";
 
 const { CX, CY, PX_POR_MM } = PLANTILLA;
 const f = (n: number) => fmt(n, 3);
@@ -209,9 +213,12 @@ function Mm({ children, filter }: { children: ReactNode; filter?: string }) {
 }
 
 /** La impresión del taller: pista, texto a las 6 y signo (o los 16 Meyis),
- *  exactamente como en dialPrintSvg (mismas primitivas, mismo SVG). */
+ *  exactamente como en dialPrintSvgCurvas: mismas primitivas y, en cuanto
+ *  carga la tabla (./curvas), las MISMAS letras en curvas que la imprenta. */
 export function PrintArt({ c, p, q }: { c: WatchConfig; p: string; q: string }) {
-  const prims = dialPrimitives(c).filter((x) => x.capa === "impresion");
+  const outline = useOutline();
+  const raw = dialPrimitives(c).filter((x) => x.capa === "impresion");
+  const prims = outline ? outline(raw) : raw;
   const svg = primitivesToSvg(prims, { idPrefix: `${q}-imp`, decimals: 3 });
   return (
     <g clipPath={`url(#${p}-ventana)`}>
@@ -542,11 +549,12 @@ export function CasebackArt({ c, p }: { c: WatchConfig; p: string }) {
   const tinte = TAPA_TINTE[fin];
   const T = TAPA_FOTO;
   const side = T.size * T.k;
-  const grab = (ink: string, pre: string) =>
-    primitivesToSvg(
-      casebackPrimitives(c, { ink }).filter((x) => x.capa === "grabado"),
-      { idPrefix: pre, decimals: 3 },
-    );
+  // Las letras del grabado = las del archivo láser (curvas), en cuanto cargan.
+  const outline = useOutline();
+  const grab = (ink: string, pre: string) => {
+    const prims = casebackPrimitives(c, { ink }).filter((x) => x.capa === "grabado");
+    return primitivesToSvg(outline ? outline(prims) : prims, { idPrefix: pre, decimals: 3 });
+  };
   // El grabado a escala real (1 mm = PX_POR_MM), centrado en el disco.
   const mm = `translate(${CX} ${CY}) scale(${PX_POR_MM})`;
   return (

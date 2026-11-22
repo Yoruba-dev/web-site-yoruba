@@ -103,8 +103,14 @@ import {
   DIAL_GRADIENT_DEFAULT,
   DIAL_GRADIENT_STEPS,
   DIAL_GRADIENT_WIDTH,
-  DIAL_NAME_Y,
+  DIAL_NAME_SPAN,
+  DIAL_SIGN_SPANS,
+  SECONDS,
+  WATCH_COLORS,
   canonicalJson,
+  contrastRatio,
+  dialInkOver,
+  dialMinContrast,
   dialColorAt,
   dialInkAt,
   gradientMix,
@@ -368,6 +374,7 @@ section("every RULE fires on a blocked example", () => {
     "texto-tapa": { c: tapa({ linea1: "<script>" }) },
     "fecha-tapa": { c: tapa({ fecha: "2025-02-30" }) },
     "contraste-segundero": { c: withPatch(esf({ base: "blanco" }), { segundero: "blanco" }) },
+    "contraste-signo": { c: esf({ base: "degradado-yemaya", degradado: 3, signo: COMBO, signoPos: "seis" }) },
     "ifa-sin-signo": { c: esf({ modelo: "ifa", texto: DIAL_TEXT_IFA, signo: null }) },
   };
   for (const rule of RULES) {
@@ -1231,41 +1238,120 @@ section("gradient dials: same colours as the layers, every step legible, the ste
   // Step 1 keeps more of the top colour at the centre than step 5.
   ok(gradientMix(1, 0) < gradientMix(3, 0) && gradientMix(3, 0) < gradientMix(5, 0), "gradient steps do not move the blend");
 
-  // 3 · The name sample height sits inside the name line of both dials.
-  for (const N of [DIAL_LAYOUT.name, DIAL_LAYOUT.ifa.name])
-    ok(DIAL_NAME_Y < N.baseline && DIAL_NAME_Y > N.baseline - N.size, `DIAL_NAME_Y ${DIAL_NAME_Y} is outside the name (${N.baseline})`);
-
-  // 4 · Every gradient × step × dial model × sign position: the name, the sign
-  //     and the 16 Meyis all reach 3:1 against the colour under them, and
-  //     validate() never blocks on contrast.
+  // 3 + 4 · Every printed piece in one of the three inks reaches 3:1 over ITS
+  //     OWN height (not just its centre: a 4 mm sign crosses part of the blend),
+  //     for every gradient × step × dial (classic with the sign at 9 and at 6,
+  //     plain-striped track with a name, Esfera Ifá). Letters are measured by
+  //     their real outline; the name also stays inside DIAL_NAME_SPAN, the span
+  //     its ink is chosen for. validate() never blocks on contrast.
+  const INKS = [WATCH_MATERIALS["tinta-oro"], WATCH_MATERIALS["tinta-oro-oscuro"], WATCH_MATERIALS["tinta-negra"]] as string[];
+  const yExtent = (q: Primitive): [number, number] | null => {
+    if (q.kind === "circle") return [q.cy - q.r, q.cy + q.r];
+    if (q.kind === "rect") {
+      const cy = q.y + q.h / 2;
+      const rad = ((q.rotate ?? 0) * Math.PI) / 180;
+      const hy = Math.abs((q.h / 2) * Math.cos(rad)) + Math.abs((q.w / 2) * Math.sin(rad));
+      return [cy - hy, cy + hy];
+    }
+    const b = q.kind === "text" ? pathBounds(textRunToPath(q).d) : q.kind === "path" ? pathBounds(q.d) : null;
+    return b ? [b[1], b[3]] : null;
+  };
   const ifaBase = resolvePreset("ifa", disp);
   const base0 = resolvePreset("orula", disp);
+  const cero = { ...resolvePreset("cero", disp) };
+  let measured = 0;
+  let warned = 0;
+  // DIAL_SIGN_SPANS (used by the warning) = the sign's real ink box.
+  for (const pos of ["nueve", "seis"] as const) {
+    const S = DIAL_LAYOUT.sign[pos];
+    ok(
+      Math.abs(DIAL_SIGN_SPANS[pos][0] - (S.cy - S.inkH / 2)) < 1e-9 && Math.abs(DIAL_SIGN_SPANS[pos][1] - (S.cy + S.inkH / 2)) < 1e-9,
+      `DIAL_SIGN_SPANS.${pos} differs from DIAL_LAYOUT.sign`,
+    );
+  }
   for (const g of DIAL_GRADIENTS)
     for (const n of DIAL_GRADIENT_STEPS) {
       const id = `degradado-${g.key}` as DialBaseId;
-      for (const pos of ["nueve", "seis"] as const) {
-        const c = withGradientStep(
-          withPart({ ...base0, esfera: { ...base0.esfera, signo: COMBO, signoPos: pos } }, "esfera", id),
-          n,
-        );
-        ok(c.esfera.base === id && c.esfera.degradado === n, `${g.key} p${n}: step not stored`);
-        const name = dialInkAt(c.esfera, DIAL_NAME_Y);
-        ok(name.contraste >= 3, `${g.key} p${n}: name ${name.contraste.toFixed(2)}:1`);
-        const s = DIAL_LAYOUT.sign[pos];
-        const si = dialInkAt(c.esfera, s.cy);
-        ok(si.contraste >= 3, `${g.key} p${n}: sign at ${pos} ${si.contraste.toFixed(2)}:1`);
-        ok(!validate(c).issues.some((i) => i.regla === "contraste-texto"), `${g.key} p${n}: contrast blocks the order`);
+      const cases: [string, WatchConfig][] = [
+        ...(["nueve", "seis"] as const).map((pos): [string, WatchConfig] => [
+          `sign at ${pos}`,
+          withGradientStep(withPart({ ...base0, esfera: { ...base0.esfera, signo: COMBO, signoPos: pos } }, "esfera", id), n),
+        ]),
+        ["plain track + name", withGradientStep(withPart({ ...cero, esfera: { ...cero.esfera, texto: "BABALÚ AYÉ" } }, "esfera", id), n)],
+        ["Esfera Ifá", withGradientStep(withPart(ifaBase, "esfera", id), n)],
+      ];
+      for (const [what, c] of cases) {
+        ok(c.esfera.base === id && c.esfera.degradado === n, `${g.key} p${n} ${what}: step not stored`);
+        ok(!validate(c).issues.some((i) => i.regla === "contraste-texto"), `${g.key} p${n} ${what}: contrast blocks the order`);
+        for (const q of dialPrimitives(c)) {
+          if (q.capa !== "impresion") continue;
+          const ink = q.fill && INKS.includes(q.fill) ? q.fill : q.stroke && INKS.includes(q.stroke) ? q.stroke : null;
+          if (!ink) continue; // the Orisha's bead colours are decoration, not ink
+          const ext = yExtent(q);
+          ok(ext, `${g.key} p${n} ${what}: a printed ${q.kind} has no measurable height`);
+          if (!ext) continue;
+          measured++;
+          const min = dialMinContrast(c.esfera, ink, ext[0], ext[1]);
+          // The personal sign is one ink for the whole sign: where no ink can
+          // reach 3:1 over its height, the customer must get 'contraste-signo'.
+          const signBar = what.startsWith("sign") && q.kind === "rect" && q.rotate === undefined;
+          if (signBar && min < 3) {
+            warned++;
+            ok(min >= 2.5, `${g.key} p${n} ${what}: a sign bar is only ${min.toFixed(2)}:1`);
+            ok(
+              validate(c).issues.some((i) => i.regla === "contraste-signo"),
+              `${g.key} p${n} ${what}: a sign bar is ${min.toFixed(2)}:1 and the customer is not warned`,
+            );
+          } else
+            ok(min >= 3, `${g.key} p${n} ${what}: a printed ${q.kind} at y ${ext[0].toFixed(2)}–${ext[1].toFixed(2)} is ${min.toFixed(2)}:1 in ${ink}`);
+          if (q.kind === "text")
+            ok(
+              ext[0] >= DIAL_NAME_SPAN[0] && ext[1] <= DIAL_NAME_SPAN[1],
+              `${g.key} p${n} ${what}: the name (${ext[0].toFixed(2)}–${ext[1].toFixed(2)}) leaves DIAL_NAME_SPAN`,
+            );
+        }
       }
-      const ifa = withGradientStep(withPart(ifaBase, "esfera", id), n);
-      for (const slot of ifaSignSlots()) {
-        const k = dialInkAt(ifa.esfera, slot.cy);
-        ok(k.contraste >= 3, `${g.key} p${n}: Meyi ${slot.oduId} ${k.contraste.toFixed(2)}:1`);
-      }
-      // The print really uses those inks (not the solid-dial one).
-      const INKS = [WATCH_MATERIALS["tinta-oro"], WATCH_MATERIALS["tinta-oro-oscuro"], WATCH_MATERIALS["tinta-negra"]] as string[];
+      // The Ifá ring really prints in the inks (not the solid-dial one).
+      const ifa = cases[3][1];
       const used = new Set(dialPrimitives(ifa).flatMap((q) => (q.capa === "impresion" && q.fill && INKS.includes(q.fill) ? [q.fill] : [])));
       ok(used.size >= 1, `${g.key} p${n}: the Ifá dial prints in none of the three inks`);
     }
+  ok(measured > 5000, `only ${measured} printed pieces measured`);
+  ok(warned < 60, `${warned} sign bars below 3:1 (expected only a handful of rare sign/step combinations)`);
+  // The warning never fires where the sign is fine.
+  for (const g of DIAL_GRADIENTS)
+    for (const n of DIAL_GRADIENT_STEPS)
+      for (const pos of ["nueve", "seis"] as const) {
+        const c = withGradientStep(withPart({ ...base0, esfera: { ...base0.esfera, signo: COMBO, signoPos: pos } }, "esfera", `degradado-${g.key}` as DialBaseId), n);
+        const best = dialInkOver(c.esfera, ...DIAL_SIGN_SPANS[pos]).contraste;
+        const fires = validate(c).issues.some((i) => i.regla === "contraste-signo");
+        ok(fires === best < 3, `${g.key} p${n} sign at ${pos}: best ink ${best.toFixed(2)}:1 but warning ${fires ? "on" : "off"}`);
+      }
+  // The exact minimum agrees with fine sampling (the method behind every check above).
+  {
+    const e = { base: "degradado-chango" as DialBaseId, degradado: 4 as const };
+    let dense = Infinity;
+    for (let y = 1.95; y <= 5.75; y += 0.01) dense = Math.min(dense, contrastRatio(WATCH_MATERIALS["tinta-oro"], dialColorAt(e, y)));
+    ok(Math.abs(dialMinContrast(e, WATCH_MATERIALS["tinta-oro"], 1.95, 5.75) - dense) < 0.02, "dialMinContrast disagrees with sampling");
+  }
+
+  // 4b · The seconds-hand warning sees the WHOLE dial: it fires exactly when
+  //      the hand drops under 1.3:1 somewhere it sweeps (fine sampling).
+  const RV = WATCH_SPECS.aberturaVisibleMm / 2;
+  for (const g of DIAL_GRADIENTS)
+    for (const n of DIAL_GRADIENT_STEPS)
+      for (const h of SECONDS) {
+        const c = { ...withGradientStep(withPart(base0, "esfera", `degradado-${g.key}` as DialBaseId), n), segundero: h.id };
+        let dense = Infinity;
+        for (let y = -RV; y <= RV; y += 0.05) dense = Math.min(dense, contrastRatio(WATCH_COLORS[h.color].hex, dialColorAt(c.esfera, y)));
+        const fires = validate(c).issues.some((i) => i.regla === "contraste-segundero");
+        if (dense < 1.29) ok(fires, `${g.key} p${n} + ${h.id}: hand at ${dense.toFixed(2)}:1 but no warning`);
+        if (dense > 1.31) ok(!fires, `${g.key} p${n} + ${h.id}: warning although the hand stays at ${dense.toFixed(2)}:1`);
+      }
+  {
+    const c = { ...withGradientStep(withPart(base0, "esfera", "degradado-chango"), 3), segundero: "rojo" as const };
+    ok(validate(c).issues.some((i) => i.regla === "contraste-segundero"), "Changó p3 + red hand (vanishes in the blend) gives no warning");
+  }
 
   // 5 · Solid dials keep exactly their old ink (best of the two golds).
   for (const b of DIAL_BASES.filter((x) => !x.degradado && x.status === "verificado")) {

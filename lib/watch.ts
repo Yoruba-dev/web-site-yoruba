@@ -257,6 +257,7 @@ export type DialGradientKey =
   | "orula"
   | "eleggua"
   | "chango"
+  | "chango-vino"
   | "yemaya"
   | "oshun"
   | "oya"
@@ -295,6 +296,9 @@ export const DIAL_GRADIENTS: readonly (DialGradient & { color: WatchColorId })[]
   { key: "orula", orisha: "Orula", arriba: "#e8c022", abajo: "#0e622a", nombres: ["amarillo", "verde"], color: "verde" },
   { key: "eleggua", orisha: "Elegguá", arriba: "#b2141a", abajo: "#100e0e", nombres: ["rojo", "negro"], color: "negro" },
   { key: "chango", orisha: "Changó", arriba: "#eeeae4", abajo: "#a81018", nombres: ["blanco", "rojo"], color: "rojo" },
+  // El dueño (2026-11-22): blanco → rojo se ve rosado en el medio; se AÑADE
+  // un Changó rojo → vino (el blanco → rojo se queda).
+  { key: "chango-vino", orisha: "Changó", arriba: "#ba161c", abajo: "#5c0c1e", nombres: ["rojo", "vino"], color: "vinotinto" },
   { key: "yemaya", orisha: "Yemayá", arriba: "#96c0e8", abajo: "#102c7c", nombres: ["azul claro", "azul"], color: "azul" },
   { key: "oshun", orisha: "Oshún", arriba: "#eec840", abajo: "#b06412", nombres: ["amarillo", "ámbar"], color: "ambar" },
   { key: "oya", orisha: "Oyá", arriba: "#965c34", abajo: "#601224", nombres: ["carmelita", "vino"], color: "vinotinto" },
@@ -1100,20 +1104,44 @@ export const DIAL_INK_NOMBRE: Readonly<Record<DialInkId, string>> = {
   negra: "Negra",
 };
 
-/** Altura (mm) a la que se mide el color bajo el nombre de las 6: el centro de
- *  sus mayúsculas (DIAL_LAYOUT.name.baseline 7.6 − ~0.6). check-watch-data
- *  comprueba que siga dentro del nombre de las dos esferas. */
-export const DIAL_NAME_Y = 7.0;
+/** Franja (mm, de arriba abajo) que ocupa el nombre de las 6 en las dos
+ *  esferas: de la tilde más alta a la línea base (DIAL_LAYOUT.name / .ifa.name).
+ *  check-watch-data comprueba que cubra los dos nombres. */
+export const DIAL_NAME_SPAN: readonly [number, number] = [6.0, 7.95];
 
-/** Tinta de lo impreso a la altura `yMm`, elegida sola.
+/** Franja (mm) del signo de la esfera en cada posición: centro ± media altura
+ *  de tinta (DIAL_LAYOUT.sign). check-watch-data comprueba que coincidan. */
+export const DIAL_SIGN_SPANS: Readonly<Record<DialSignPos, readonly [number, number]>> = {
+  nueve: [-2.0, 2.0],
+  seis: [1.95, 5.75],
+};
+
+/** El contraste MÁS BAJO de `hex` sobre la esfera entre las alturas y0 y y1
+ *  (mm). Exacto: en un degradado la luminancia cambia en un solo sentido de
+ *  arriba abajo (mezcla lineal en luz lineal), así que el peor punto es uno de
+ *  los dos extremos… salvo que la luminancia de `hex` caiga ENTRE las dos:
+ *  entonces en algún punto son iguales y el contraste es 1:1. */
+export function dialMinContrast(e: Pick<Esfera, "base" | "degradado">, hex: string, y0: number, y1: number): number {
+  const a = dialColorAt(e, y0);
+  const b = dialColorAt(e, y1);
+  if (gradientStepOf(e)) {
+    const L = luminance(hex);
+    const [la, lb] = [luminance(a), luminance(b)];
+    if (L >= Math.min(la, lb) && L <= Math.max(la, lb)) return 1;
+  }
+  return Math.min(contrastRatio(hex, a), contrastRatio(hex, b));
+}
+
+/** Tinta de una pieza impresa que ocupa de y0 a y1 (mm, + hacia abajo),
+ *  elegida sola.
  *  • Esfera lisa: la dorada de más contraste (oscura sobre la blanca), igual
  *    en toda la esfera.
- *  • Degradado: contra el color que queda DEBAJO de cada pieza impresa, la
- *    primera que llega a 3:1 en este orden: dorada clara, dorada oscura, negra
- *    (la negra salva la zona de mezcla). Si ninguna llega, la de más contraste. */
-export function dialInkAt(e: Pick<Esfera, "base" | "degradado">, yMm: number): DialInk {
-  const bg = dialColorAt(e, yMm);
-  const of = (id: DialInkId): DialInk => ({ id, hex: INK_HEX[id], contraste: contrastRatio(INK_HEX[id], bg) });
+ *  • Degradado: contra TODO el color que queda debajo de la pieza (no solo su
+ *    centro: un signo de 4 mm cruza parte de la mezcla), la primera que llega a
+ *    3:1 en toda su altura en este orden: dorada clara, dorada oscura, negra.
+ *    Si ninguna llega, la de más contraste. */
+export function dialInkOver(e: Pick<Esfera, "base" | "degradado">, y0: number, y1: number): DialInk {
+  const of = (id: DialInkId): DialInk => ({ id, hex: INK_HEX[id], contraste: dialMinContrast(e, INK_HEX[id], y0, y1) });
   if (!gradientStepOf(e)) {
     const l = of("oro");
     const d = of("oro-oscuro");
@@ -1123,10 +1151,14 @@ export function dialInkAt(e: Pick<Esfera, "base" | "degradado">, yMm: number): D
   return all.find((i) => i.contraste >= DIAL_TEXT_MIN_CONTRAST) ?? all.reduce((a, b) => (b.contraste > a.contraste ? b : a));
 }
 
-/** Tinta del texto de la esfera (el nombre de las 6). En una esfera lisa es la
- *  de toda la esfera. */
+/** dialInkOver en un solo punto. */
+export function dialInkAt(e: Pick<Esfera, "base" | "degradado">, yMm: number): DialInk {
+  return dialInkOver(e, yMm, yMm);
+}
+
+/** Tinta del nombre de las 6 (en una esfera lisa, la de toda la esfera). */
 export function dialInk(base: DialBaseId, degradado?: DialGradientStep): DialInk {
-  return dialInkAt({ base, degradado }, DIAL_NAME_Y);
+  return dialInkOver({ base, degradado }, ...DIAL_NAME_SPAN);
 }
 
 /** La esfera en palabras: "Verde sol" o "Degradado Orula (amarillo → verde),
@@ -1312,6 +1344,21 @@ export const RULES: readonly Rule[] = [
     campos: (c) => (c.esfera.modelo === "ifa" && !c.tapa.signo ? ["tapa.signo"] : []),
   },
   {
+    // Un signo de 4 mm puede cruzar la mezcla de un degradado de tal forma que
+    // ninguna tinta llega a 3:1 en toda su altura (p. ej. Yemayá paso 3 con el
+    // signo a las 6). No se mezclan tintas dentro de un signo: se avisa.
+    id: "contraste-signo",
+    nivel: "aviso",
+    motivo: "Tu signo cruza la mezcla del degradado y ahí se lee menos: cámbialo de sitio o mueve el degradado.",
+    campos: (c) =>
+      c.esfera.signo &&
+      c.esfera.modelo !== "ifa" &&
+      gradientStepOf(c.esfera) &&
+      dialInkOver(c.esfera, ...DIAL_SIGN_SPANS[c.esfera.signoPos]).contraste < DIAL_TEXT_MIN_CONTRAST
+        ? ["esfera.signo"]
+        : [],
+  },
+  {
     id: "contraste-segundero",
     nivel: "aviso",
     motivo: "Este segundero casi no se ve sobre esta esfera.",
@@ -1319,9 +1366,10 @@ export const RULES: readonly Rule[] = [
       const s = getSecondsPart(c.segundero);
       const b = getDialBase(c.esfera.base);
       if (!s || !b) return [];
-      // En un degradado, el peor de sus dos extremos (donde la punta recorre la pista).
-      const fondos = gradientStepOf(c.esfera) ? [-12, 12].map((y) => dialColorAt(c.esfera, y)) : [WATCH_COLORS[b.color].hex];
-      return fondos.some((bg) => contrastRatio(WATCH_COLORS[s.color].hex, bg) < SECONDS_MIN_CONTRAST) ? ["segundero"] : [];
+      // El segundero barre TODA la esfera visible: en un degradado cuenta el
+      // peor punto de arriba abajo (dialMinContrast, exacto).
+      const R = WATCH_SPECS.aberturaVisibleMm / 2;
+      return dialMinContrast(c.esfera, WATCH_COLORS[s.color].hex, -R, R) < SECONDS_MIN_CONTRAST ? ["segundero"] : [];
     },
   },
 ];
@@ -1349,7 +1397,7 @@ export function validate(c: WatchConfig, disp: Availability = availability(), fl
       issues.push({ regla: rule.id, campo, nivel: rule.nivel, motivo: rule.motivo });
     }
   }
-  if (getDialBase(c.esfera.base) && dialInkAt(c.esfera, DIAL_NAME_Y).contraste < DIAL_TEXT_MIN_CONTRAST) {
+  if (getDialBase(c.esfera.base) && dialInkOver(c.esfera, ...DIAL_NAME_SPAN).contraste < DIAL_TEXT_MIN_CONTRAST) {
     issues.push({
       regla: "contraste-texto",
       campo: "esfera.base",

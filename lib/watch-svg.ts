@@ -338,6 +338,10 @@ export interface PosterOptions {
   fondo?: string;
   /** Prefijo de ids (varios SVG del reloj en una misma página). */
   idPrefix?: string;
+  /** Texto → contornos de imprenta (lib/watch-curvas.ts outlinePrimitives).
+   *  Un SVG dentro de <img> no puede usar las fuentes de la página: con esto
+   *  las letras salen iguales que en la esfera impresa. */
+  curvas?: (prims: readonly Primitive[]) => Primitive[];
 }
 
 /** El reloj de frente: caja octogonal en su acabado, esfera (de las primitivas
@@ -359,7 +363,8 @@ export function frontSvg(c: WatchConfig, opts: PosterOptions = {}): string {
       Array.from({ length: 9 }, (_, i) => `<stop offset="${i / 8}" stop-color="${dialColorAt(c.esfera, -R + (2 * R * i) / 8)}"/>`).join("") +
       `</linearGradient></defs>`
     : "";
-  const prims = grad ? dial.map((q) => (q.id === "esfera" ? { ...q, fill: `url(#${p}grad)` } : q)) : dial;
+  const conDisco = grad ? dial.map((q) => (q.id === "esfera" ? { ...q, fill: `url(#${p}grad)` } : q)) : dial;
+  const prims = opts.curvas ? opts.curvas(conDisco) : conDisco;
   const slot = prims.find((q): q is RectPrim => q.kind === "rect" && q.id === "aplique");
   const D = DIAL_LAYOUT.date;
   const bg = opts.fondo ? `<rect x="${-VIEW}" y="${-VIEW}" width="${2 * VIEW}" height="${2 * VIEW}" fill="${opts.fondo}"/>` : "";
@@ -405,7 +410,8 @@ export function casebackSvg(c: WatchConfig, opts: PosterOptions = {}): string {
   const strapHex = strap?.color ? WATCH_COLORS[strap.color].hex : null;
   // Lo grabado: el acero oscurecido por el láser de fibra.
   const engraved = shade(tones.base, c.acabado === "pvd-negro" ? 0.55 : -0.55);
-  const prims = casebackPrimitives(c, { ink: engraved }).filter((q) => q.capa !== "guia");
+  const grabado = casebackPrimitives(c, { ink: engraved }).filter((q) => q.capa !== "guia");
+  const prims = opts.curvas ? opts.curvas(grabado) : grabado;
   let notches = "";
   for (let i = 0; i < 6; i++) {
     notches += `<rect x="-0.9" y="-16.75" width="1.8" height="1.1" rx="0.2" fill="${tones.deep}" transform="rotate(${i * 60 + 30})"/>`;

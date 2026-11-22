@@ -23,6 +23,7 @@ import {
 import { buildOrderInfo, type WatchProductVM } from "./order";
 import { useCart } from "@/lib/cart-context";
 import { frontSvgDataUrl } from "@/lib/watch-svg";
+import { outlineIfReady } from "./front/curvas";
 import {
   decodeWatchDesign,
   designCode,
@@ -367,7 +368,7 @@ export default function WatchCreator({
     if (!product || !v || !order.canBuy || !order.validation.ok || !policy) return;
     const uid =
       typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${order.code}`;
-    const preview = frontSvgDataUrl(final);
+    const preview = frontSvgDataUrl(final, { curvas: outlineIfReady() ?? undefined });
     addLine(
       {
         id: `${v.id}-reloj-${uid}`,
