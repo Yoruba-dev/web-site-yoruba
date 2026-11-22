@@ -6,6 +6,7 @@ import { layerUrl } from "../creator-state";
 import { tileState, type StepProps } from "./types";
 import { previewPart } from "./preview";
 import { FINISHES, WATCH_SPECS, getStrap, isPartId, optionState, visibleParts, type FinishId } from "@/lib/watch";
+import { nombresCapas } from "@/lib/watch-capas";
 
 /** Paso 1 · Caja: el acabado (Acero, Negro PVD, Oro rosa). La forma es una sola. */
 export default function StepCaja({ config, dispatch }: StepProps) {
@@ -28,7 +29,7 @@ export default function StepCaja({ config, dispatch }: StepProps) {
           visual: (
             <LayerThumb
               crop="caja"
-              layers={[layerUrl(`caja-${f.id}`), layerUrl(`esfera-${config.esfera.base}`)]}
+              layers={[layerUrl(`caja-${f.id}`), layerUrl(nombresCapas(config).esfera)]}
               fallbackHex={swatchHex(f.swatch)}
             />
           ),

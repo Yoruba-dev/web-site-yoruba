@@ -11,20 +11,27 @@ import {
   WATCH_COLORS,
   WATCH_PROOF_NOTE,
   WATCH_SPECS,
+  DIAL_GRADIENT_CENTERS,
+  DIAL_GRADIENT_WIDTH,
+  DIAL_INK_NOMBRE,
+  DIAL_NAME_Y,
+  WATCH_MATERIALS,
   designCode,
-  dialInk,
+  dialColorAt,
+  dialInkAt,
   getAppliquePart,
   getClasp,
   getDialBase,
   getFinish,
   getSecondsPart,
   getStrap,
+  gradientStepOf,
   lineProperties,
   validate,
   type NormalizeReport,
   type Part,
 } from "@/lib/watch";
-import { CASEBACK_LAYOUT, DIAL_LAYOUT, dialHasDate } from "@/lib/watch-art";
+import { CASEBACK_LAYOUT, DIAL_LAYOUT, dialHasDate, dialPrimitives } from "@/lib/watch-art";
 import { svgDataUrl } from "@/lib/watch-svg";
 // Texto en CURVAS (contornos reales de Cinzel / Cormorant): la vista previa de
 // la hoja y el archivo que abre el láser o la impresora son idénticos, sin
@@ -78,7 +85,15 @@ export default function WatchSheet({
   const finish = getFinish(c.acabado);
   const base = getDialBase(c.esfera.base);
   const strap = getStrap(c.correa);
-  const ink = dialInk(c.esfera.base);
+  const ink = dialInkAt(c.esfera, DIAL_NAME_Y);
+  const grad = base?.degradado;
+  const paso = gradientStepOf(c.esfera);
+  // Las tintas que de verdad lleva la impresión (en un degradado, cada pieza la
+  // suya según el color que tiene debajo), en el orden en que aparecen.
+  const tintas = (["oro", "oro-oscuro", "negra"] as const).filter((id) => {
+    const hex = WATCH_MATERIALS[id === "oro" ? "tinta-oro" : id === "oro-oscuro" ? "tinta-oro-oscuro" : "tinta-negra"];
+    return dialPrimitives(c).some((q) => q.capa === "impresion" && (q.fill === hex || q.stroke === hex));
+  });
   const seq = c.esfera.pista.orisha ? TRACK_SEQUENCES[c.esfera.pista.orisha] : null;
 
   // La ficha: las mismas propiedades que lleva el pedido (lineProperties: una
@@ -92,14 +107,30 @@ export default function WatchSheet({
     { key: "Modelo de esfera", value: `${DIAL_MODELS[c.esfera.modelo].label} — ${DIAL_MODELS[c.esfera.modelo].nota}` },
     {
       key: "Esfera · acabado y lume",
-      value: `${base?.textura === "sol" ? "Sol (rayos)" : (base?.textura ?? "")} · lume ${base?.lume ?? "—"}`,
+      value: `${base?.textura === "sol" || grad ? "Sol (rayos)" : (base?.textura ?? "")} · lume ${base?.lume ?? "—"}`,
     },
+    ...(grad && paso
+      ? [
+          {
+            key: "Esfera · degradado",
+            value: `Vertical, de arriba (12) a abajo (6): ${grad.nombres[0]} ${grad.arriba} → ${grad.nombres[1]} ${grad.abajo}. Paso ${paso} de 5: la mezcla centrada al ${Math.round(
+              DIAL_GRADIENT_CENTERS[paso] * 100,
+            )} % del diámetro desde las 12, ${Math.round(DIAL_GRADIENT_WIDTH * 100)} % de ancho. Pedir al proveedor igual a la vista previa.`,
+          },
+        ]
+      : []),
     ...(seq ? [{ key: "Pista · secuencia", value: seq.nota }] : []),
     {
       key: "Tinta del texto",
-      value: `${ink.id === "oro" ? "Dorada clara" : "Dorada oscura"} ${ink.hex} · contraste ${ink.contraste.toFixed(1)}:1 sobre ${lower(
-        WATCH_COLORS[base?.color ?? "blanco"].nombre,
-      )}`,
+      value: grad
+        ? `Por zonas (degradado): cada pieza impresa en la tinta que contrasta con el color que tiene debajo. Nombre a las 6: ${DIAL_INK_NOMBRE[
+            ink.id
+          ].toLowerCase()} ${ink.hex} · ${ink.contraste.toFixed(1)}:1 sobre ${dialColorAt(c.esfera, DIAL_NAME_Y)}. Tintas en esta esfera: ${tintas
+            .map((t) => DIAL_INK_NOMBRE[t].toLowerCase())
+            .join(", ")}.`
+        : `${DIAL_INK_NOMBRE[ink.id]} ${ink.hex} · contraste ${ink.contraste.toFixed(1)}:1 sobre ${lower(
+            WATCH_COLORS[base?.color ?? "blanco"].nombre,
+          )}`,
     },
     {
       key: "Agujas hora / minuto",

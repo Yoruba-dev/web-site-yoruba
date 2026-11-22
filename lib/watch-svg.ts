@@ -39,9 +39,12 @@ import {
 import {
   WATCH_COLORS,
   WATCH_MATERIALS,
+  WATCH_SPECS,
   contrastRatio,
   designCode,
+  dialColorAt,
   getAppliquePart,
+  getDialBase,
   getFinish,
   getSecondsPart,
   getStrap,
@@ -346,8 +349,17 @@ export function frontSvg(c: WatchConfig, opts: PosterOptions = {}): string {
   const strap = getStrap(c.correa);
   const strapHex = strap?.color ? WATCH_COLORS[strap.color].hex : null;
   const metal = getAppliquePart(c.aplique)?.metal ?? "oro";
-  const prims = dialPrimitives(c);
-  const dialHex = prims.find((q) => q.id === "esfera")?.fill ?? "#ffffff";
+  const dial = dialPrimitives(c);
+  const dialHex = dial.find((q) => q.id === "esfera")?.fill ?? "#ffffff";
+  // Un degradado: el disco se pinta con el MISMO degradado (dialColorAt).
+  const grad = getDialBase(c.esfera.base)?.degradado;
+  const R = WATCH_SPECS.dialMm / 2;
+  const gradDefs = grad
+    ? `<defs><linearGradient id="${p}grad" gradientUnits="userSpaceOnUse" x1="0" y1="${-R}" x2="0" y2="${R}">` +
+      Array.from({ length: 9 }, (_, i) => `<stop offset="${i / 8}" stop-color="${dialColorAt(c.esfera, -R + (2 * R * i) / 8)}"/>`).join("") +
+      `</linearGradient></defs>`
+    : "";
+  const prims = grad ? dial.map((q) => (q.id === "esfera" ? { ...q, fill: `url(#${p}grad)` } : q)) : dial;
   const slot = prims.find((q): q is RectPrim => q.kind === "rect" && q.id === "aplique");
   const D = DIAL_LAYOUT.date;
   const bg = opts.fondo ? `<rect x="${-VIEW}" y="${-VIEW}" width="${2 * VIEW}" height="${2 * VIEW}" fill="${opts.fondo}"/>` : "";
@@ -356,6 +368,7 @@ export function frontSvg(c: WatchConfig, opts: PosterOptions = {}): string {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${-VIEW} ${-VIEW} ${2 * VIEW} ${2 * VIEW}">` +
     `<title>Reloj ${escapeXml(designCode(c))}</title>` +
     defs(p, tones, strapHex, APPLIQUE_TONES[metal], dialHex) +
+    gradDefs +
     bg +
     strapMarkup(c, p, -21.6, -VIEW, tones) +
     strapMarkup(c, p, 21.6, VIEW, tones) +

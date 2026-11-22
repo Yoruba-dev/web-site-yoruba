@@ -6,7 +6,7 @@ import { tileState, type StepProps } from "./types";
 import {
   SECONDS,
   WATCH_COLORS,
-  dialBaseHex,
+  dialColorAt,
   getFinish,
   isPartId,
   optionState,
@@ -18,7 +18,9 @@ import {
 export default function StepAgujas({ config, dispatch }: StepProps) {
   const finish = getFinish(config.acabado);
   const metal = finish?.metalAgujas === "oro-rosa" ? "oro rosa" : "acero pulido";
-  const dialHex = dialBaseHex(config.esfera.base);
+  // Arriba y abajo de la esfera (iguales en una lisa; distintos en un degradado).
+  const dialHex = dialColorAt(config.esfera, -9);
+  const dialAbajo = dialColorAt(config.esfera, 9);
   return (
     <>
       <p className="pyj-reloj_lead">
@@ -33,7 +35,7 @@ export default function StepAgujas({ config, dispatch }: StepProps) {
         options={visibleParts(SECONDS).map((s) => ({
           id: s.id,
           label: s.label,
-          visual: <HandSwatch hex={WATCH_COLORS[s.color].hex} dialHex={dialHex} />,
+          visual: <HandSwatch hex={WATCH_COLORS[s.color].hex} dialHex={dialHex} dialAbajo={dialAbajo} />,
           ...tileState(optionState(config, "segundero", s.id)),
         }))}
       />

@@ -19,11 +19,14 @@
 import {
   APPLIQUES,
   DIAL_BASES,
+  DIAL_GRADIENTS,
+  DIAL_GRADIENT_STEPS,
   FINISHES,
   STRAPS,
   WATCH_COLORS,
   getDialBase,
   getStrap,
+  gradientStepOf,
   type AppliqueId,
   type DialBaseId,
   type FinishId,
@@ -203,10 +206,13 @@ export function nombresCapas(c: Pick<WatchConfig, "acabado" | "correa" | "esfera
     if (!tiene) aproximadas.push({ capa: "correa", pedido: s.id, usada: correa });
   }
 
-  // Esfera (disco sol del color base).
+  // Esfera (disco sol del color base; un degradado, con su paso 1–5).
   const b = getDialBase(c.esfera.base);
+  const paso = gradientStepOf(c.esfera);
   let esfera: string;
-  if (b && b.textura === "sol" && (ESFERA_FOTOS as readonly string[]).includes(b.id)) {
+  if (b?.degradado && paso) {
+    esfera = `esfera-degradado-${b.degradado.key}-p${paso}`;
+  } else if (b && b.textura === "sol" && (ESFERA_FOTOS as readonly string[]).includes(b.id)) {
     esfera = `esfera-${b.id}`;
   } else {
     // Franjas (o un id desconocido): el disco sol del color más parecido.
@@ -268,6 +274,7 @@ export function capaFiles(): string[] {
   for (const c of CAUCHO_FOTOS) nombres.push(`correa-caucho-${c}`);
   for (const c of PIEL_FOTOS) for (const f of ACABADO_FOTOS) nombres.push(`correa-piel-${c}-${f}`);
   for (const e of ESFERA_FOTOS) nombres.push(`esfera-${e}`);
+  for (const g of DIAL_GRADIENTS) for (const n of DIAL_GRADIENT_STEPS) nombres.push(`esfera-degradado-${g.key}-p${n}`);
   const out = nombres.flatMap((n) => CAPA_SIZES.map((s) => capaUrl(n, s)));
   for (const a of ["logo-py", "logo-py-plata"] as const) for (const s of CAPA_SIZES) out.push(apliqueUrl(a, s));
   for (const w of [1024, 720, 480] as const) for (const fmt of ["webp", "avif"] as const) out.push(tapaUrl(w, fmt));
@@ -281,19 +288,21 @@ export function catalogCombos(): Pick<WatchConfig, "acabado" | "correa" | "esfer
   for (const f of FINISHES)
     for (const s of STRAPS)
       for (const b of DIAL_BASES)
-        for (const a of APPLIQUES)
-          out.push({
-            acabado: f.id,
-            correa: s.id as StrapId,
-            aplique: a.id as AppliqueId,
-            esfera: {
-              modelo: "clasica",
-              base: b.id as DialBaseId,
-              pista: { estilo: "rayas" },
-              texto: "",
-              signo: null,
-              signoPos: "nueve",
-            },
-          });
+        for (const paso of b.degradado ? DIAL_GRADIENT_STEPS : [undefined])
+          for (const a of APPLIQUES)
+            out.push({
+              acabado: f.id,
+              correa: s.id as StrapId,
+              aplique: a.id as AppliqueId,
+              esfera: {
+                modelo: "clasica",
+                base: b.id as DialBaseId,
+                ...(paso ? { degradado: paso } : {}),
+                pista: { estilo: "rayas" },
+                texto: "",
+                signo: null,
+                signoPos: "nueve",
+              },
+            });
   return out;
 }

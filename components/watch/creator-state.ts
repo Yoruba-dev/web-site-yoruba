@@ -9,6 +9,8 @@
 // interfaz a esas funciones.
 // ---------------------------------------------------------------------------
 import {
+  DIAL_GRADIENTS,
+  DIAL_GRADIENT_STEPS,
   canonicalDialText,
   cleanCasebackLine,
   cleanDialText,
@@ -16,7 +18,9 @@ import {
   normalize,
   resolvePreset,
   withDialModel,
+  withGradientStep,
   withPart,
+  type DialGradientStep,
   type DialModelId,
   type DialSignPos,
   type OduSign,
@@ -75,6 +79,8 @@ export type CreatorAction =
   /** Una pieza del catálogo; 'pista' cambia el estilo (cuentas / rayas). */
   | { type: "pieza"; cat: PartCategory; id: string }
   | { type: "modelo"; modelo: DialModelId }
+  /** Dónde cambia el color de una esfera de degradado (1–5). */
+  | { type: "degradado"; paso: DialGradientStep }
   /** De qué Orisha son los colores de la pista (null = rayas lisas). */
   | { type: "pistaOrisha"; orisha: OrishaId | null }
   | { type: "texto"; texto: string }
@@ -102,6 +108,9 @@ export function creatorReducer(c: WatchConfig, a: CreatorAction): WatchConfig {
 
     case "modelo":
       return withDialModel(c, a.modelo);
+
+    case "degradado":
+      return withGradientStep(c, a.paso);
 
     case "pistaOrisha": {
       const { estilo } = c.esfera.pista;
@@ -207,6 +216,7 @@ const KNOWN_LAYERS = new Set([
   "esfera-verde",
   "esfera-azul",
   "esfera-amarillo",
+  ...DIAL_GRADIENTS.flatMap((g) => DIAL_GRADIENT_STEPS.map((n) => `esfera-degradado-${g.key}-p${n}`)),
   ...["negro", "gris", "blanco", "azul-marino", "azul", "naranja", "verde", "rojo", "tan"].map((c) => `correa-caucho-${c}`),
   ...["verde", "rojo", "azul-marino"].flatMap((c) =>
     ["acero", "pvd-negro", "oro-rosa"].map((f) => `correa-piel-${c}-${f}`),

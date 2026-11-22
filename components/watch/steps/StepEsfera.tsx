@@ -1,16 +1,19 @@
 "use client";
 
+import "@/app/creador-de-relojes/degradado.css";
 import { useId, useState } from "react";
 import ComposedInput from "../ComposedInput";
 import OptionGroup from "../OptionGroup";
 import OduPicker from "../OduPicker";
-import { BeadRow, LayerThumb, swatchHex } from "../Swatches";
+import { BeadRow, GradientDial, LayerThumb, swatchHex } from "../Swatches";
 import { layerUrl } from "../creator-state";
+import { preloadWatchLayers } from "../WatchFront";
 import { lostChars, tileState, type StepProps } from "./types";
 import { previewPart } from "./preview";
 import {
   APPLIQUES,
   DIAL_BASES,
+  DIAL_GRADIENT_STEPS,
   DIAL_MODELS,
   DIAL_TEXT_MAX,
   FLAGS,
@@ -20,13 +23,19 @@ import {
   WATCH_ORISHAS,
   canonicalDialText,
   cleanDialText,
+  getDialBase,
+  gradientStepOf,
+  isGradientStep,
   isPartId,
   optionState,
   orishaName,
   validate,
   visibleParts,
+  withGradientStep,
   type AppliqueId,
   type DialBaseId,
+  type DialGradient,
+  type DialGradientStep,
   type DialModelId,
   type DialSignPos,
   type OrishaId,
@@ -34,6 +43,16 @@ import {
 } from "@/lib/watch";
 
 const IFA_SIGN_RULE = RULES.find((r) => r.id === "signo-esfera-ifa")?.motivo;
+
+/** Nombre de cada paso del ajuste (lectores de pantalla y la ficha). */
+function pasoLabel(n: DialGradientStep, g: DialGradient): string {
+  const [arriba, abajo] = g.nombres;
+  return n === 3
+    ? "Al centro"
+    : n < 3
+      ? `${n === 1 ? "Mucho" : "Un poco"} más ${arriba}`
+      : `${n === 5 ? "Mucho" : "Un poco"} más ${abajo}`;
+}
 
 /** Paso 2 · Esfera: modelo, color base, pista, texto a las 6, signo y aplique. */
 export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
@@ -43,6 +62,15 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
   const [rechazado, setRechazado] = useState(false);
   const issues = validate(config).issues;
   const motivoDe = (campo: string) => issues.find((i) => i.campo === campo && i.nivel === "bloqueo")?.motivo;
+  const bases = visibleParts(DIAL_BASES);
+  const lisas = bases.filter((b) => !b.degradado);
+  const degradados = bases.filter((b) => b.degradado);
+  const grad = getDialBase(e.base)?.degradado;
+  const paso = gradientStepOf(e);
+  const baseTile = (b: (typeof bases)[number]) => ({
+    id: b.id,
+    ...tileState(optionState(config, "esfera", b.id)),
+  });
 
   return (
     <>
@@ -63,16 +91,67 @@ export default function StepEsfera({ config, dispatch, goTo }: StepProps) {
       <OptionGroup<DialBaseId>
         label="Color de la esfera"
         hint="Esfera de acabado sol: el brillo se mueve con la luz."
-        value={e.base}
+        value={grad ? null : e.base}
         onChange={(id) => isPartId("esfera", id) && dispatch({ type: "pieza", cat: "esfera", id })}
         onPreview={(id) => previewPart(config, "esfera", id)}
-        options={visibleParts(DIAL_BASES).map((b) => ({
-          id: b.id,
+        options={lisas.map((b) => ({
+          ...baseTile(b),
           label: b.label,
           visual: <LayerThumb crop="esfera" layers={[layerUrl(`esfera-${b.id}`)]} fallbackHex={swatchHex(b.swatch)} />,
-          ...tileState(optionState(config, "esfera", b.id)),
         }))}
       />
+
+      {/* — Degradado de Orisha (+ su ajuste) ——————————————————————— */}
+      {degradados.length > 0 && (
+        <OptionGroup<DialBaseId>
+          label="Degradado de Orisha"
+          hint="Los dos colores de un Orisha, fundidos de arriba abajo con el mismo brillo sol."
+          value={grad ? e.base : null}
+          onChange={(id) => isPartId("esfera", id) && dispatch({ type: "pieza", cat: "esfera", id })}
+          onPreview={(id) => previewPart(config, "esfera", id)}
+          options={degradados.map((b) => {
+            const g = b.degradado!;
+            return {
+              ...baseTile(b),
+              label: g.orisha,
+              detalle: `${g.nombres[0]} → ${g.nombres[1]}`,
+              visual: (
+                <LayerThumb
+                  crop="esfera"
+                  layers={[layerUrl(`esfera-degradado-${g.key}-p${paso ?? 3}`)]}
+                  fallbackHex={swatchHex(b.swatch)}
+                />
+              ),
+            };
+          })}
+        />
+      )}
+      {grad && paso && (
+        <div className="pyj-reloj_paso">
+          <OptionGroup<string>
+            label="Ajusta el degradado"
+            hint="Mueve dónde cambia el color. Lo hacemos igual en la esfera."
+            value={String(paso)}
+            onChange={(id) => {
+              const n = Number(id);
+              if (isGradientStep(n)) dispatch({ type: "degradado", paso: n });
+            }}
+            onPreview={(id) => {
+              const n = Number(id);
+              if (isGradientStep(n)) void preloadWatchLayers(withGradientStep(config, n));
+            }}
+            options={DIAL_GRADIENT_STEPS.map((n) => ({
+              id: String(n),
+              label: pasoLabel(n, grad),
+              visual: <GradientDial esfera={{ base: e.base, degradado: n }} size={36} />,
+            }))}
+          />
+          <div className="pyj-reloj_pasoends" aria-hidden="true">
+            <span>← Más {grad.nombres[0]}</span>
+            <span>Más {grad.nombres[1]} →</span>
+          </div>
+        </div>
+      )}
 
       {/* — Pista ———————————————————————————————————————————————— */}
       <OptionGroup<TrackStyle>

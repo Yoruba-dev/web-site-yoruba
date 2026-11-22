@@ -1,11 +1,15 @@
 // Muestras pequeñas de las fichas del creador. Todo lo redondo es SVG (la web
 // tiene un reset global `* { border-radius: 0 !important }`), y las fotos son
 // las MISMAS capas del escenario, recortadas con CSS (.pyj-reloj_thumb--*).
+import { useId } from "react";
 import {
   TRACK_SEQUENCES,
   WATCH_COLORS,
   WATCH_MATERIALS,
+  WATCH_SPECS,
   beadAt,
+  dialColorAt,
+  type Esfera,
   type OrishaId,
   type WatchColorId,
 } from "@/lib/watch";
@@ -76,13 +80,44 @@ export function BeadRow({ orisha, count = 8 }: { orisha: OrishaId; count?: numbe
 }
 
 /** El segundero de un color sobre la esfera elegida. */
-export function HandSwatch({ hex, dialHex }: { hex: string; dialHex: string }) {
+export function HandSwatch({ hex, dialHex, dialAbajo }: { hex: string; dialHex: string; dialAbajo?: string }) {
+  const id = `pyjh${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const grad = dialAbajo && dialAbajo !== dialHex;
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" className="pyj-reloj_handsw" focusable="false" aria-hidden="true">
-      <circle cx="22" cy="22" r="20" fill={dialHex} stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
+      {grad && (
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={dialHex} />
+            <stop offset="1" stopColor={dialAbajo} />
+          </linearGradient>
+        </defs>
+      )}
+      <circle cx="22" cy="22" r="20" fill={grad ? `url(#${id})` : dialHex} stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
       <rect x="21.2" y="5" width="1.6" height="24" fill={hex} />
       <circle cx="22" cy="22" r="2.6" fill={hex} />
       <circle cx="22" cy="33" r="1.6" fill={hex} />
+    </svg>
+  );
+}
+
+/** Una esfera de degradado dibujada (círculo con el degradado real, muestreado
+ *  con dialColorAt: la misma cuenta que pintó la capa). Para el ajuste 1–5. */
+export function GradientDial({ esfera, size = 40 }: { esfera: Pick<Esfera, "base" | "degradado">; size?: number }) {
+  const id = `pyjg${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const R = WATCH_SPECS.dialMm / 2;
+  const stops = Array.from({ length: 9 }, (_, i) => i / 8);
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" className="pyj-reloj_gdial" focusable="false" aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          {stops.map((t) => (
+            <stop key={t} offset={t} stopColor={dialColorAt(esfera, -R + 2 * R * t)} />
+          ))}
+        </linearGradient>
+      </defs>
+      <circle cx="20" cy="20" r="18.5" fill={`url(#${id})`} stroke="rgba(255,255,255,0.28)" strokeWidth="1" />
+      <ellipse cx="14.5" cy="12" rx="7" ry="3.6" fill="#fff" opacity="0.12" />
     </svg>
   );
 }

@@ -30,7 +30,16 @@ import {
   type Primitive,
   type RectPrim,
 } from "@/lib/watch-art";
-import { DIAL_BASES, WATCH_COLORS, getDialBase, type FinishId, type WatchConfig } from "@/lib/watch";
+import {
+  DIAL_BASES,
+  WATCH_COLORS,
+  WATCH_SPECS,
+  contrastRatio,
+  dialColorAt,
+  getDialBase,
+  type FinishId,
+  type WatchConfig,
+} from "@/lib/watch";
 import { PLANTILLA } from "@/lib/watch-capas";
 import { FINISH_TONE } from "../materials";
 import { castShadow, mmCanvas, paintPrimitives, rng, type MmCanvas, type Paint } from "./paint";
@@ -209,7 +218,15 @@ export function dialTextures(
   ctx.beginPath();
   ctx.arc(0, 0, S / 2, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = baseHex;
+  if (base.degradado) {
+    // Respaldo bajo la foto: el mismo degradado (dialColorAt), por si tarda.
+    const R = WATCH_SPECS.dialMm / 2;
+    const lg = ctx.createLinearGradient(0, -R, 0, R);
+    for (let i = 0; i <= 8; i++) lg.addColorStop(i / 8, dialColorAt(c.esfera, -R + (2 * R * i) / 8));
+    ctx.fillStyle = lg;
+  } else {
+    ctx.fillStyle = baseHex;
+  }
   ctx.fillRect(-S / 2, -S / 2, S, S);
   // La foto del disco sol: R_ESFERA px alrededor del centro de la plantilla.
   if (imgs.photo) {
@@ -229,7 +246,10 @@ export function dialTextures(
 
   // Sombras horneadas (la pieza real está encima, en 3D).
   // Sobre una esfera clara la sombra se nota mucho más: más suave.
-  const dark = base.id === "negro" || base.id === "verde" || base.id === "azul";
+  // (En un degradado cuenta el color del centro.)
+  const dark = base.degradado
+    ? contrastRatio(dialColorAt(c.esfera, 0), "#000000") < 6
+    : base.id === "negro" || base.id === "verde" || base.id === "azul";
   const lumeAlpha = dark ? 0.5 : 0.3;
   const handAlpha = dark ? 0.42 : 0.24;
   for (const p of prims) {

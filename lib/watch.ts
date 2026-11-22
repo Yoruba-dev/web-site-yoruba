@@ -142,6 +142,9 @@ export const WATCH_MATERIALS = {
   "tinta-oro": "#f2d27a",
   /** Tinta dorada oscura: texto sobre esfera blanca. */
   "tinta-oro-oscuro": "#7d5a10",
+  /** Tinta negra: solo en las esferas de degradado, donde ninguna de las dos
+   *  doradas llega a 3:1 (la zona de mezcla de amarillo → verde, por ejemplo). */
+  "tinta-negra": "#16130e",
   /** Disco de fecha. */
   fecha: "#ffffff",
 } as const;
@@ -249,16 +252,57 @@ export const FINISHES: readonly FinishPart[] = [
 ];
 
 // — Esfera: color base (sol) ——————————————————————————————————————————————
-export type DialBaseId = "blanco" | "negro" | "rojo" | "verde" | "azul" | "franjas";
-export type DialTexture = "sol" | "franjas";
+/** Los degradados sol por Orisha (DECISIONES-DUENO §14), de arriba abajo. */
+export type DialGradientKey =
+  | "orula"
+  | "eleggua"
+  | "chango"
+  | "yemaya"
+  | "oshun"
+  | "oya"
+  | "ogun"
+  | "obatala"
+  | "babalu-aye"
+  | "olokun";
+export type DialBaseId = "blanco" | "negro" | "rojo" | "verde" | "azul" | "franjas" | `degradado-${DialGradientKey}`;
+export type DialTexture = "sol" | "franjas" | "degradado";
+
+export interface DialGradient {
+  key: DialGradientKey;
+  /** De quién son los colores, como se escribe en la interfaz. */
+  orisha: string;
+  /** Color de arriba y de abajo (sRGB): los MISMOS de piezas/esferas.py
+   *  DEGRADADOS, que pintó las capas. check-watch-data vigila que coincidan. */
+  arriba: string;
+  abajo: string;
+  /** Los dos colores en palabras ("amarillo", "verde") para la ficha y el taller. */
+  nombres: readonly [string, string];
+}
 
 export interface DialBasePart extends Part {
   id: DialBaseId;
+  /** Color del catálogo más parecido. En un degradado es el de abajo y solo
+   *  sirve de respaldo (muestra sin foto): el color real lo da `degradado`. */
   color: WatchColorId;
   textura: DialTexture;
   /** Pigmento luminoso de los índices, fijo por esfera. */
   lume: "C3" | "BGW9";
+  degradado?: DialGradient;
 }
+
+/** Arriba → abajo, como la esfera amarillo → verde de la foto 20 del dueño. */
+export const DIAL_GRADIENTS: readonly (DialGradient & { color: WatchColorId })[] = [
+  { key: "orula", orisha: "Orula", arriba: "#e8c022", abajo: "#0e622a", nombres: ["amarillo", "verde"], color: "verde" },
+  { key: "eleggua", orisha: "Elegguá", arriba: "#b2141a", abajo: "#100e0e", nombres: ["rojo", "negro"], color: "negro" },
+  { key: "chango", orisha: "Changó", arriba: "#eeeae4", abajo: "#a81018", nombres: ["blanco", "rojo"], color: "rojo" },
+  { key: "yemaya", orisha: "Yemayá", arriba: "#96c0e8", abajo: "#102c7c", nombres: ["azul claro", "azul"], color: "azul" },
+  { key: "oshun", orisha: "Oshún", arriba: "#eec840", abajo: "#b06412", nombres: ["amarillo", "ámbar"], color: "ambar" },
+  { key: "oya", orisha: "Oyá", arriba: "#965c34", abajo: "#601224", nombres: ["carmelita", "vino"], color: "vinotinto" },
+  { key: "ogun", orisha: "Oggún", arriba: "#166030", abajo: "#0e100f", nombres: ["verde", "negro"], color: "negro" },
+  { key: "obatala", orisha: "Obatalá", arriba: "#f2f0ea", abajo: "#b2b8c0", nombres: ["blanco", "plata"], color: "plateado" },
+  { key: "babalu-aye", orisha: "Babalú Ayé", arriba: "#b292d2", abajo: "#4e2470", nombres: ["lila", "morado"], color: "azul-marino" },
+  { key: "olokun", orisha: "Olokun", arriba: "#167680", abajo: "#0a1c4e", nombres: ["turquesa", "azul profundo"], color: "azul-marino" },
+];
 
 export const DIAL_BASES: readonly DialBasePart[] = [
   { id: "blanco", label: "Blanca sol", status: "verificado", swatch: "plateado", color: "plateado", textura: "sol", lume: "C3" },
@@ -279,7 +323,36 @@ export const DIAL_BASES: readonly DialBasePart[] = [
     lume: "C3",
     nota: "Imágenes 4, 11, 17, 20: fuera del lanzamiento por riesgo de parecido con un diseño ajeno (FLAGS.STRIPE_DIALS).",
   },
+  // Pedido del dueño (§14): ofrecidos ya; el proveedor confirma cada degradado
+  // en la Fase 0 (solo el amarillo → verde sale en sus fotos, y con franjas).
+  ...DIAL_GRADIENTS.map(
+    ({ color, ...g }): DialBasePart => ({
+      id: `degradado-${g.key}`,
+      label: `Degradado ${g.orisha}`,
+      status: "verificado",
+      swatch: color,
+      color,
+      textura: "degradado",
+      lume: "C3",
+      degradado: g,
+      nota: `Sol en degradado ${g.nombres[0]} → ${g.nombres[1]}: confirmar con el proveedor (Fase 0).`,
+    }),
+  ),
 ];
+
+// — Degradado: dónde ocurre el cambio de color (un ajuste sencillo de 5 pasos) —
+export type DialGradientStep = 1 | 2 | 3 | 4 | 5;
+export const DIAL_GRADIENT_STEPS: readonly DialGradientStep[] = [1, 2, 3, 4, 5];
+export const DIAL_GRADIENT_DEFAULT: DialGradientStep = 3;
+/** Centro de la mezcla por paso, en fracción del diámetro desde arriba: 1 =
+ *  más color de arriba (la mezcla baja), 5 = más color de abajo. Los MISMOS
+ *  números que piezas/esferas.py POSICIONES y ANCHO_TRANSICION. */
+export const DIAL_GRADIENT_CENTERS: Readonly<Record<DialGradientStep, number>> = { 1: 0.68, 2: 0.59, 3: 0.5, 4: 0.41, 5: 0.32 };
+export const DIAL_GRADIENT_WIDTH = 0.76;
+
+export function isGradientStep(v: unknown): v is DialGradientStep {
+  return v === 1 || v === 2 || v === 3 || v === 4 || v === 5;
+}
 
 // — Pista de minutos ———————————————————————————————————————————————————————
 export type TrackStyle = "cuentas" | "rayas";
@@ -726,6 +799,8 @@ export interface Esfera {
   texto: string;
   signo: OduSign | null;
   signoPos: DialSignPos;
+  /** Solo con una base de degradado: dónde cambia el color (1–5, 3 = centro). */
+  degradado?: DialGradientStep;
 }
 
 /** 'ifa' = la pieza estrella: Esfera Ifá con la pista de Orula (§12). */
@@ -956,20 +1031,112 @@ export const DIAL_TEXT_MIN_CONTRAST = 3;
 /** Por debajo de esto un segundero "casi no se ve" (aviso, no bloqueo). */
 export const SECONDS_MIN_CONTRAST = 1.3;
 
+/** Color de una esfera LISA (en un degradado, su color de respaldo: usa
+ *  dialColorAt para el color real en cada punto). */
 export function dialBaseHex(base: DialBaseId): string {
   const b = getDialBase(base) ?? DIAL_BASES[0];
   return WATCH_COLORS[b.color].hex;
 }
 
-/** Tinta del texto de la esfera, elegida sola: dorado claro sobre esferas
- *  oscuras o de color, dorado oscuro sobre la blanca (la de mayor contraste). */
-export function dialInk(base: DialBaseId): { id: "oro" | "oro-oscuro"; hex: string; contraste: number } {
-  const bg = dialBaseHex(base);
-  const light = WATCH_MATERIALS["tinta-oro"];
-  const dark = WATCH_MATERIALS["tinta-oro-oscuro"];
-  const cl = contrastRatio(light, bg);
-  const cd = contrastRatio(dark, bg);
-  return cl >= cd ? { id: "oro", hex: light, contraste: cl } : { id: "oro-oscuro", hex: dark, contraste: cd };
+/** El paso del degradado de esta esfera; null si la base es lisa. */
+export function gradientStepOf(e: Pick<Esfera, "base" | "degradado">): DialGradientStep | null {
+  if (!getDialBase(e.base)?.degradado) return null;
+  return isGradientStep(e.degradado) ? e.degradado : DIAL_GRADIENT_DEFAULT;
+}
+
+const toLin = (hex: string) =>
+  [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+const toHex = (lin: number[]) =>
+  `#${lin
+    .map((c) => {
+      const v = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+      return Math.round(Math.min(1, Math.max(0, v)) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+
+/** Cuánto del color de abajo hay a la altura `yMm` (mm desde el centro, + hacia
+ *  abajo): smoothstep sobre el diámetro de la esfera, como piezas/esferas.py. */
+export function gradientMix(step: DialGradientStep, yMm: number): number {
+  const R = WATCH_SPECS.dialMm / 2;
+  const t = (yMm + R) / (2 * R);
+  const u = Math.min(1, Math.max(0, (t - (DIAL_GRADIENT_CENTERS[step] - DIAL_GRADIENT_WIDTH / 2)) / DIAL_GRADIENT_WIDTH));
+  return u * u * (3 - 2 * u);
+}
+
+/** El color de la esfera a la altura `yMm` (mm desde el centro, + hacia abajo).
+ *  En una esfera lisa es su color; en un degradado, la mezcla en luz lineal
+ *  (la misma cuenta que pintó la capa). */
+export function dialColorAt(e: Pick<Esfera, "base" | "degradado">, yMm: number): string {
+  const g = getDialBase(e.base)?.degradado;
+  const step = gradientStepOf(e);
+  if (!g || !step) return dialBaseHex(e.base);
+  const t = gradientMix(step, yMm);
+  const a = toLin(g.arriba);
+  const b = toLin(g.abajo);
+  return toHex(a.map((v, i) => v * (1 - t) + b[i] * t));
+}
+
+export type DialInkId = "oro" | "oro-oscuro" | "negra";
+export interface DialInk {
+  id: DialInkId;
+  hex: string;
+  contraste: number;
+}
+
+const INK_HEX: Readonly<Record<DialInkId, string>> = {
+  oro: WATCH_MATERIALS["tinta-oro"],
+  "oro-oscuro": WATCH_MATERIALS["tinta-oro-oscuro"],
+  negra: WATCH_MATERIALS["tinta-negra"],
+};
+
+export const DIAL_INK_NOMBRE: Readonly<Record<DialInkId, string>> = {
+  oro: "Dorada clara",
+  "oro-oscuro": "Dorada oscura",
+  negra: "Negra",
+};
+
+/** Altura (mm) a la que se mide el color bajo el nombre de las 6: el centro de
+ *  sus mayúsculas (DIAL_LAYOUT.name.baseline 7.6 − ~0.6). check-watch-data
+ *  comprueba que siga dentro del nombre de las dos esferas. */
+export const DIAL_NAME_Y = 7.0;
+
+/** Tinta de lo impreso a la altura `yMm`, elegida sola.
+ *  • Esfera lisa: la dorada de más contraste (oscura sobre la blanca), igual
+ *    en toda la esfera.
+ *  • Degradado: contra el color que queda DEBAJO de cada pieza impresa, la
+ *    primera que llega a 3:1 en este orden: dorada clara, dorada oscura, negra
+ *    (la negra salva la zona de mezcla). Si ninguna llega, la de más contraste. */
+export function dialInkAt(e: Pick<Esfera, "base" | "degradado">, yMm: number): DialInk {
+  const bg = dialColorAt(e, yMm);
+  const of = (id: DialInkId): DialInk => ({ id, hex: INK_HEX[id], contraste: contrastRatio(INK_HEX[id], bg) });
+  if (!gradientStepOf(e)) {
+    const l = of("oro");
+    const d = of("oro-oscuro");
+    return l.contraste >= d.contraste ? l : d;
+  }
+  const all = (["oro", "oro-oscuro", "negra"] as const).map(of);
+  return all.find((i) => i.contraste >= DIAL_TEXT_MIN_CONTRAST) ?? all.reduce((a, b) => (b.contraste > a.contraste ? b : a));
+}
+
+/** Tinta del texto de la esfera (el nombre de las 6). En una esfera lisa es la
+ *  de toda la esfera. */
+export function dialInk(base: DialBaseId, degradado?: DialGradientStep): DialInk {
+  return dialInkAt({ base, degradado }, DIAL_NAME_Y);
+}
+
+/** La esfera en palabras: "Verde sol" o "Degradado Orula (amarillo → verde),
+ *  paso 3 de 5". Una sola fuente para el resumen, el pedido y la hoja. */
+export function dialBaseLabel(e: Pick<Esfera, "base" | "degradado">): string {
+  const b = getDialBase(e.base);
+  if (!b) return e.base;
+  const g = b.degradado;
+  const step = gradientStepOf(e);
+  return g && step ? `${b.label} (${g.nombres[0]} → ${g.nombres[1]}), paso ${step} de 5` : b.label;
 }
 
 // ===========================================================================
@@ -1152,9 +1319,9 @@ export const RULES: readonly Rule[] = [
       const s = getSecondsPart(c.segundero);
       const b = getDialBase(c.esfera.base);
       if (!s || !b) return [];
-      return contrastRatio(WATCH_COLORS[s.color].hex, WATCH_COLORS[b.color].hex) < SECONDS_MIN_CONTRAST
-        ? ["segundero"]
-        : [];
+      // En un degradado, el peor de sus dos extremos (donde la punta recorre la pista).
+      const fondos = gradientStepOf(c.esfera) ? [-12, 12].map((y) => dialColorAt(c.esfera, y)) : [WATCH_COLORS[b.color].hex];
+      return fondos.some((bg) => contrastRatio(WATCH_COLORS[s.color].hex, bg) < SECONDS_MIN_CONTRAST) ? ["segundero"] : [];
     },
   },
 ];
@@ -1182,7 +1349,7 @@ export function validate(c: WatchConfig, disp: Availability = availability(), fl
       issues.push({ regla: rule.id, campo, nivel: rule.nivel, motivo: rule.motivo });
     }
   }
-  if (getDialBase(c.esfera.base) && dialInk(c.esfera.base).contraste < DIAL_TEXT_MIN_CONTRAST) {
+  if (getDialBase(c.esfera.base) && dialInkAt(c.esfera, DIAL_NAME_Y).contraste < DIAL_TEXT_MIN_CONTRAST) {
     issues.push({
       regla: "contraste-texto",
       campo: "esfera.base",
@@ -1219,6 +1386,13 @@ export function withDialModel(c: WatchConfig, modelo: DialModelId): WatchConfig 
   };
 }
 
+/** Mueve el cambio de color de un degradado (1–5). Sin base de degradado, o
+ *  con un paso que no existe, devuelve `c` sin cambios. */
+export function withGradientStep(c: WatchConfig, step: DialGradientStep): WatchConfig {
+  if (!getDialBase(c.esfera.base)?.degradado || !isGradientStep(step) || c.esfera.degradado === step) return c;
+  return { ...c, esfera: { ...c.esfera, degradado: step } };
+}
+
 /** El cambio sin comprobar: solo para ids que ya se sabe que existen. */
 function setPart(c: WatchConfig, cat: PartCategory, id: string): WatchConfig {
   switch (cat) {
@@ -1226,8 +1400,15 @@ function setPart(c: WatchConfig, cat: PartCategory, id: string): WatchConfig {
       return { ...c, caja: id as CaseId };
     case "acabado":
       return { ...c, acabado: id as FinishId };
-    case "esfera":
-      return { ...c, esfera: { ...c.esfera, base: id as DialBaseId } };
+    case "esfera": {
+      // El paso del degradado se guarda solo con una base de degradado (y se
+      // conserva al pasar de un degradado a otro).
+      const { degradado, ...rest } = c.esfera;
+      const base = id as DialBaseId;
+      return getDialBase(base)?.degradado
+        ? { ...c, esfera: { ...rest, base, degradado: degradado ?? DIAL_GRADIENT_DEFAULT } }
+        : { ...c, esfera: { ...rest, base } };
+    }
     case "pista":
       return { ...c, esfera: { ...c.esfera, pista: { ...c.esfera.pista, estilo: id as TrackStyle } } };
     case "aplique":
@@ -1361,13 +1542,22 @@ export function normalizeWithReport(raw: unknown): NormalizeReport {
   const fecha = fechaRaw && isValidFecha(fechaRaw) ? fechaRaw : undefined;
   if (fechaRaw && !fecha) log.push({ campo: "tapa.fecha", valor: fechaRaw, usado: "sin fecha" });
 
+  const base = pick<DialBaseId>("esfera.base", "esfera", e.base, d.esfera.base);
+  let degradado: DialGradientStep | undefined;
+  if (getDialBase(base)?.degradado) {
+    degradado = isGradientStep(e.degradado) ? e.degradado : DIAL_GRADIENT_DEFAULT;
+    if (e.degradado !== undefined && degradado !== e.degradado)
+      log.push({ campo: "esfera.degradado", valor: String(e.degradado), usado: String(degradado) });
+  }
+
   const config: WatchConfig = {
     v: 1,
     caja: pick<CaseId>("caja", "caja", r.caja, d.caja),
     acabado: pick<FinishId>("acabado", "acabado", r.acabado, d.acabado),
     esfera: {
       modelo,
-      base: pick<DialBaseId>("esfera.base", "esfera", e.base, d.esfera.base),
+      base,
+      ...(degradado ? { degradado } : {}),
       pista: orisha ? { estilo, orisha } : { estilo },
       texto: text("esfera.texto", e.texto, cleanDialText),
       signo: normSign(e.signo, "esfera.signo", log),
@@ -1478,11 +1668,11 @@ function strapLabel(c: WatchConfig): string {
 /** Una línea en español para el carrito y el resumen. */
 export function summary(c: WatchConfig): string {
   const fin = getFinish(c.acabado)?.label ?? c.acabado;
-  const base = getDialBase(c.esfera.base)?.label ?? c.esfera.base;
-  const ifa = c.esfera.modelo === "ifa" ? " Ifá con los 16 Meyis" : "";
+  const base = dialBaseLabel(c.esfera);
+  const ifa = c.esfera.modelo === "ifa" ? "Ifá con los 16 Meyis, " : "";
   const bits = [
     `Reloj octogonal 40 mm en ${lower(fin)}`,
-    `esfera ${lower(base)}${ifa}, ${describeTrack(c)}`,
+    `esfera ${ifa}${lower(base)}, ${describeTrack(c)}`,
     c.esfera.texto ? `«${c.esfera.texto}»` : "sin texto",
   ];
   if (c.esfera.signo) bits.push(`signo ${signName(c.esfera.signo)} ${posLabel(c.esfera.signoPos)}`);
@@ -1525,7 +1715,7 @@ export function lineProperties(
     { key: "Diseño", value: code },
     { key: "Orisha", value: orisha ? orishaName(orisha) : "Personalizado" },
     { key: "Caja", value: `Octogonal 40 mm · ${getFinish(c.acabado)?.shopifyValue ?? c.acabado}` },
-    { key: "Esfera", value: `${getDialBase(c.esfera.base)?.label ?? c.esfera.base} · ${modelo}${describeTrack(c)}` },
+    { key: "Esfera", value: `${dialBaseLabel(c.esfera)} · ${modelo}${describeTrack(c)}` },
     {
       key: "Esfera · texto",
       value: texto ? `«${texto}»${canon && texto !== canon ? " · escrito por el cliente" : ""}` : "(sin texto)",

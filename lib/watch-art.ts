@@ -37,8 +37,10 @@ import {
   WATCH_MATERIALS,
   WATCH_SPECS,
   beadAt,
+  DIAL_NAME_Y,
   contrastRatio,
-  dialInk,
+  dialColorAt,
+  dialInkAt,
   formatFecha,
   getDialBase,
   getFinish,
@@ -447,8 +449,12 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   const L = DIAL_LAYOUT;
   const ifa = c.esfera.modelo === "ifa";
   const base = getDialBase(c.esfera.base) ?? DIAL_BASES[0];
-  const baseHex = WATCH_COLORS[base.color].hex;
-  const ink = dialInk(base.id).hex;
+  // Color de la esfera y tinta a una altura (mm, + hacia abajo): fijos en una
+  // esfera lisa; en un degradado, los que quedan DEBAJO de cada pieza impresa
+  // (lib/watch.ts dialInkAt: dorada clara, dorada oscura o negra).
+  const bgAt = (y: number) => dialColorAt(c.esfera, y);
+  const inkAt = (y: number) => dialInkAt(c.esfera, y).hex;
+  const baseHex = base.degradado ? bgAt(0) : WATCH_COLORS[base.color].hex;
   const rim = rimMetalHex(c);
   const lume = WATCH_MATERIALS.lume;
   const out: Primitive[] = [];
@@ -471,7 +477,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   const seq = orisha ? TRACK_SEQUENCES[orisha] : undefined;
   // Un color que casi desaparece sobre la esfera lleva un filo de tinta (cuentas)
   // o se imprime en tinta (rayas): blanco sobre blanco, rojo sobre rojo…
-  const lowContrast = (hex: string) => contrastRatio(hex, baseHex) < 1.6;
+  const lowContrast = (hex: string, y: number) => contrastRatio(hex, bgAt(y)) < 1.6;
   for (let i = 0; i < 60; i++) {
     const deg = i * 6;
     if (estilo === "cuentas" && seq) {
@@ -486,7 +492,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
         cy: p.y,
         r,
         fill: hex,
-        ...(lowContrast(hex) ? { stroke: ink, strokeWidth: 0.07 } : {}),
+        ...(lowContrast(hex, p.y) ? { stroke: inkAt(p.y), strokeWidth: 0.07 } : {}),
       });
       if (b.raya) {
         // La cuenta rayada: una banda a lo ancho, tangente a la pista.
@@ -504,9 +510,10 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
     } else {
       const major = i % 5 === 0;
       const t = major ? L.track.major : L.track.minor;
-      const want = seq ? WATCH_COLORS[beadAt(seq, i).color].hex : ink;
-      const hex = lowContrast(want) ? ink : want;
       const p = polar(L.track.outerR - t.len / 2, deg);
+      const ink = inkAt(p.y);
+      const want = seq ? WATCH_COLORS[beadAt(seq, i).color].hex : ink;
+      const hex = lowContrast(want, p.y) ? ink : want;
       out.push({ kind: "rect", capa: "impresion", x: p.x - t.w / 2, y: p.y - t.len / 2, w: t.w, h: t.len, rotate: deg, fill: hex });
     }
   }
@@ -528,7 +535,7 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
       letterSpacing: size * N.trackEm,
       weight: N.weight,
       maxWidth: N.maxW,
-      fill: ink,
+      fill: inkAt(DIAL_NAME_Y),
     });
   }
 
@@ -537,14 +544,14 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
   if (ifa) {
     for (const s of ifaSignSlots()) {
       out.push(
-        ...signPrimitives({ tipo: "meyi", oduId: s.oduId }, s.cx, s.cy, L.ifa.inkH, ink, "impresion", "barras", {
+        ...signPrimitives({ tipo: "meyi", oduId: s.oduId }, s.cx, s.cy, L.ifa.inkH, inkAt(s.cy), "impresion", "barras", {
           barScale: L.ifa.barScale,
         }),
       );
     }
   } else if (c.esfera.signo) {
     const s = L.sign[c.esfera.signoPos];
-    out.push(...signPrimitives(c.esfera.signo, s.cx, s.cy, s.inkH, ink, "impresion"));
+    out.push(...signPrimitives(c.esfera.signo, s.cx, s.cy, s.inkH, inkAt(s.cy), "impresion"));
   }
 
   // 5 · Ventana de fecha (el disco blanco se ve a través del hueco).

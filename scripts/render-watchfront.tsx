@@ -198,6 +198,48 @@ async function main() {
       }),
     },
     { nombre: "noche-orula", config: P("orula"), noche: true },
+    // Degradados (§14): la tinta cambia según el color que queda debajo.
+    ...([1, 3, 5] as const).map((n) => ({
+      nombre: `degradado-ifa-orula-p${n}`,
+      config: tweak(P("ifa"), (c) => {
+        c.esfera.base = "degradado-orula";
+        c.esfera.degradado = n;
+      }),
+    })),
+    {
+      nombre: "degradado-chango-signo-6",
+      config: tweak(P("chango"), (c) => {
+        c.esfera.base = "degradado-chango";
+        c.esfera.degradado = 3;
+        c.esfera.signo = { tipo: "meyi", oduId: "ogunda-meji" };
+        c.esfera.signoPos = "seis";
+      }),
+    },
+    {
+      nombre: "degradado-oshun-p3",
+      config: tweak(P("oshun"), (c) => {
+        c.esfera.base = "degradado-oshun";
+        c.esfera.degradado = 3;
+      }),
+    },
+    {
+      nombre: "degradado-babalu-aye-p2-signo-9",
+      config: tweak(P("cero"), (c) => {
+        c.esfera.base = "degradado-babalu-aye";
+        c.esfera.degradado = 2;
+        c.esfera.texto = "BABALÚ AYÉ";
+        c.esfera.signo = { tipo: "combinacion", derecha: "otura-meji", izquierda: "ika-meji", nombre: "Otura Ika" };
+        c.esfera.signoPos = "nueve";
+      }),
+    },
+    {
+      nombre: "degradado-obatala-p4",
+      config: tweak(P("cero"), (c) => {
+        c.esfera.base = "degradado-obatala";
+        c.esfera.degradado = 4;
+        c.esfera.texto = "OBATALÁ";
+      }),
+    },
     { nombre: "noche-ifa", config: P("ifa"), noche: true },
     {
       nombre: "tapa-ifa",

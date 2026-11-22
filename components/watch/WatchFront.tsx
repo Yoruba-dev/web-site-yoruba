@@ -129,7 +129,7 @@ export default function WatchFront({
   }, []);
 
   // Claves de fundido: cada capa SVG cambia solo si cambia lo que pinta.
-  const kImpresion = JSON.stringify([e.modelo, e.base, e.pista, e.texto, e.signo, e.signoPos]);
+  const kImpresion = JSON.stringify([e.modelo, e.base, e.degradado, e.pista, e.texto, e.signo, e.signoPos]);
   const kIndices = JSON.stringify([e.modelo, e.base, dialHasDate(config), rimMetalHex(config)]);
   const kAgujas = JSON.stringify([config.segundero, e.base, handMetalHex(config), handPose(config)]);
   // El aplique mide ~87 px en la plantilla: la versión de 256 px sobra siempre.

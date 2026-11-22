@@ -95,6 +95,23 @@ import {
   type TextRun,
 } from "../lib/watch-art";
 import { casebackSvg, dialPrintSvg, frontSvg, frontSvgDataUrl, laserSvg } from "../lib/watch-svg";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  DIAL_GRADIENTS,
+  DIAL_GRADIENT_CENTERS,
+  DIAL_GRADIENT_DEFAULT,
+  DIAL_GRADIENT_STEPS,
+  DIAL_GRADIENT_WIDTH,
+  DIAL_NAME_Y,
+  canonicalJson,
+  dialColorAt,
+  dialInkAt,
+  gradientMix,
+  withGradientStep,
+  type DialBaseId,
+} from "../lib/watch";
+import { capaUrl, nombresCapas } from "../lib/watch-capas";
 import { dialPrintSvgCurvas, laserSvgCurvas, missingGlyphs, pathBounds, pathReach, textRunToPath, textWidthMm } from "../lib/watch-curvas";
 import { CASEBACK_LAYOUT } from "../lib/watch-art";
 import { decodeDesign, encodeDesign, encodeWatchDesign, isWatchPayload } from "../lib/design-code";
@@ -1168,6 +1185,111 @@ section("production files: text in curves (no <text>), every glyph present, insi
       ok(b && b[2] - b[0] <= name6.maxWidth + 0.05, `${name}: the dial name is ${(b ? b[2] - b[0] : NaN).toFixed(2)} mm wide (max ${name6.maxWidth})`);
     }
   }
+});
+
+section("gradient dials: same colours as the layers, every step legible, the step survives links", () => {
+  // 1 · The data and the layer generator agree (colours, positions, width).
+  //     design-assets/ is not in git (Netlify builds without it): that half of
+  //     the check runs only where the generator exists (the owner's machine).
+  const pyPath = join(process.cwd(), "design-assets/creador-relojes/piezas/esferas.py");
+  const py = existsSync(pyPath) ? readFileSync(pyPath, "utf8") : null;
+  if (!py) console.log("  · esferas.py not here (design-assets/ is not in git): skipping the generator comparison");
+  const hex = (rgb: string) =>
+    `#${rgb
+      .split(",")
+      .map((n) => Number(n.trim()).toString(16).padStart(2, "0"))
+      .join("")}`;
+  for (const g of DIAL_GRADIENTS) {
+    const m = py?.match(new RegExp(`"${g.key}": \\(\\(([^)]+)\\), \\(([^)]+)\\)`));
+    if (py) ok(m, `gradient ${g.key}: not in piezas/esferas.py DEGRADADOS`);
+    if (m) ok(hex(m[1]) === g.arriba && hex(m[2]) === g.abajo, `gradient ${g.key}: colours differ from esferas.py (${hex(m[1])} → ${hex(m[2])})`);
+    const b = DIAL_BASES.find((x) => x.id === `degradado-${g.key}`);
+    ok(b?.textura === "degradado" && b.degradado?.key === g.key, `gradient ${g.key}: no catalogue entry`);
+    // Every step has its photo layer at both sizes.
+    for (const n of DIAL_GRADIENT_STEPS)
+      for (const size of [1200, 600] as const)
+        ok(
+          existsSync(join(process.cwd(), "public", capaUrl(`esfera-degradado-${g.key}-p${n}`, size))),
+          `gradient ${g.key} p${n}: missing layer ${size}`,
+        );
+  }
+  if (py) {
+    const pos = py.match(/POSICIONES = \{([^}]+)\}/)?.[1] ?? "";
+    for (const n of DIAL_GRADIENT_STEPS) {
+      const v = pos.match(new RegExp(`${n}: ([0-9.]+)`))?.[1];
+      ok(v !== undefined && Number(v) === DIAL_GRADIENT_CENTERS[n], `gradient step ${n}: centre differs from esferas.py POSICIONES`);
+    }
+    ok(Number(py.match(/ANCHO_TRANSICION = ([0-9.]+)/)?.[1]) === DIAL_GRADIENT_WIDTH, "gradient width differs from esferas.py");
+  }
+
+  // 2 · The colour really runs top → bottom, and a solid dial is flat.
+  for (const g of DIAL_GRADIENTS) {
+    const e = { base: `degradado-${g.key}` as DialBaseId, degradado: 3 as const };
+    ok(dialColorAt(e, -15.25) === g.arriba && dialColorAt(e, 15.25) === g.abajo, `gradient ${g.key}: ends are not its two colours`);
+  }
+  ok(dialColorAt({ base: "verde" }, -10) === dialColorAt({ base: "verde" }, 10), "a solid dial changes colour");
+  // Step 1 keeps more of the top colour at the centre than step 5.
+  ok(gradientMix(1, 0) < gradientMix(3, 0) && gradientMix(3, 0) < gradientMix(5, 0), "gradient steps do not move the blend");
+
+  // 3 · The name sample height sits inside the name line of both dials.
+  for (const N of [DIAL_LAYOUT.name, DIAL_LAYOUT.ifa.name])
+    ok(DIAL_NAME_Y < N.baseline && DIAL_NAME_Y > N.baseline - N.size, `DIAL_NAME_Y ${DIAL_NAME_Y} is outside the name (${N.baseline})`);
+
+  // 4 · Every gradient × step × dial model × sign position: the name, the sign
+  //     and the 16 Meyis all reach 3:1 against the colour under them, and
+  //     validate() never blocks on contrast.
+  const ifaBase = resolvePreset("ifa", disp);
+  const base0 = resolvePreset("orula", disp);
+  for (const g of DIAL_GRADIENTS)
+    for (const n of DIAL_GRADIENT_STEPS) {
+      const id = `degradado-${g.key}` as DialBaseId;
+      for (const pos of ["nueve", "seis"] as const) {
+        const c = withGradientStep(
+          withPart({ ...base0, esfera: { ...base0.esfera, signo: COMBO, signoPos: pos } }, "esfera", id),
+          n,
+        );
+        ok(c.esfera.base === id && c.esfera.degradado === n, `${g.key} p${n}: step not stored`);
+        const name = dialInkAt(c.esfera, DIAL_NAME_Y);
+        ok(name.contraste >= 3, `${g.key} p${n}: name ${name.contraste.toFixed(2)}:1`);
+        const s = DIAL_LAYOUT.sign[pos];
+        const si = dialInkAt(c.esfera, s.cy);
+        ok(si.contraste >= 3, `${g.key} p${n}: sign at ${pos} ${si.contraste.toFixed(2)}:1`);
+        ok(!validate(c).issues.some((i) => i.regla === "contraste-texto"), `${g.key} p${n}: contrast blocks the order`);
+      }
+      const ifa = withGradientStep(withPart(ifaBase, "esfera", id), n);
+      for (const slot of ifaSignSlots()) {
+        const k = dialInkAt(ifa.esfera, slot.cy);
+        ok(k.contraste >= 3, `${g.key} p${n}: Meyi ${slot.oduId} ${k.contraste.toFixed(2)}:1`);
+      }
+      // The print really uses those inks (not the solid-dial one).
+      const INKS = [WATCH_MATERIALS["tinta-oro"], WATCH_MATERIALS["tinta-oro-oscuro"], WATCH_MATERIALS["tinta-negra"]] as string[];
+      const used = new Set(dialPrimitives(ifa).flatMap((q) => (q.capa === "impresion" && q.fill && INKS.includes(q.fill) ? [q.fill] : [])));
+      ok(used.size >= 1, `${g.key} p${n}: the Ifá dial prints in none of the three inks`);
+    }
+
+  // 5 · Solid dials keep exactly their old ink (best of the two golds).
+  for (const b of DIAL_BASES.filter((x) => !x.degradado && x.status === "verificado")) {
+    const i = dialInk(b.id);
+    ok(i.id === "oro" || i.id === "oro-oscuro", `solid ${b.id}: ink ${i.id} is not one of the golds`);
+  }
+
+  // 6 · The step lives only with a gradient base, and survives links.
+  const g0 = withPart(base0, "esfera", "degradado-orula");
+  ok(g0.esfera.degradado === DIAL_GRADIENT_DEFAULT, "a new gradient does not start at step 3");
+  const g4 = withGradientStep(g0, 4);
+  ok(withPart(g4, "esfera", "degradado-oshun").esfera.degradado === 4, "switching gradients loses the step");
+  ok(!("degradado" in withPart(g4, "esfera", "verde").esfera), "a solid dial keeps a gradient step");
+  ok(withGradientStep(base0, 2) === base0, "a step changes a solid dial");
+  ok(canonicalJson(normalize(JSON.parse(JSON.stringify(g4)))) === canonicalJson(g4), "a gradient design does not round-trip through normalize");
+  ok(normalize({ ...g0, esfera: { ...g0.esfera, degradado: undefined } }).esfera.degradado === 3, "missing step is not 3");
+  const bad = normalizeWithReport({ ...g0, esfera: { ...g0.esfera, degradado: 9 } });
+  ok(bad.config.esfera.degradado === 3 && bad.descontinuado.some((d) => d.campo === "esfera.degradado"), "a bad step is not reported");
+  ok(!("degradado" in normalize({ ...base0, esfera: { ...base0.esfera, degradado: 2 } }).esfera), "a solid dial keeps a step from a link");
+  ok(designCode(g4) !== designCode(g0), "the design code ignores the step");
+  ok(nombresCapas(g4).esfera === "esfera-degradado-orula-p4" && nombresCapas(g4).aproximadas.length === 0, "wrong gradient layer");
+  const props = lineProperties(g4, "PY-R-TEST", "https://x/diseno?d=x").find((p) => p.key === "Esfera")?.value ?? "";
+  ok(/Degradado Orula \(amarillo → verde\), paso 4 de 5/.test(props), `the order line does not state the step: ${props}`);
+  ok(/paso 4 de 5/.test(summary(g4)), "the summary does not state the step");
 });
 
 console.log(`\n${checks - failures}/${checks} checks passed`);
