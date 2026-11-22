@@ -20,6 +20,7 @@ import {
   withDialModel,
   withGradientStep,
   withPart,
+  withStrapType,
   type DialGradientStep,
   type DialModelId,
   type DialSignPos,
@@ -27,15 +28,22 @@ import {
   type OrishaId,
   type PartCategory,
   type PresetId,
+  type StrapId,
+  type StrapType,
   type Tapa,
   type WatchConfig,
   type WatchField,
 } from "../../lib/watch";
+import { ALL_GHOST, ALL_SOLID, WATCH_PARTS, type PartMask, type View3D, type WatchPart } from "./stage3d-contract";
 
 // ===========================================================================
-// PASOS
+// PASOS — 4 pasos para armar el reloj + "Listo" (spec V2 §3.5). Las agujas
+// viven dentro de la esfera (Esfera › Detalles).
 // ===========================================================================
-export type StepId = "caja" | "esfera" | "agujas" | "correa" | "tapa" | "resumen";
+export type StepId = "caja" | "esfera" | "correa" | "tapa" | "resumen";
+
+/** Sub-pestañas de los pasos que las tienen. */
+export type SubId = "color" | "pista" | "texto" | "detalles" | "signo" | "grabado";
 
 export interface StepDef {
   id: StepId;
@@ -48,25 +56,106 @@ export interface StepDef {
 export const STEPS: readonly StepDef[] = [
   { id: "caja", label: "Caja", titulo: "El acabado de tu caja" },
   { id: "esfera", label: "Esfera", titulo: "Tu esfera" },
-  { id: "agujas", label: "Agujas", titulo: "Las agujas" },
   { id: "correa", label: "Correa", titulo: "Tu correa" },
-  { id: "tapa", label: "Tu tapa", titulo: "Tu tapa: el grabado al dorso" },
-  { id: "resumen", label: "Resumen", titulo: "Tu reloj" },
+  { id: "tapa", label: "Tapa", titulo: "Tu tapa: el grabado al dorso" },
+  { id: "resumen", label: "Listo", titulo: "Tu reloj está listo" },
 ];
+
+/** Pasos que arman el reloj ("Paso N de 4"); el quinto es "Listo". */
+export const BUILD_STEPS = 4;
+
+export const SUBS: Readonly<Partial<Record<StepId, readonly SubId[]>>> = {
+  esfera: ["color", "pista", "texto", "detalles"],
+  tapa: ["signo", "grabado"],
+};
+
+export const SUB_LABELS: Readonly<Record<SubId, string>> = {
+  color: "Color",
+  pista: "Pista",
+  texto: "Texto",
+  detalles: "Detalles",
+  signo: "Signo",
+  grabado: "Grabado",
+};
 
 export function isStepId(x: unknown): x is StepId {
   return typeof x === "string" && STEPS.some((s) => s.id === x);
 }
 
+export function isSubId(x: unknown): x is SubId {
+  return typeof x === "string" && x in SUB_LABELS;
+}
+
 export const stepIndex = (id: StepId) => STEPS.findIndex((s) => s.id === id);
 
-/** El paso donde se corrige cada campo (para los enlaces "Corregir"). */
-export function stepOfField(f: WatchField): StepId {
-  if (f === "caja" || f === "acabado") return "caja";
-  if (f.startsWith("esfera.") || f === "aplique") return "esfera";
-  if (f === "segundero") return "agujas";
-  if (f === "correa" || f === "cierre") return "correa";
-  return "tapa";
+/** Las sub-pestañas de un paso ([] si no tiene). */
+export const subsOf = (step: StepId): readonly SubId[] => SUBS[step] ?? [];
+
+/** La sub-pestaña válida para `step`: `sub` si es suya; si no, la primera
+ *  (null en un paso sin sub-pestañas). */
+export function fixSub(step: StepId, sub: SubId | null | undefined): SubId | null {
+  const list = subsOf(step);
+  if (!list.length) return null;
+  return sub && list.includes(sub) ? sub : list[0];
+}
+
+/** El paso que vuelve REAL (sólida) cada pieza del reloj 3D. */
+export const PART_STEP: Readonly<Record<WatchPart, StepId>> = {
+  caja: "caja",
+  esfera: "esfera",
+  agujas: "esfera",
+  correa: "correa",
+  cierre: "correa",
+  tapa: "tapa",
+};
+
+/** El encuadre de la cámara de cada paso. */
+export const STEP_VIEW: Readonly<Record<StepId, View3D>> = {
+  caja: "tres4",
+  esfera: "esfera",
+  correa: "lado",
+  tapa: "tapa",
+  resumen: "tres4",
+};
+
+/** Qué piezas son reales: las de los pasos ya alcanzados (índice ≤ `max`), o
+ *  todas con `todo` ("Ver completo", un enlace compartido). max = -1 → todo en
+ *  cristal (la entrada). */
+export function confirmedMask(max: number, todo: boolean): PartMask {
+  if (todo) return ALL_SOLID;
+  const out = { ...ALL_GHOST } as Record<WatchPart, boolean>;
+  for (const p of WATCH_PARTS) out[p] = stepIndex(PART_STEP[p]) <= max;
+  return out;
+}
+
+/** Dónde se corrige cada campo (los enlaces "Corregir" y los puntos de la
+ *  barra de pasos): el paso y su sub-pestaña. */
+export function stepOfField(f: WatchField): { step: StepId; sub: SubId | null } {
+  switch (f) {
+    case "caja":
+    case "acabado":
+      return { step: "caja", sub: null };
+    case "esfera.modelo":
+    case "esfera.base":
+      return { step: "esfera", sub: "color" };
+    case "esfera.pista":
+      return { step: "esfera", sub: "pista" };
+    case "esfera.texto":
+    case "esfera.signo":
+      return { step: "esfera", sub: "texto" };
+    case "aplique":
+    case "segundero":
+      return { step: "esfera", sub: "detalles" };
+    case "correa":
+    case "cierre":
+      return { step: "correa", sub: null };
+    case "tapa.signo":
+      return { step: "tapa", sub: "signo" };
+    case "tapa.linea1":
+    case "tapa.linea2":
+    case "tapa.fecha":
+      return { step: "tapa", sub: "grabado" };
+  }
 }
 
 // ===========================================================================
@@ -78,6 +167,9 @@ export type CreatorAction =
   | { type: "preset"; id: PresetId }
   /** Una pieza del catálogo; 'pista' cambia el estilo (cuentas / rayas). */
   | { type: "pieza"; cat: PartCategory; id: string }
+  /** Tarjeta de tipo de correa: cambia de tipo en un gesto (withStrapType);
+   *  `recordado` = la correa que el cliente llevaba antes en ese tipo. */
+  | { type: "tipoCorrea"; tipo: StrapType; recordado?: StrapId }
   | { type: "modelo"; modelo: DialModelId }
   /** Dónde cambia el color de una esfera de degradado (1–5). */
   | { type: "degradado"; paso: DialGradientStep }
@@ -105,6 +197,9 @@ export function creatorReducer(c: WatchConfig, a: CreatorAction): WatchConfig {
 
     case "pieza":
       return isPartId(a.cat, a.id) ? withPart(c, a.cat, a.id) : c;
+
+    case "tipoCorrea":
+      return withStrapType(c, a.tipo, a.recordado);
 
     case "modelo":
       return withDialModel(c, a.modelo);
@@ -167,29 +262,41 @@ export function creatorReducer(c: WatchConfig, a: CreatorAction): WatchConfig {
 
 // ===========================================================================
 // AUTOGUARDADO — un solo borrador por navegador (localStorage, con try/catch).
+// v2 guarda también la sub-pestaña y hasta dónde se armó el reloj (`max`), así
+// recargar devuelve el mismo paso con las mismas piezas en cristal. Un
+// borrador v1 (6 pasos, con "agujas") se migra: agujas → Esfera › Detalles.
 // ===========================================================================
 export const DRAFT_KEY = "pyj-reloj-diseno";
 
 export interface Draft {
-  v: 1;
+  v: 2;
   config: WatchConfig;
   step: StepId;
+  sub: SubId | null;
+  /** Índice del paso más alto alcanzado (−1 = ninguno). */
+  max: number;
   /** Date.now() del último cambio. */
   at: number;
 }
 
-/** Lee un borrador guardado (ya normalizado) o null. Nunca lanza. */
+/** Lee un borrador guardado (v2, o v1 migrado; ya normalizado) o null. Nunca lanza. */
 export function parseDraft(raw: string | null): Draft | null {
   if (!raw) return null;
   try {
-    const d = JSON.parse(raw) as Partial<Draft> | null;
+    const d = JSON.parse(raw) as Record<string, unknown> | null;
     if (!d || typeof d !== "object" || !d.config) return null;
-    return {
-      v: 1,
-      config: normalize(d.config),
-      step: isStepId(d.step) ? d.step : "caja",
-      at: typeof d.at === "number" ? d.at : 0,
-    };
+    const config = normalize(d.config);
+    const at = typeof d.at === "number" ? d.at : 0;
+    // v1: 6 pasos; "agujas" vive ahora en Esfera › Detalles.
+    const rawStep = d.step === "agujas" ? "esfera" : d.step;
+    const step: StepId = isStepId(rawStep) ? rawStep : "caja";
+    const sub = d.step === "agujas" ? "detalles" : fixSub(step, isSubId(d.sub) ? d.sub : null);
+    const top = STEPS.length - 1;
+    const max =
+      d.v === 2 && typeof d.max === "number" && Number.isFinite(d.max)
+        ? Math.max(stepIndex(step), Math.min(top, Math.round(d.max)))
+        : stepIndex(step);
+    return { v: 2, config, step, sub, max, at };
   } catch {
     return null;
   }

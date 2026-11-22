@@ -1,29 +1,48 @@
-// Tipos compartidos entre la vista 3D (diferida) y su envoltorio. Sin three:
-// el envoltorio los importa solo como tipos.
+// Tipos compartidos entre la escena 3D (diferida) y su envoltorio
+// (components/watch/WatchStage3D.tsx). Sin three: el envoltorio los importa
+// solo como tipos. El contrato con el editor vive en ../stage3d-contract.ts.
 import type { WatchConfig } from "@/lib/watch";
+import type { CaptureOptions, PartMask, Stage3DMode, View3D, ViewInsets, WatchPart } from "../stage3d-contract";
 
-/** Encuadres de la cámara: perspectiva (3/4, el de presentación), de frente,
- *  de perfil (el lado de la corona) y la tapa. */
-export type Vista3D = "tres4" | "frente" | "perfil" | "tapa";
+/** Un paso pedido con el teclado sobre el visor (flechas, + y −). */
+export interface Nudge {
+  seq: number;
+  /** Radianes de acimut y de ángulo polar. */
+  az: number;
+  pol: number;
+  /** Factor de distancia (1 = sin cambio; 0.85 acerca, 1.18 aleja). */
+  zoom: number;
+}
+
+/** Los recuadros tapados por la interfaz, leídos sin volver a pintar React
+ *  (el editor los cambia hasta una vez por fotograma al arrastrar la hoja). */
+export interface InsetsSource {
+  get(): ViewInsets;
+  subscribe(fn: () => void): () => void;
+}
+
+/** Lo que la escena ofrece hacia fuera (la foto de estudio). */
+export interface SceneApi {
+  capture(opts?: CaptureOptions): Promise<Blob | null>;
+}
 
 export interface WatchSceneProps {
   config: WatchConfig;
-  vista: Vista3D;
-  /** Sube cada vez que se pulsa un encuadre (aunque sea el mismo). */
-  vistaSeq: number;
-  /** Un paso de giro pedido con el teclado (radianes de acimut y polar). */
-  nudge?: { seq: number; az: number; pol: number };
+  confirmed: PartMask;
+  view: View3D;
+  /** Sube con cada encuadre pedido (aunque se repita). */
+  viewSeq: number;
   noche: boolean;
-  /** Sube cada vez que se pide "Descargar foto". */
-  fotoSeq: number;
-  /** Giro de presentación al abrir (se para al primer gesto). */
-  intro?: boolean;
-  /** Encuadre de la cabeza (el escenario pequeño del móvil). */
-  compacto?: boolean;
+  mode: Stage3DMode;
+  /** false = "Foto real" delante: no se pinta nada (el contexto se conserva). */
+  active: boolean;
+  insets: InsetsSource;
+  nudge: Nudge;
+  /** Primer fotograma completo (texturas pintadas). */
   onReady?: () => void;
-  /** La foto de estudio (JPEG) o null si no se pudo. */
-  onFoto?: (img: Blob | null) => void;
   onContextLost?: () => void;
-  /** El cliente tocó el reloj (para dejar de mostrar pistas). */
   onInteract?: () => void;
+  onPartPick?: (p: WatchPart) => void;
+  /** La escena entrega su API al montarse (y null al desmontarse). */
+  onApi?: (api: SceneApi | null) => void;
 }

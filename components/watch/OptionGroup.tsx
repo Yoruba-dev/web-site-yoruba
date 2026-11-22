@@ -1,24 +1,35 @@
 "use client";
 
-import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // Grupo de opciones del creador = un radiogroup accesible (patrón WAI-ARIA):
 // una sola parada de tabulador por grupo, flechas para moverse (y elegir, como
 // un radio nativo), Inicio / Fin, foco visible. Las fichas en gris (agotada,
 // bloqueada) se pintan con su motivo en español, no se pueden elegir y las
-// flechas las saltan. En el móvil el mismo grupo se vuelve un carril
-// horizontal (CSS: .pyj-reloj_rail).
+// flechas las saltan.
+//
+// Variantes (spec V2 §6.1), todas sobre la misma rejilla de 8 px:
+//   • tiles     — fichas con muestra + nombre (acabado, aplique, Meyis…);
+//   • cards     — tarjetas con foto a sangre (tipo de correa);
+//   • rows      — filas de 48 px (las cuentas de cada Orisha);
+//   • swatches  — círculos de 44 px (SVG: la web anula los border-radius); el
+//                 nombre de la elegida va en la etiqueta del grupo;
+//   • segmented — pista de pastilla con el "pulgar" que se desliza;
+//   • chips     — pastillas de texto.
+// En la hoja del móvil, tiles / cards / swatches son carriles que se deslizan.
 // ---------------------------------------------------------------------------
 
 export type OptionEstado = "disponible" | "aviso" | "agotado" | "bloqueado";
+
+export type OptionVariant = "tiles" | "cards" | "rows" | "swatches" | "segmented" | "chips";
 
 export interface OptionItem<T extends string> {
   id: T;
   label: string;
   /** Muestra (SVG, foto recortada…). */
   visual?: ReactNode;
-  /** Línea pequeña bajo el nombre ("Incluido", "Pendiente de taller"…). */
+  /** Línea pequeña bajo el nombre ("Incluido", "9 colores"…). */
   detalle?: string;
   estado?: OptionEstado;
   /** Motivo en español cuando está en gris o con aviso. */
@@ -27,6 +38,7 @@ export interface OptionItem<T extends string> {
 
 export default function OptionGroup<T extends string>({
   label,
+  labelValue,
   hint,
   value,
   options,
@@ -34,17 +46,26 @@ export default function OptionGroup<T extends string>({
   variant = "tiles",
   hideLabel = false,
   onPreview,
+  columns,
+  field,
+  className,
 }: {
   label: string;
+  /** Lo elegido, a la vista en la etiqueta ("2 · Color — Caucho rojo"). */
+  labelValue?: string;
   hint?: ReactNode;
   value: T | null | undefined;
   options: readonly OptionItem<T>[];
   onChange: (id: T) => void;
-  /** 'tiles' = fichas con muestra; 'chips' = pastillas de texto. */
-  variant?: "tiles" | "chips";
+  variant?: OptionVariant;
   hideLabel?: boolean;
   /** Al pasar el ratón / enfocar una ficha (precarga de sus fotos). */
   onPreview?: (id: T) => void;
+  /** Columnas de la rejilla (tiles, cards, rows, swatches). */
+  columns?: number;
+  /** data-field: "Corregir" lleva el foco aquí. */
+  field?: string;
+  className?: string;
 }) {
   const uid = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -84,15 +105,22 @@ export default function OptionGroup<T extends string>({
 
   const labelId = `${uid}-l`;
   const hintId = hint ? `${uid}-h` : undefined;
+  const swatch = variant === "swatches";
+  const segmented = variant === "segmented";
+  const style = {
+    ...(columns ? { "--cols": columns } : {}),
+    ...(segmented ? { "--n": options.length, "--i": Math.max(0, selectedIndex) } : {}),
+  } as CSSProperties;
 
   return (
-    <div className={`pyj-reloj_group pyj-reloj_group--${variant}`}>
-      <div className={hideLabel ? "pyj-reloj_sr" : "pyj-reloj_grouphead"}>
-        <span id={labelId} className="pyj-reloj_grouplabel">
+    <div className={`rl-group rl-group--${variant}${className ? ` ${className}` : ""}`} data-field={field}>
+      <div className={hideLabel ? "rl-sr" : "rl-group_head"}>
+        <span id={labelId} className="rl-group_label">
           {label}
+          {labelValue && <span className="rl-group_value"> — {labelValue}</span>}
         </span>
         {hint && (
-          <span id={hintId} className="pyj-reloj_grouphint">
+          <span id={hintId} className="rl-group_hint">
             {hint}
           </span>
         )}
@@ -101,8 +129,10 @@ export default function OptionGroup<T extends string>({
         role="radiogroup"
         aria-labelledby={labelId}
         aria-describedby={hintId}
-        className={`pyj-reloj_rail pyj-reloj_rail--${variant}`}
+        className={`rl-rail rl-rail--${variant}${segmented ? " rl-seg" : ""}${selectedIndex < 0 && segmented ? " is-empty" : ""}`}
+        style={style}
       >
+        {segmented && <span className="rl-seg_thumb" aria-hidden="true" />}
         {options.map((o, i) => {
           const checked = i === selectedIndex;
           const off = !usable(o);
@@ -118,8 +148,10 @@ export default function OptionGroup<T extends string>({
               aria-checked={checked}
               aria-disabled={off || undefined}
               aria-describedby={motivoId}
+              aria-label={swatch ? `${o.label}${o.detalle ? `, ${o.detalle}` : ""}` : undefined}
+              title={swatch ? o.motivo ?? o.label : off ? o.motivo : undefined}
               tabIndex={i === tabIndexOf ? 0 : -1}
-              className={`pyj-reloj_opt${checked ? " is-on" : ""}${off ? " is-off" : ""}${
+              className={`rl-opt${segmented ? " rl-seg_btn" : ""}${checked ? " is-on" : ""}${off ? " is-off" : ""}${
                 o.estado === "aviso" ? " is-warn" : ""
               }`}
               onClick={() => {
@@ -130,19 +162,40 @@ export default function OptionGroup<T extends string>({
               onFocus={onPreview && !off ? () => onPreview(o.id) : undefined}
             >
               {o.visual && (
-                <span className="pyj-reloj_optvis" aria-hidden="true">
+                <span className="rl-opt_vis" aria-hidden="true">
                   {o.visual}
+                  {swatch && (
+                    <svg className="rl-opt_ring" viewBox="0 0 52 52" focusable="false">
+                      <circle cx="26" cy="26" r="24.5" />
+                    </svg>
+                  )}
                 </span>
               )}
-              <span className="pyj-reloj_opttxt">
-                <span className="pyj-reloj_optlabel">{o.label}</span>
-                {o.detalle && <span className="pyj-reloj_optdet">{o.detalle}</span>}
-                {o.motivo && (
-                  <span id={motivoId} className="pyj-reloj_optwhy">
-                    {o.motivo}
-                  </span>
-                )}
-              </span>
+              {!swatch && (
+                <span className="rl-opt_txt">
+                  <span className="rl-opt_label">{o.label}</span>
+                  {o.detalle && <span className="rl-opt_det">{o.detalle}</span>}
+                  {o.motivo && (variant === "tiles" || variant === "cards" || variant === "rows") && (
+                    <span id={motivoId} className="rl-opt_why">
+                      {o.motivo}
+                    </span>
+                  )}
+                </span>
+              )}
+              {o.motivo && !(variant === "tiles" || variant === "cards" || variant === "rows") && (
+                <span id={motivoId} className="rl-sr">
+                  {o.motivo}
+                </span>
+              )}
+              {(variant === "tiles" || variant === "cards") && checked && (
+                <span className="rl-opt_badge" aria-hidden="true">
+                  <svg viewBox="0 0 18 18" focusable="false">
+                    <circle cx="9" cy="9" r="9" />
+                    <path d="m5 9.4 2.6 2.6L13 6.4" />
+                  </svg>
+                </span>
+              )}
+              {o.estado === "aviso" && <span className="rl-opt_warn" aria-hidden="true" />}
             </button>
           );
         })}

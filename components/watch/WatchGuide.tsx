@@ -8,9 +8,10 @@ import {
   watchLeadTimeLabel,
 } from "@/lib/watch";
 
-// "Cómo funciona" del creador de relojes (id="como-funciona": la portada y el
-// creador enlazan a /creador-de-relojes#como-funciona). Componente de
-// servidor: solo texto, ningún JavaScript.
+// "Cómo funciona" del creador de relojes: vive en su propia página,
+// /creador-de-relojes/como-funciona (el editor es solo el editor; spec V2
+// §3.10). Componente de servidor: solo texto, ningún JavaScript. Estilos en
+// app/creador-de-relojes/como-funciona/guia.css.
 const PASOS: readonly { t: string; d: string }[] = [
   {
     t: "Empieza con tu Orisha",
@@ -18,7 +19,7 @@ const PASOS: readonly { t: string; d: string }[] = [
   },
   {
     t: "Ármalo pieza a pieza",
-    d: "Acabado de la caja, esfera, segundero y correa. El reloj se va armando de frente con cada elección.",
+    d: "Caja, esfera, correa y tapa. El reloj se arma en 3D ante tus ojos: cada pieza se vuelve real en su paso, y lo giras para verlo por todos lados.",
   },
   {
     t: "Tu signo, al dorso",
@@ -34,10 +35,10 @@ export default function WatchGuide() {
   return (
     <section id="como-funciona" className="pyj-reloj_guide" aria-labelledby="pyj-reloj-guide-title">
       <div className="container">
-        <header className="pyj-reloj_entryhead">
+        <header className="pyj-reloj_guidehead">
           <span className="pyj-eyebrow">✦ Paso a paso ✦</span>
-          <h2 id="pyj-reloj-guide-title" className="pyj-reloj_h2">
-            Cómo funciona
+          <h2 id="pyj-reloj-guide-title" className="pyj-reloj_guideh2">
+            Cuatro pasos y tu prueba
           </h2>
         </header>
 

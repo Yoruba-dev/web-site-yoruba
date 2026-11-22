@@ -1,61 +1,109 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
-import WatchStage, { type StageView } from "./WatchStage";
-import { useWebGL } from "./WatchStage3D";
+import "@/app/creador-de-relojes/editor.css";
+import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import WatchStage from "./WatchStage";
 import WatchEntry from "./WatchEntry";
 import StepCaja from "./steps/StepCaja";
 import StepEsfera from "./steps/StepEsfera";
-import StepAgujas from "./steps/StepAgujas";
-import StepCorrea from "./steps/StepCorrea";
+import StepCorrea, { type StrapMemory } from "./steps/StepCorrea";
 import StepTapa from "./steps/StepTapa";
-import StepResumen, { OrderCta } from "./steps/StepResumen";
+import StepListo from "./steps/StepListo";
 import {
+  BUILD_STEPS,
   DRAFT_KEY,
+  PART_STEP,
   STEPS,
+  STEP_VIEW,
+  confirmedMask,
   creatorReducer,
+  fixSub,
   parseDraft,
   stepIndex,
+  stepOfField,
+  subsOf,
   type CreatorAction,
   type Draft,
   type StepId,
+  type SubId,
 } from "./creator-state";
-import { buildOrderInfo, type WatchProductVM } from "./order";
+import { buildOrderInfo, type OrderInfo, type WatchProductVM } from "./order";
+import {
+  ALL_GHOST,
+  ALL_SOLID,
+  NO_INSETS,
+  WATCH_PARTS,
+  maskKey,
+  type PartMask,
+  type Stage3DStatus,
+  type View3D,
+  type ViewInsets,
+  type WatchPart,
+  type WatchStage3DHandle,
+} from "./stage3d-contract";
+import { AnnouncerProvider, useAnnouncer } from "./shell/announce";
+import BottomSheet, { type Snap } from "./shell/BottomSheet";
+import FocusHeader, { GUIA_HREF } from "./shell/FocusHeader";
+import { OverlayHostContext } from "./shell/overlay";
+import SharePopover from "./shell/SharePopover";
+import { HintChip, StageChips } from "./shell/StageOverlays";
+import Stepper from "./shell/Stepper";
+import SubTabs from "./shell/SubTabs";
+import ViewDock from "./shell/ViewDock";
+import { store, useCoarse, useKeyboardViewport, useMedia, usePanelLayout, useShareOrigin } from "./shell/hooks";
+import { Icon } from "./shell/icons";
+import { copyText, downloadBlob } from "./shell/share";
+import { useScrollShadow } from "./shell/useScrollShadow";
+import { STAGE3D_V2, preload3D, use3DSupport } from "./shell/stage3d";
+import { useReducedMotion } from "./front/layers";
 import { useCart } from "@/lib/cart-context";
 import { frontSvgDataUrl } from "@/lib/watch-svg";
 import { outlineIfReady } from "./front/curvas";
+import { SITE } from "@/lib/site";
 import {
-  decodeWatchDesign,
+  canonicalJson,
   designCode,
   isPresetId,
   lineProperties,
   normalize,
   resolvePreset,
+  decodeWatchDesign,
   summary,
   type Descontinuado,
   type PresetId,
+  type StrapId,
+  type StrapType,
   type WatchConfig,
 } from "@/lib/watch";
 
 // ---------------------------------------------------------------------------
-// CREADOR DE RELOJES — el editor.
+// CREADOR DE RELOJES — el editor (spec V2: design-assets/creador-relojes/
+// SPEC-EDITOR-V2.md).
 //
+// • Un armazón FIJO a pantalla completa (.pyj-reloj-app): su cabecera propia,
+//   el escenario y el panel de cristal (escritorio) o la hoja inferior
+//   (móvil). La página NUNCA se desplaza; solo, si hace falta, la zona de
+//   opciones por dentro.
 // • Un useReducer sobre WatchConfig (creator-state.ts → lib/watch.ts): cada
-//   gesto es una acción pura; las reglas, el catálogo y los textos salen de
-//   lib/watch.ts.
-// • El escenario (WatchFront) recibe la config en CADA cambio: el reloj "se va
-//   armando en frente" al instante (requisito n.º 1 del dueño). La animación de
-//   montaje (armar) solo corre en la primera entrada.
-// • Autoguardado en localStorage (try/catch) y en la URL ?d= (replaceState,
-//   400 ms después del último cambio), así recargar o compartir no pierde nada.
-// • Historial: pasar de la entrada al editor AÑADE una entrada (pushState), así
-//   el gesto "atrás" del teléfono vuelve a "Empieza con tu Orisha" (con el
-//   diseño guardado como "Continuar mi diseño") en vez de salir del creador;
-//   "adelante" vuelve a abrirlo. Las ediciones siguen con replaceState.
-// • Escritorio ≥ 1024 px: escenario fijo a la izquierda (~58 %) + pasos a la
-//   derecha. Móvil: escenario fijo arriba, barra de pasos, carriles de opciones
-//   y un pie fijo con el botón (sustituye a la barra de pestañas: ruta de
-//   enfoque, lib/focus-routes.ts).
+//   gesto es una acción pura.
+// • El reloj 3D es la vista principal y se va ARMANDO: las piezas de los pasos
+//   aún no alcanzados van "en cristal" (confirmedMask(max)). Saltar adelante
+//   las vuelve reales; "Ver completo" las enseña todas sin tocar `max`.
+// • Autoguardado (borrador v2: diseño, paso, sub-pestaña y `max`) en
+//   localStorage y en ?d= (replaceState, 400 ms tras el último cambio).
+// • Historial: entrada → editor AÑADE una entrada (pushState); "atrás" vuelve a
+//   "Empieza con tu Orisha" con "Continuar mi diseño".
 // ---------------------------------------------------------------------------
 
 export interface CreatorInitial {
@@ -63,23 +111,19 @@ export interface CreatorInitial {
   /** De dónde salió: 'd' (enlace), 'preset' (?preset=) o null (entrada). */
   source: "d" | "preset" | null;
   descontinuado: Descontinuado[];
+  /** ?paso= de un enlace compartido (por defecto "resumen"). */
+  paso?: StepId;
 }
 
-/** El mismo corte que el CSS del creador (escenario fijo a la izquierda). */
-const MQ_ESCRITORIO = "(min-width: 1024px)";
-
-/** true / false según la media query; null en el servidor y al hidratar. */
-function useEscritorio(): boolean | null {
-  return useSyncExternalStore<boolean | null>(
-    (cb) => {
-      const mq = window.matchMedia(MQ_ESCRITORIO);
-      mq.addEventListener("change", cb);
-      return () => mq.removeEventListener("change", cb);
-    },
-    () => window.matchMedia(MQ_ESCRITORIO).matches,
-    () => null,
-  );
-}
+const HINT_KEY = "pyj-reloj-pista-cristal";
+const PART_NAMES: Readonly<Record<WatchPart, string>> = {
+  caja: "caja",
+  esfera: "esfera",
+  agujas: "agujas",
+  correa: "correa",
+  cierre: "cierre",
+  tapa: "tapa",
+};
 
 const todayIso = () => {
   const d = new Date();
@@ -87,59 +131,138 @@ const todayIso = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-export default function WatchCreator({
-  initial,
-  product = null,
-}: {
-  initial: CreatorInitial;
-  product?: WatchProductVM | null;
-}) {
+const sameInsets = (a: ViewInsets, b: ViewInsets) =>
+  a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
+
+export default function WatchCreator(props: { initial: CreatorInitial; product?: WatchProductVM | null }) {
+  return (
+    <AnnouncerProvider>
+      <Creator {...props} />
+    </AnnouncerProvider>
+  );
+}
+
+function Creator({ initial, product = null }: { initial: CreatorInitial; product?: WatchProductVM | null }) {
+  const router = useRouter();
+  const uid = useId();
+  const { announce, toast } = useAnnouncer();
   const [config, rawDispatch] = useReducer(creatorReducer, initial.config);
   const [screen, setScreen] = useState<"entrada" | "editor">(initial.source ? "editor" : "entrada");
-  const [step, setStep] = useState<StepId>("caja");
-  const [view, setView] = useState<StageView>("frente");
-  const [armar, setArmar] = useState(true);
+  const desdeEnlace = initial.source === "d";
+  const [step, setStep] = useState<StepId>(desdeEnlace ? (initial.paso ?? "resumen") : "caja");
+  const [subMem, setSubMem] = useState<Partial<Record<StepId, SubId>>>({});
+  const [max, setMax] = useState<number>(desdeEnlace ? STEPS.length - 1 : initial.source === "preset" ? 0 : -1);
+  const [compartido, setCompartido] = useState(desdeEnlace);
+  // Con ?d=, hasta saber si es una recarga (el borrador coincide) o un enlace
+  // ajeno, el panel no se pinta: así no asoma "Listo" antes del paso guardado.
+  const [listo, setListo] = useState(!desdeEnlace);
+  const [verCompleto, setVerCompleto] = useState(false);
+  const [view, setView] = useState<{ v: View3D; seq: number }>({ v: desdeEnlace ? "tres4" : "tres4", seq: 0 });
+  const [noche, setNoche] = useState(false);
+  const [foto, setFoto] = useState(false);
+  const [fotoVista, setFotoVista] = useState<"frente" | "tapa">("frente");
+  const [want3d, setWant3d] = useState(false);
+  const [status, setStatus] = useState<Stage3DStatus>("cargando");
+  const [hoverPreset, setHoverPreset] = useState<PresetId | null>(null);
+  const [snap, setSnap] = useState<Snap>("half");
+  const [shareAnchor, setShareAnchor] = useState<HTMLElement | null>(null);
+  const [pedido, setPedido] = useState(false);
   const [policy, setPolicy] = useState(false);
-  const [added, setAdded] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [saveSeq, setSaveSeq] = useState(0);
+  const [insets, setInsets] = useState<ViewInsets>(NO_INSETS);
   const [descontinuado, setDescontinuado] = useState<Descontinuado[]>(initial.descontinuado);
-  const [announce, setAnnounce] = useState("");
+  const [strapMem, setStrapMem] = useState<StrapMemory>({});
+  const [hint, setHint] = useState(false);
+  const [snapshot, setSnapshot] = useState<{ code: string; url: string; file: File } | null>(null);
+  const [detalle, setDetalle] = useState(false);
+
   const rootRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const bodyRef = useRef<HTMLElement>(null);
+  const stage3d = useRef<WatchStage3DHandle>(null);
+  const sheetH = useRef(0);
   const moved = useRef(false);
   /** La entrada actual del historial la añadió el creador (entrada → editor). */
   const pushed = useRef(false);
-  const { addLine, setCartOpen } = useCart();
-  const escritorio = useEscritorio();
-  const webgl = useWebGL();
+  const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
+  const optsShadow = useScrollShadow();
+  // La entrada del cuerpo: al cambiar de paso entra de lado (x 12 → 0); al
+  // cambiar de sub-pestaña, de abajo (y 6 → 0). Spec §6.2.
+  const animStep = useRef<string>("");
 
-  // El reloj tal como se pide y se comparte: normalizado (sin espacios sueltos,
-  // y exactamente lo que se reconstruye desde el enlace).
+  const { addLine, setCartOpen, count } = useCart();
+  const panel = usePanelLayout();
+  // Teléfono apaisado: panel a la derecha, pero el dock va en columna (§3.4).
+  const apaisado = useMedia("(orientation: landscape) and (max-height: 500px)");
+  const dockVertical = !panel || apaisado;
+  const coarse = useCoarse();
+  const reducido = useReducedMotion();
+  const teclado = useKeyboardViewport(rootRef);
+  const origin = useShareOrigin();
+  const support3d = use3DSupport();
+  const support = STAGE3D_V2 ? support3d : support3d === null ? null : "no";
+
+  // El reloj tal como se pide y se comparte: normalizado (y referencia estable).
   const final = useMemo(() => normalize(config), [config]);
-  const order = useMemo(() => buildOrderInfo(final, product), [final, product]);
+  const order: OrderInfo = useMemo(() => buildOrderInfo(final, product, origin), [final, product, origin]);
+  const sub = fixSub(step, subMem[step]);
 
-  /** Toda edición pasa por aquí: el primer cambio apaga la animación de montaje
-   *  (las siguientes actualizaciones son instantáneas). */
+  /** Toda edición pasa por aquí. */
   const dispatch = useCallback((a: CreatorAction) => {
-    setArmar(false);
-    setAdded(false);
+    setPedido(false);
+    setCompartido(false);
     rawDispatch(a);
   }, []);
 
+  // — Lo que se enseña en el escenario —————————————————————————————————————
+  const ifa = useMemo(() => resolvePreset("ifa"), []);
+  const hoverConfig = useMemo(() => (hoverPreset ? resolvePreset(hoverPreset) : null), [hoverPreset]);
+  const stageConfig = screen === "entrada" ? (hoverConfig ?? ifa) : final;
+  const mask: PartMask = useMemo(
+    () => (screen === "entrada" ? (hoverPreset ? ALL_SOLID : ALL_GHOST) : confirmedMask(max, verCompleto)),
+    [screen, hoverPreset, max, verCompleto],
+  );
+  const hayCristal = screen === "editor" && maskKey(confirmedMask(max, false)) !== maskKey(ALL_SOLID);
+  const mode = screen === "entrada" ? "entrada" : step === "resumen" ? "final" : "editor";
+  const mount3d = support === "completo" || (want3d && support !== "no" && support !== null);
+  const tres = mount3d && !foto && status !== "sin-3d";
+
+  const requestView = useCallback((v: View3D) => setView((s) => ({ v, seq: s.seq + 1 })), []);
+
+  // — Llegada con ?d=: ¿recarga del mismo diseño (borrador) o enlace ajeno? ——
+  useLayoutEffect(() => {
+    if (!desdeEnlace) return;
+    const d = parseDraft(store.get(DRAFT_KEY));
+    if (d && canonicalJson(d.config) === canonicalJson(normalize(initial.config))) {
+      setStep(d.step);
+      if (d.sub) setSubMem({ [d.step]: d.sub });
+      setMax(d.max);
+      setCompartido(false);
+      setView({ v: STEP_VIEW[d.step], seq: 1 });
+    } else {
+      setView({ v: STEP_VIEW[initial.paso ?? "resumen"], seq: 1 });
+    }
+    setListo(true);
+    // Solo al montar.
+  }, []);
+
+  // — El enlace viejo "#como-funciona" lleva a su página propia.
+  useEffect(() => {
+    if (window.location.hash === "#como-funciona") router.replace(GUIA_HREF);
+  }, [router]);
+
   // — Borrador guardado: se ofrece en la entrada ("Continuar mi diseño").
   useEffect(() => {
-    if (initial.source) return;
-    try {
-      setDraft(parseDraft(localStorage.getItem(DRAFT_KEY)));
-    } catch {
-      /* almacenamiento bloqueado: no hay borrador */
-    }
-  }, [initial.source]);
+    setDraft(parseDraft(store.get(DRAFT_KEY)));
+    setHint(store.get(HINT_KEY) !== "1");
+  }, []);
 
   // Lo último de cada estado, para el oyente de popstate (se monta una vez).
-  const live = useRef({ screen, final, step });
-  live.current = { screen, final, step };
+  const live = useRef({ screen, final, step, sub, max });
+  live.current = { screen, final, step, sub, max };
 
   // — Atrás / adelante del navegador dentro del creador.
   useEffect(() => {
@@ -147,17 +270,17 @@ export default function WatchCreator({
       const sp = new URL(window.location.href).searchParams;
       const d = sp.get("d");
       const preset = sp.get("preset");
-      const { screen: now, final: cfg, step: st } = live.current;
+      const now = live.current;
       if (!d && !preset) {
-        // Atrás desde el editor: a la entrada, sin perder el diseño.
-        if (now !== "editor") return;
+        if (now.screen !== "editor") return;
         pushed.current = false;
-        setDraft({ v: 1, config: cfg, step: st, at: Date.now() });
+        setDraft({ v: 2, config: now.final, step: now.step, sub: now.sub, max: now.max, at: Date.now() });
+        setHoverPreset(null);
         setScreen("entrada");
+        setView((s) => ({ v: "tres4", seq: s.seq + 1 }));
         return;
       }
-      if (now !== "entrada") return;
-      // Adelante desde la entrada: el diseño de esa entrada del historial.
+      if (now.screen !== "entrada") return;
       const r = d ? decodeWatchDesign(d) : null;
       if (r) {
         rawDispatch({ type: "cargar", config: r.config });
@@ -167,138 +290,137 @@ export default function WatchCreator({
         setDescontinuado([]);
       } else return;
       pushed.current = true;
-      setArmar(false);
       setScreen("editor");
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // — Si se llega con ?preset= o ?d=, el editor entra en pantalla al cargar
-  //   (al instante: un desplazamiento suave durante la carga se interrumpe y
-  //   el html de la web lleva scroll-behavior: smooth, de ahí "instant"). Solo
-  //   si la página sigue arriba: si el visitante ya se movió, no se le mueve.
+  // — Autoguardado: URL ?d= + borrador v2, 400 ms después del último cambio.
+  const lastSaidSave = useRef(0);
   useEffect(() => {
-    if (!initial.source) return;
-    const raf = requestAnimationFrame(() => {
-      if (window.scrollY > 40) return;
-      rootRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
-    });
-    return () => cancelAnimationFrame(raf);
-    // Solo al montar (initial no cambia mientras el creador vive).
-  }, []);
-
-  // — Altura del header fijo → el escenario fijo se pega justo debajo. (La raíz
-  //   cambia entre la entrada y el editor: se vuelve a medir con `screen`.)
-  useEffect(() => {
-    const header = document.querySelector<HTMLElement>(".header-main_area-2");
-    const root = rootRef.current;
-    if (!header || !root) return;
-    const set = () => root.style.setProperty("--pyj-reloj-top", `${Math.round(header.getBoundingClientRect().height)}px`);
-    set();
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(set) : null;
-    ro?.observe(header);
-    return () => ro?.disconnect();
-  }, [screen]);
-
-  // — Autoguardado: URL ?d= + localStorage, 400 ms después del último cambio.
-  useEffect(() => {
-    if (screen !== "editor") return;
+    // Un diseño compartido que aún no se tocó no pisa el borrador propio.
+    if (screen !== "editor" || !listo || compartido) return;
     const t = window.setTimeout(() => {
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete("preset");
+        url.searchParams.delete("paso");
         url.searchParams.set("d", order.d);
-        window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
       } catch {
         /* URL demasiado larga o historial bloqueado: el borrador local basta */
       }
-      try {
-        const d: Draft = { v: 1, config: final, step, at: Date.now() };
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
-      } catch {
-        /* cuota llena o modo privado: se sigue sin guardar */
+      const d: Draft = { v: 2, config: final, step, sub, max, at: Date.now() };
+      store.set(DRAFT_KEY, JSON.stringify(d));
+      setSaveSeq((n) => n + 1);
+      // "Guardado" se anuncia, pero como mucho cada 20 s (no en cada letra).
+      if (Date.now() - lastSaidSave.current > 20000) {
+        lastSaidSave.current = Date.now();
+        announce("Diseño guardado");
       }
     }, 400);
     return () => window.clearTimeout(t);
-  }, [screen, final, step, order.d]);
+  }, [screen, listo, compartido, final, step, sub, max, order.d, announce]);
 
-  // — El escenario sigue al paso: la tapa se ve en "Tu tapa"; el resto, de
-  //   frente. "Terminar diseño" (resumen) abre el reloj EN 3D, y solo UNA
-  //   vista 3D por página: en el escritorio, en el escenario grande (que pasa
-  //   solo a "3D" y vuelve al frente al salir del resumen); en el móvil, en el
-  //   propio resumen (el escenario fijo se oculta y no monta la suya).
-  const auto3d = useRef(false);
-  const prevStep = useRef(step);
+  // — Cambio de paso: anunciarlo, llevar el foco al título, y el golpe de
+  //   cámara de ese paso (en la foto, la tapa se ve en "Tapa").
+  const prevStep = useRef<StepId | null>(null);
   useEffect(() => {
+    if (screen !== "editor" || !listo) return;
     const changed = prevStep.current !== step;
     prevStep.current = step;
-    if (step === "resumen") {
-      if (escritorio === true && webgl === true) {
-        if (changed || !auto3d.current) {
-          auto3d.current = true;
-          setView("3d");
-        }
-      } else if (changed || escritorio === false) {
-        setView((v) => (v === "3d" || v === "tapa" ? "frente" : v));
-      }
-      return;
-    }
     if (!changed) return;
-    setView((v) => (step === "tapa" ? "tapa" : v === "tapa" || (auto3d.current && v === "3d") ? "frente" : v));
-    auto3d.current = false;
-  }, [step, escritorio, webgl]);
-
-  // — Al cambiar de paso: anunciarlo y llevar el foco al título (sin robarlo
-  //   en la primera carga). En el móvil se desplaza para que las PRIMERAS
-  //   OPCIONES (no el título) queden justo bajo el escenario fijo: el pie fijo
-  //   ya dice en qué paso se está.
-  useEffect(() => {
-    if (screen !== "editor") return;
     const i = stepIndex(step);
-    setAnnounce(`Paso ${i + 1} de ${STEPS.length}: ${STEPS[i].label}`);
+    announce(i < BUILD_STEPS ? `Paso ${i + 1} de ${BUILD_STEPS}: ${STEPS[i].label}` : "Listo: tu reloj está completo");
+    setFotoVista(step === "tapa" ? "tapa" : "frente");
     if (!moved.current) return;
-    const h = headingRef.current;
-    if (!h) return;
-    h.focus({ preventScroll: true });
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const behavior: ScrollBehavior = reduce ? "auto" : "smooth";
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      // En el resumen no hay escenario fijo encima: se lleva a la cabecera
-      // del paso ("Paso 6 de 6 · Tu reloj"), con el reloj 3D justo debajo.
-      const first =
-        step === "resumen"
-          ? bodyRef.current?.querySelector<HTMLElement>(":scope > .pyj-reloj_stephead")
-          : bodyRef.current?.querySelector<HTMLElement>(
-              ":scope > .pyj-reloj_group, :scope > .pyj-reloj_field, :scope > fieldset, :scope > .pyj-reloj_tabs, :scope > .pyj-reloj_sum, :scope > .pyj-reloj_callout",
-            );
-      (first ?? h).scrollIntoView({ block: "start", behavior });
-      return;
-    }
-    const top = h.getBoundingClientRect().top;
-    const margin = parseFloat(getComputedStyle(h).scrollMarginTop) || 0;
-    if (top < margin - 4 || top > window.innerHeight * 0.7) {
-      h.scrollIntoView({ block: "start", behavior });
-    }
-  }, [step, screen]);
+    requestView(STEP_VIEW[step]);
+    headingRef.current?.focus({ preventScroll: true });
+  }, [step, screen, listo, announce, requestView]);
 
-  const goTo = useCallback((s: StepId) => {
+  useEffect(() => {
+    animStep.current = screen === "entrada" ? "entrada" : step;
+  });
+
+  // — Piezas que pasan a reales: se anuncian ("Pieza colocada: correa").
+  const prevMask = useRef<PartMask>(mask);
+  useEffect(() => {
+    const before = prevMask.current;
+    prevMask.current = mask;
+    if (screen !== "editor") return;
+    const nuevas = WATCH_PARTS.filter((p) => mask[p] && !before[p]);
+    if (!nuevas.length) return;
+    announce(`${nuevas.length === 1 ? "Pieza colocada" : "Piezas colocadas"}: ${nuevas.map((p) => PART_NAMES[p]).join(", ")}`);
+    if (hint) {
+      setHint(false);
+      store.set(HINT_KEY, "1");
+    }
+  }, [mask, screen, announce, hint]);
+
+  // — La pista de una vez: se va a los 6 s.
+  useEffect(() => {
+    if (!hint || screen !== "editor" || !hayCristal) return;
+    const t = window.setTimeout(() => {
+      setHint(false);
+      store.set(HINT_KEY, "1");
+    }, 6000);
+    return () => window.clearTimeout(t);
+  }, [hint, screen, hayCristal]);
+
+  // — Teclado del móvil abierto: el escenario pequeño enseña lo que se escribe.
+  useEffect(() => {
+    if (!teclado || screen !== "editor") return;
+    if (step === "esfera") requestView("esfera");
+    else if (step === "tapa") requestView("tapa");
+  }, [teclado, screen, step, requestView]);
+
+  // — Ir a un paso (cualquiera, en cualquier orden): visitar = aceptar lo de
+  //   en medio (max sube y esas piezas se vuelven reales, escalonadas).
+  const goTo = useCallback((s: StepId, sb?: SubId | null) => {
     moved.current = true;
     setStep(s);
+    setMax((m) => Math.max(m, stepIndex(s)));
+    if (sb) setSubMem((x) => ({ ...x, [s]: sb }));
+    setShareAnchor(null);
   }, []);
 
-  const i = stepIndex(step);
-  const prev = i > 0 ? STEPS[i - 1] : null;
-  const next = i < STEPS.length - 1 ? STEPS[i + 1] : null;
+  const setSub = useCallback(
+    (sb: SubId) => {
+      setSubMem((x) => ({ ...x, [step]: sb }));
+      if (step === "esfera") requestView("esfera");
+    },
+    [step, requestView],
+  );
 
-  /** Entrada → editor: una entrada nueva en el historial (con el diseño en
-   *  ?d=), para que "atrás" vuelva a la entrada. */
+  /** "Corregir": al paso y sub-pestaña del campo, con el foco en él. */
+  const fix = useCallback(
+    (s: StepId, sb?: SubId | null, field?: string) => {
+      goTo(s, sb);
+      if (!field) return;
+      window.setTimeout(() => {
+        const box = rootRef.current?.querySelector<HTMLElement>(`[data-field="${field}"]`);
+        // Un campo de texto primero (el nombre de la combinación); si no, la
+        // opción elegida del grupo; si no, su primer botón.
+        const target =
+          box?.querySelector<HTMLElement>("input:not([type=hidden])") ??
+          box?.querySelector<HTMLElement>("[role=radio][tabindex='0']") ??
+          box?.querySelector<HTMLElement>("button") ??
+          box;
+        target?.focus({ preventScroll: false });
+      }, 80);
+    },
+    [goTo],
+  );
+
+  // — Entrada → editor ————————————————————————————————————————————————————
   function pushEditorEntry(cfg: WatchConfig) {
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("preset");
-      url.searchParams.set("d", buildOrderInfo(normalize(cfg), product).d);
-      window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`);
+      url.searchParams.delete("paso");
+      url.searchParams.set("d", buildOrderInfo(normalize(cfg), product, origin).d);
+      window.history.pushState(null, "", `${url.pathname}${url.search}`);
       pushed.current = true;
     } catch {
       /* historial bloqueado: el autoguardado sigue funcionando */
@@ -309,47 +431,21 @@ export default function WatchCreator({
     pushEditorEntry(resolvePreset(id));
     rawDispatch({ type: "preset", id });
     setDescontinuado([]);
-    setArmar(true);
+    setCompartido(false);
     setPolicy(false);
-    setAdded(false);
-    setStep("caja");
-    setView("frente");
-    setScreen("editor");
+    setPedido(false);
+    setHoverPreset(null);
+    setStrapMem({});
+    setSubMem({});
+    setMax(0);
+    setVerCompleto(false);
     moved.current = false;
-    rootRef.current?.scrollIntoView({ block: "start" });
-  }
-
-  /** Volver a la entrada sin perder nada: el diseño actual queda como
-   *  "Continuar mi diseño". */
-  function backToEntry() {
-    setDraft({ v: 1, config: final, step, at: Date.now() });
-    if (pushed.current) {
-      // Se llegó desde la entrada: volver es deshacer esa entrada del
-      // historial (popstate hace el resto), así "adelante" vuelve al editor.
-      window.history.back();
-    } else {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("d");
-        url.searchParams.delete("preset");
-        window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-      } catch {
-        /* sin historial: solo cambia la pantalla */
-      }
-      setScreen("entrada");
-    }
-    rootRef.current?.scrollIntoView({ block: "start" });
-  }
-
-  /** Pulsar "Solicitar" sin poder: llevar a la casilla de la política (o a lo
-   *  que falta resolver). */
-  function showBlocker() {
-    const el =
-      document.querySelector<HTMLElement>(".pyj-reloj_blocks button") ??
-      document.querySelector<HTMLElement>(".pyj-reloj_policy input");
-    if (!el) return;
-    el.scrollIntoView({ block: "center" });
-    el.focus({ preventScroll: true });
+    prevStep.current = "caja";
+    setStep("caja");
+    setFotoVista("frente");
+    setScreen("editor");
+    requestView("tres4");
+    announce(`Paso 1 de ${BUILD_STEPS}: Caja`);
   }
 
   function continueDraft() {
@@ -357,21 +453,60 @@ export default function WatchCreator({
     pushEditorEntry(draft.config);
     rawDispatch({ type: "cargar", config: draft.config });
     setDescontinuado([]);
-    setArmar(true);
+    setCompartido(false);
+    setHoverPreset(null);
+    setSubMem(draft.sub ? { [draft.step]: draft.sub } : {});
+    setMax(draft.max);
+    moved.current = false;
+    prevStep.current = draft.step;
     setStep(draft.step);
     setScreen("editor");
-    moved.current = false;
+    requestView(STEP_VIEW[draft.step]);
+  }
+
+  /** Volver a la entrada sin perder nada: el diseño queda como "Continuar". */
+  function backToEntry() {
+    setDraft({ v: 2, config: final, step, sub, max, at: Date.now() });
+    if (pushed.current) {
+      window.history.back();
+      return;
+    }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("d");
+      url.searchParams.delete("preset");
+      url.searchParams.delete("paso");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    } catch {
+      /* sin historial: solo cambia la pantalla */
+    }
+    setScreen("entrada");
+    requestView("tres4");
+  }
+
+  // — Pedir —————————————————————————————————————————————————————————————————
+  const bloqueos = order.validation.issues.filter((i) => i.nivel === "bloqueo");
+  const blockedSteps = useMemo(() => new Set(bloqueos.map((i) => stepOfField(i.campo).step)), [bloqueos]);
+  const blockedSubs = useMemo(
+    () => new Set(bloqueos.map((i) => stepOfField(i.campo)).filter((x) => x.step === step && x.sub).map((x) => x.sub as SubId)),
+    [bloqueos, step],
+  );
+  const listoParaPedir = order.validation.ok && (!order.canBuy || policy);
+
+  function showBlocker() {
+    const el = rootRef.current?.querySelector<HTMLElement>("[data-corregir]") ?? rootRef.current?.querySelector<HTMLElement>(".rl-policy input");
+    el?.focus();
   }
 
   function addToCart() {
     const v = order.variant;
     if (!product || !v || !order.canBuy || !order.validation.ok || !policy) return;
-    const uid =
+    const lineUid =
       typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${order.code}`;
     const preview = frontSvgDataUrl(final, { curvas: outlineIfReady() ?? undefined });
     addLine(
       {
-        id: `${v.id}-reloj-${uid}`,
+        id: `${v.id}-reloj-${lineUid}`,
         merchandiseId: v.id,
         productHandle: product.handle,
         title: `${product.title} — ${order.code}`,
@@ -383,156 +518,538 @@ export default function WatchCreator({
       },
       1,
     );
-    setAdded(true);
     setCartOpen(true);
   }
 
-  if (screen === "entrada") {
-    return (
-      <div ref={rootRef} className="pyj-reloj pyj-reloj--entrada">
-        <WatchEntry
-          onPick={pickPreset}
-          onContinue={draft ? continueDraft : undefined}
-          draftCode={draft ? designCode(draft.config) : undefined}
-        />
-      </div>
-    );
+  // — Compartir ——————————————————————————————————————————————————————————————
+  async function copyLink() {
+    const r = await copyText(order.creatorUrl);
+    if (r === "ok") toast("Enlace copiado ✓");
+    else setShareAnchor(chipsRef.current);
   }
 
-  const stepProps = { config, dispatch, goTo };
+  // La foto de estudio pequeña de "Listo" (tras la vuelta de presentación,
+  // en reposo; una por código de diseño).
+  const snaps = useRef(new Map<string, { url: string; file: File }>());
+  useEffect(() => {
+    if (step !== "resumen" || screen !== "editor" || !tres || status !== "listo") return;
+    const code = order.code;
+    const hit = snaps.current.get(code);
+    if (hit) {
+      setSnapshot({ code, ...hit });
+      return;
+    }
+    let vivo = true;
+    const t = window.setTimeout(
+      () => {
+        const run = async () => {
+          const blob = await stage3d.current?.capture({ views: ["tres4"], size: 480, ssaa: 4 });
+          if (!vivo || !blob) return;
+          const file = new File([blob], `reloj-${code}.jpg`, { type: "image/jpeg" });
+          const item = { url: URL.createObjectURL(blob), file };
+          snaps.current.set(code, item);
+          setSnapshot({ code, ...item });
+        };
+        if ("requestIdleCallback" in window) window.requestIdleCallback(() => void run(), { timeout: 2000 });
+        else void run();
+      },
+      reducido ? 600 : 7600,
+    );
+    return () => {
+      vivo = false;
+      window.clearTimeout(t);
+    };
+  }, [step, screen, tres, status, order.code, reducido]);
+  useEffect(() => {
+    const m = snaps.current;
+    return () => m.forEach((s) => URL.revokeObjectURL(s.url));
+  }, []);
 
-  return (
-    <div ref={rootRef} className="pyj-reloj pyj-reloj--editor" data-paso={step}>
-      <p className="pyj-reloj_sr" aria-live="polite" role="status">
-        {announce}
-      </p>
+  async function downloadStudio() {
+    const blob = await stage3d.current?.capture();
+    if (blob) downloadBlob(blob, `reloj-${order.code}.jpg`);
+    else toast("No pudimos preparar la foto en este equipo");
+  }
 
-      <div className="pyj-reloj_layout">
-        <div className="pyj-reloj_stagecol">
-          <WatchStage
-            config={final}
-            view={view}
-            onView={setView}
-            armar={armar}
-            code={order.code}
-            sin3d={step === "resumen" && escritorio !== true}
-            compacto={escritorio === false}
+  // — Encuadre: lo que tapa la interfaz (chips, dock, hoja), cada fotograma
+  //   como mucho. ——————————————————————————————————————————————————————————
+  const measureRaf = useRef(0);
+  const measure = useCallback(() => {
+    cancelAnimationFrame(measureRaf.current);
+    measureRaf.current = requestAnimationFrame(() => {
+      const st = stageRef.current?.getBoundingClientRect();
+      if (!st) return;
+      const chips = chipsRef.current?.getBoundingClientRect();
+      const dock = dockRef.current?.getBoundingClientRect();
+      const top = chips && chips.height ? Math.round(chips.bottom - st.top + 8) : 16;
+      let next: ViewInsets;
+      if (panel && !dockVertical) {
+        const bottom = dock && dock.height ? Math.round(st.bottom - dock.top + 8) : 16;
+        next = { top, right: 16, bottom, left: 16 };
+      } else if (panel) {
+        const right = dock && dock.width ? Math.round(st.right - dock.left + 8) : 16;
+        next = { top, right, bottom: 12, left: 12 };
+      } else {
+        const right = dock && dock.width ? Math.round(st.right - dock.left + 8) : 12;
+        next = { top, right, bottom: Math.round(sheetH.current + 8), left: 12 };
+      }
+      setInsets((cur) => (sameInsets(cur, next) ? cur : next));
+    });
+  }, [panel, dockVertical]);
+  useLayoutEffect(() => {
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    for (const el of [stageRef.current, chipsRef.current, dockRef.current]) if (el) ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, screen, tres, panel, hayCristal]);
+  const onSheetHeight = useCallback(
+    (px: number) => {
+      sheetH.current = px;
+      measure();
+    },
+    [measure],
+  );
+
+  // — Lo que pide el visor ——————————————————————————————————————————————————
+  const onPartPick = useCallback(
+    (p: WatchPart) => {
+      if (screen !== "editor") return;
+      goTo(PART_STEP[p], p === "agujas" ? "detalles" : p === "esfera" ? "color" : p === "tapa" ? "signo" : null);
+    },
+    [screen, goTo],
+  );
+  const onViewRequest = useCallback((v: View3D) => requestView(v), [requestView]);
+  const onInteract = useCallback(() => setHint(false), []);
+  const onStatus = useCallback((s: Stage3DStatus) => setStatus(s), []);
+
+  // ==========================================================================
+  // PINTAR
+  // ==========================================================================
+  const i = stepIndex(step);
+  const def = STEPS[i];
+  const prev = i > 0 ? STEPS[i - 1] : null;
+  const next = i < STEPS.length - 1 ? STEPS[i + 1] : null;
+  const subs = subsOf(step);
+  const panelId = `${uid}-opts`;
+  const stepProps = { config, dispatch, goTo, requestView };
+  const enEditor = screen === "editor" && listo;
+
+  const dock = (
+    <div ref={dockRef} className={dockVertical ? "rl-vdockwrap" : "rl-dockwrap"}>
+      <ViewDock
+        vertical={dockVertical}
+        tres={tres}
+        view={view.v}
+        onView={(v) => {
+          requestView(v);
+          setHint(false);
+        }}
+        fotoVista={fotoVista}
+        onFotoVista={setFotoVista}
+        noche={noche}
+        onNoche={() => setNoche((x) => !x)}
+        onToggleFoto={
+          support === "no" || support === null
+            ? null
+            : () => {
+                if (!mount3d) {
+                  setWant3d(true);
+                  setFoto(false);
+                  preload3D();
+                } else setFoto((x) => !x);
+              }
+        }
+        hayCristal={hayCristal}
+        verCompleto={verCompleto}
+        onVerCompleto={() => setVerCompleto((x) => !x)}
+      />
+    </div>
+  );
+
+  // — "Tu diseño · PY-R-…" / "Diseño compartido · … · Editar este diseño"
+  //   (Listo, R8.2). En el panel va encima del título; en la hoja del móvil
+  //   (sin cabeza de paso) va arriba de las opciones, solo si es compartido.
+  const listoEyebrow = (
+    <span className="rl-eyebrow">
+      {compartido ? "Diseño compartido" : "Tu diseño"} ·{" "}
+      <button type="button" className="rl-eyebrow_code" onClick={copyLink} title="Copiar el enlace">
+        {order.code}
+      </button>
+      {compartido && (
+        <>
+          {" · "}
+          <button
+            type="button"
+            className="rl-eyebrow_edit"
+            onClick={() => {
+              setCompartido(false);
+              goTo("caja");
+            }}
+          >
+            Editar este diseño
+          </button>
+        </>
+      )}
+    </span>
+  );
+
+  const stepBody = (() => {
+    if (!enEditor) return null;
+    switch (step) {
+      case "caja":
+        return <StepCaja {...stepProps} />;
+      case "esfera":
+        return <StepEsfera {...stepProps} sub={sub ?? "color"} />;
+      case "correa":
+        return (
+          <StepCorrea
+            {...stepProps}
+            memoria={strapMem}
+            recordar={(t: StrapType, id: StrapId) => setStrapMem((m) => (m[t] === id ? m : { ...m, [t]: id }))}
           />
-        </div>
+        );
+      case "tapa":
+        return <StepTapa {...stepProps} sub={sub ?? "signo"} />;
+      case "resumen":
+        return (
+          <>
+            {!panel && compartido && <div className="rl-sharedrow">{listoEyebrow}</div>}
+            <StepListo
+              config={final}
+              goTo={(s, sb) => {
+                const f = order.validation.issues.find((x) => stepOfField(x.campo).step === s)?.campo;
+                fix(s, sb, f);
+              }}
+              order={order}
+              descontinuado={descontinuado}
+              snapshot={snapshot && snapshot.code === order.code ? snapshot : null}
+              onDownload={tres && status === "listo" ? downloadStudio : undefined}
+              policy={policy}
+              onPolicy={setPolicy}
+              detalle={detalle}
+              onDetalle={panel ? undefined : () => setDetalle((x) => !x)}
+            />
+          </>
+        );
+    }
+  })();
 
-        <div className="pyj-reloj_panel">
-          <nav className="pyj-reloj_steps" aria-label="Pasos del diseño">
-            <ol>
-              {STEPS.map((s, k) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className={`pyj-reloj_stepbtn${s.id === step ? " is-on" : ""}${k < i ? " is-done" : ""}`}
-                    aria-current={s.id === step ? "step" : undefined}
-                    onClick={() => goTo(s.id)}
-                  >
-                    <span className="pyj-reloj_stepnum" aria-hidden="true">
-                      {k + 1}
-                    </span>
-                    {s.label}
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </nav>
+  const cta = (big: boolean): ReactNode =>
+    order.canBuy ? (
+      <button
+        type="button"
+        className={`rl-btn rl-btn--gold rl-btn--cta${big ? " rl-btn--big" : ""}${listoParaPedir ? "" : " is-disabled"}`}
+        aria-disabled={!listoParaPedir || undefined}
+        onClick={() => (listoParaPedir ? addToCart() : showBlocker())}
+      >
+        {`Añadir al carrito · ${order.priceLabel}`}
+      </button>
+    ) : (
+      <a
+        className={`rl-btn rl-btn--gold rl-btn--cta${big ? " rl-btn--big" : ""}${listoParaPedir ? "" : " is-disabled"}${pedido ? "" : " has-sheen"}`}
+        href={listoParaPedir ? order.whatsappHref : undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        role={listoParaPedir ? undefined : "link"}
+        aria-disabled={!listoParaPedir || undefined}
+        tabIndex={0}
+        onClick={(e) => {
+          if (!listoParaPedir) {
+            e.preventDefault();
+            showBlocker();
+            return;
+          }
+          setPedido(true);
+        }}
+        onKeyDown={(e) => {
+          if (!listoParaPedir && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            showBlocker();
+          }
+        }}
+      >
+        <Icon name="whatsapp" />
+        <span className="rl-btn_label">{pedido ? "Abrir WhatsApp de nuevo" : order.ctaLabel}</span>
+      </a>
+    );
 
-          {descontinuado.length > 0 && step !== "resumen" && (
-            <div className="pyj-reloj_callout" role="note">
-              <p>
-                Tu enlace traía {descontinuado.length === 1 ? "una pieza" : "piezas"} que ya no ofrecemos; las
-                cambiamos por {descontinuado.length === 1 ? "la más cercana" : "las más cercanas"}.
-              </p>
-              <button type="button" className="pyj-reloj_link" onClick={() => setDescontinuado([])}>
-                Entendido
-              </button>
-            </div>
-          )}
-
-          <section ref={bodyRef} className="pyj-reloj_stepbody" aria-labelledby="pyj-reloj-step-title">
-            <div className="pyj-reloj_stephead">
-              <span className="pyj-reloj_stepcount">
-                Paso {i + 1} de {STEPS.length}
-              </span>
-              <h2 id="pyj-reloj-step-title" ref={headingRef} tabIndex={-1} className="pyj-reloj_h2">
-                {STEPS[i].titulo}
-              </h2>
-            </div>
-
-            {step === "caja" && <StepCaja {...stepProps} />}
-            {step === "esfera" && <StepEsfera {...stepProps} />}
-            {step === "agujas" && <StepAgujas {...stepProps} />}
-            {step === "correa" && <StepCorrea {...stepProps} />}
-            {step === "tapa" && <StepTapa {...stepProps} />}
-            {step === "resumen" && (
-              <StepResumen
-                config={final}
-                goTo={goTo}
-                order={order}
-                policy={policy}
-                onPolicy={setPolicy}
-                onAddToCart={addToCart}
-                added={added}
-                descontinuado={descontinuado}
-                escritorio={escritorio}
-              />
-            )}
-          </section>
-
-          <div className="pyj-reloj_nav">
-            {prev ? (
-              <button type="button" className="pyj-reloj_ghost" onClick={() => goTo(prev.id)}>
-                ‹ {prev.label}
-              </button>
-            ) : (
-              <button type="button" className="pyj-reloj_ghost" onClick={backToEntry}>
-                ‹ Cambiar de Orisha
-              </button>
-            )}
-            <span className="pyj-reloj_navprice">{order.priceLabel}</span>
-            {next && (
-              <button type="button" className="pyj-btn-gold pyj-reloj_next" onClick={() => goTo(next.id)}>
-                {next.id === "resumen" ? "Terminar diseño" : `Siguiente: ${next.label}`} ›
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Pie fijo del móvil: paso actual + avanzar, o el botón de pedir. */}
-      <div className="pyj-reloj_mbar">
+  const footer = !enEditor ? null : step === "resumen" ? (
+    <div className="rl-foot rl-foot--listo">
+      {panel ? (
+        <button type="button" className="rl-btn rl-btn--ghost rl-btn--square" onClick={() => goTo("tapa")} aria-label="Volver a Tapa">
+          <Icon name="back" />
+        </button>
+      ) : (
         <button
           type="button"
-          className="pyj-reloj_mbtn"
-          aria-label={prev ? `Paso anterior: ${prev.label}` : "Cambiar de Orisha"}
-          onClick={() => (prev ? goTo(prev.id) : backToEntry())}
+          className="rl-btn rl-btn--glass rl-btn--square rl-foot_share"
+          onClick={(e) => setShareAnchor(e.currentTarget)}
+          aria-haspopup="dialog"
+          aria-label="Compartir tu diseño"
+          title="Compartir"
         >
-          ‹
+          <Icon name="share" />
         </button>
-        <span className="pyj-reloj_mstep">
-          <strong>
-            {STEPS[i].label} · {i + 1}/{STEPS.length}
-          </strong>
-          <small>{order.priceLabel}</small>
-        </span>
-        {next ? (
-          <button type="button" className="pyj-btn-gold pyj-reloj_mnext" onClick={() => goTo(next.id)}>
-            {next.id === "resumen" ? "Terminar" : next.label} ›
+      )}
+      {cta(true)}
+    </div>
+  ) : (
+    <div className="rl-foot">
+      <button
+        type="button"
+        className="rl-btn rl-btn--ghost rl-btn--square"
+        onClick={() => (prev ? goTo(prev.id) : backToEntry())}
+        aria-label={prev ? `Paso anterior: ${prev.label}` : "Cambiar de Orisha"}
+        title={prev ? prev.label : "Cambiar de Orisha"}
+      >
+        <Icon name="back" />
+      </button>
+      {next && (
+        <button type="button" className="rl-btn rl-btn--gold rl-foot_next" onClick={() => goTo(next.id)}>
+          <span className="rl-btn_label">
+            {next.id === "resumen" ? (
+              "Terminar"
+            ) : (
+              <>
+                Siguiente<span className="rl-foot_nextname">: {next.label}</span>
+              </>
+            )}
+          </span>
+          <Icon name="next" />
+        </button>
+      )}
+      {!panel && (
+        <button type="button" className="rl-btn rl-btn--outline rl-foot_pedir" onClick={() => goTo("resumen")}>
+          Pedir
+        </button>
+      )}
+    </div>
+  );
+
+  const postCta =
+    enEditor && step === "resumen" && pedido ? (
+      <div className="rl-sent rl-glass" role="status">
+        <button type="button" className="rl-iconbtn rl-sent_close" onClick={() => setPedido(false)} aria-label="Cerrar">
+          <Icon name="close" size={16} />
+        </button>
+        <p className="rl-sent_title">
+          Te abrimos WhatsApp con tu diseño <strong>{order.code}</strong>
+        </p>
+        <p className="rl-sent_row">
+          <button
+            type="button"
+            className="rl-link"
+            onClick={async () => {
+              const r = await copyText(order.whatsappText);
+              toast(r === "ok" ? "Mensaje copiado ✓" : "No pudimos copiarlo: escríbenos");
+            }}
+          >
+            ¿No se abrió? Copiar mensaje
           </button>
-        ) : (
-          <OrderCta
-            order={order}
-            policy={policy}
-            onAddToCart={addToCart}
-            added={added}
-            onBlocked={showBlocker}
-          />
+          <a className="rl-link" href={`tel:${SITE.contact.phoneTel}`}>
+            Escríbenos al {SITE.contact.phone}
+          </a>
+        </p>
+        <p className="rl-sent_note">Tu diseño {order.code} queda guardado.</p>
+      </div>
+    ) : null;
+
+  // — Cabeza del panel: el título del paso (o de la entrada). —
+  const stepHead = enEditor ? (
+    <div className="rl-stephead">
+      {step === "resumen" ? (
+        listoEyebrow
+      ) : (
+        <span className="rl-eyebrow">
+          Paso {i + 1} de {BUILD_STEPS}
+        </span>
+      )}
+      <div className="rl-stephead_row">
+        <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-title">
+          {def.titulo}
+        </h2>
+        {step === "resumen" && (
+          <button type="button" className="rl-detail_toggle" aria-expanded={detalle} onClick={() => setDetalle((x) => !x)}>
+            {detalle ? "Ocultar detalle" : "Ver detalle"}
+          </button>
         )}
       </div>
+    </div>
+  ) : (
+    <div className="rl-stephead">
+      <span className="rl-eyebrow">✦ Creador de relojes</span>
+      <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-title">
+        Empieza con tu Orisha
+      </h2>
+      <p className="rl-sub">Después lo cambias todo.</p>
+    </div>
+  );
+
+  const tabs =
+    enEditor && subs.length > 0 && sub ? (
+      <SubTabs
+        subs={subs}
+        value={sub}
+        onChange={setSub}
+        panelId={panelId}
+        idPrefix={uid}
+        blocked={blockedSubs}
+        label={`Partes de ${def.label}`}
+      />
+    ) : null;
+
+  const bodyKey = screen === "entrada" ? "entrada" : step;
+  const animKind = animStep.current === bodyKey ? "sub" : "step";
+  const options = (
+    <div className="rl-opts_wrap">
+      <div
+        id={panelId}
+        ref={optsShadow}
+        className="rl-opts"
+        role={tabs ? "tabpanel" : undefined}
+        aria-labelledby={tabs && sub ? `${uid}-tab-${sub}` : `${uid}-title`}
+        tabIndex={-1}
+      >
+        <div
+          key={screen === "entrada" ? "entrada" : `${step}-${sub ?? ""}`}
+          className="rl-body"
+          data-anim={animKind}
+        >
+          {screen === "entrada" ? (
+            <WatchEntry
+              onPick={pickPreset}
+              onHover={
+                panel && !coarse
+                  ? (id) => {
+                      setHoverPreset(id);
+                      if (id) preload3D();
+                    }
+                  : undefined
+              }
+              onContinue={draft ? continueDraft : undefined}
+              draft={draft ? { code: designCode(draft.config), at: draft.at } : null}
+            />
+          ) : (
+            stepBody
+          )}
+        </div>
+      </div>
+      <div className="rl-ovhost" ref={setOverlayHost} />
+    </div>
+  );
+
+  const showChips = enEditor;
+  const sheetFull = !panel && (snap === "full" || teclado);
+  const appClass = `pyj-reloj-app${panel ? " is-panel" : " is-sheet"}${teclado && !panel ? " is-keyboard" : ""}${
+    sheetFull ? " is-sheet-full" : ""
+  }`;
+
+  return (
+    <div ref={rootRef} className={appClass} data-pantalla={screen} data-paso={enEditor ? step : undefined}>
+      <FocusHeader
+        saved={screen === "editor" && saveSeq > 0}
+        saveSeq={saveSeq}
+        onSolicitar={panel && enEditor && step !== "resumen" ? () => goTo("resumen") : undefined}
+        cart={order.canBuy ? { count, onOpen: () => setCartOpen(true) } : null}
+      />
+
+      <main className="rl-main">
+        <WatchStage
+          stageRef={stageRef}
+          stage3dRef={stage3d}
+          config={stageConfig}
+          mask={mask}
+          mode={mode}
+          view={view.v}
+          viewSeq={view.seq}
+          noche={noche}
+          mount3d={mount3d}
+          foto={foto}
+          fotoVista={fotoVista}
+          insets={insets}
+          status={status}
+          onStatus={onStatus}
+          onPartPick={onPartPick}
+          onViewRequest={onViewRequest}
+          onInteract={onInteract}
+        >
+          {showChips && (
+            <StageChips
+              ref={chipsRef}
+              code={order.code}
+              onCopy={copyLink}
+              onShare={(el) => setShareAnchor((a) => (a ? null : el))}
+              shareOpen={!!shareAnchor}
+              compact={!panel}
+            />
+          )}
+          {enEditor && hint && hayCristal && <HintChip text="Las piezas en cristal se colocan en su paso" />}
+          {(screen === "editor" || tres || support === "ligero") && dock}
+        </WatchStage>
+
+        <OverlayHostContext.Provider value={overlayHost}>
+          {panel ? (
+            <aside className={`rl-panel rl-glass${screen === "entrada" ? " rl-panel--entrada" : ""}`} aria-labelledby={`${uid}-title`}>
+              {enEditor && <Stepper step={step} max={max} blocked={blockedSteps} onGo={(s) => goTo(s)} />}
+              {stepHead}
+              {tabs}
+              {options}
+              {postCta}
+              {footer}
+            </aside>
+          ) : (
+            <BottomSheet
+              snap={snap}
+              onSnap={setSnap}
+              keyboard={teclado}
+              onVisibleHeight={onSheetHeight}
+              label={enEditor ? def.titulo : "Empieza con tu Orisha"}
+              head={
+                enEditor ? (
+                  <>
+                    <Stepper step={step} max={max} blocked={blockedSteps} onGo={(s) => goTo(s)} compact />
+                    <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-sr">
+                      {step === "resumen" ? `${def.titulo} · ${order.code}` : def.titulo}
+                    </h2>
+                  </>
+                ) : (
+                  <div className="rl-sheet_entryhead">
+                    <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-title">
+                      Empieza con tu Orisha
+                    </h2>
+                    <span className="rl-sub">Después lo cambias todo</span>
+                  </div>
+                )
+              }
+              tabs={tabs}
+              footer={
+                <>
+                  {postCta}
+                  {footer ?? (
+                    <div className="rl-foot rl-foot--entrada">
+                      <a className="rl-link" href={GUIA_HREF}>
+                        ¿Cómo funciona? Precio, plazo y prueba →
+                      </a>
+                    </div>
+                  )}
+                </>
+              }
+            >
+              {options}
+            </BottomSheet>
+          )}
+        </OverlayHostContext.Provider>
+      </main>
+
+      {shareAnchor && (
+        <SharePopover
+          order={order}
+          file={snapshot && snapshot.code === order.code ? snapshot.file : null}
+          onClose={() => setShareAnchor(null)}
+          returnFocus={shareAnchor}
+        />
+      )}
     </div>
   );
 }

@@ -6,8 +6,9 @@
 // outlinePrimitives() (lib/watch-curvas.ts + lib/watch-glyphs.ts), que lo
 // convierte en los contornos reales de Cinzel / Cormorant con la misma
 // colocación que el archivo de impresión y el láser. Así las letras son
-// idénticas a la producción y no dependen de las fuentes del teléfono. La
-// tabla de contornos pesa ~116 KB: solo viaja en este trozo diferido de la 3D.
+// idénticas a la producción y no dependen de las fuentes del teléfono. Las
+// tablas de contornos pesan ~124 KB (~46 KB gzip): solo viajan en este trozo
+// diferido de la 3D.
 //
 // Convención: el canvas está en mm con el origen en el centro y y HACIA ABAJO
 // (como las primitivas y como SVG). Con flipY de three por defecto, la fila de

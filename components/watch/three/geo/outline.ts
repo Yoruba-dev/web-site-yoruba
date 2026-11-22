@@ -64,7 +64,17 @@ export const BEZEL_QUARTER: readonly P2[] = [
   [-10.3, 19.6],
   [0, 19.6],
 ];
-export const BEZEL_CORNER_R = 2.0;
+/** Radios de las esquinas del bisel, MEDIDOS sobre caja-acero-1200.webp
+ *  (SPEC §4.9 #1; antes 2.0, demasiado vivo): las de las 3 y las 9 por ajuste
+ *  del gradiente de la foto al contorno (r = 5.25); las de las 12 y las 6
+ *  superponiendo candidatos al canto interior del chaflán (entre 6 y 8 → 7).
+ *  Detalle en el informe de la etapa 4. */
+export const BEZEL_CORNER_R = { lado: 5.25, cabeza: 7.0 } as const;
+
+/** Radio de cada esquina del octógono (las de |y| > 10 son las de 12 y 6). */
+export function bezelCornerRadii(corners: readonly P2[]): number[] {
+  return corners.map(([, y]) => (Math.abs(y) > 10 ? BEZEL_CORNER_R.cabeza : BEZEL_CORNER_R.lado));
+}
 
 /** Polígono completo y en sentido ANTIHORARIO a partir de un cuarto (de las 9
  *  a las 12), por simetría en x y en y. */
@@ -121,11 +131,12 @@ export function offsetPolygon(pts: readonly P2[], d: number): [number, number][]
  *  (los centros de los redondeos son fijos y el radio pasa a r + d: un
  *  desplazamiento EXACTO, así el chaflán es paralelo en todo el contorno).
  *  `segs` puntos por esquina (siempre los mismos: los anillos casan). */
-export function roundedConvex(base: readonly P2[], r: number, d: number, segs = 6): [number, number][] {
+export function roundedConvex(base: readonly P2[], radius: number | readonly number[], d: number, segs = 6): [number, number][] {
   const n = base.length;
   const out: [number, number][] = [];
-  const rr = Math.max(0.05, r + d);
   for (let i = 0; i < n; i++) {
+    const r = typeof radius === "number" ? radius : radius[i];
+    const rr = Math.max(0.05, r + d);
     const p = base[i];
     const n0 = edgeNormal(base[(i - 1 + n) % n], p);
     const n1 = edgeNormal(p, base[(i + 1) % n]);

@@ -113,16 +113,28 @@ export function PhotoLayer({
   priority,
   reducido,
   style,
+  fantasma,
+  revela,
 }: {
   name: string;
   className?: string;
   priority?: boolean;
   reducido: boolean;
   style?: CSSProperties;
+  /** La pieza aún no se eligió: se pinta "en cristal" (spec V2 §4.8). */
+  fantasma?: boolean;
+  /** Acaba de pasar de cristal a real (la correa se descubre desde las asas). */
+  revela?: boolean;
 }) {
   const { pila, listo, fin } = useFundido(name, name, { carga: true, reducido });
   return (
-    <div className={`wf-capa ${className ?? ""}`} style={style} aria-hidden="true">
+    <div
+      className={`wf-capa ${className ?? ""}`}
+      style={style}
+      aria-hidden="true"
+      data-fantasma={fantasma ? "" : undefined}
+      data-revela={revela ? "" : undefined}
+    >
       {pila.map((c, i) => {
         const espera = c.estado === "cargando";
         const decodificada = (img: HTMLImageElement) => {
@@ -167,6 +179,7 @@ export function SvgFundido<T>({
   reducido,
   className,
   render,
+  fantasma,
 }: {
   k: string;
   value: T;
@@ -175,10 +188,12 @@ export function SvgFundido<T>({
   reducido: boolean;
   className?: string;
   render: (value: T, q: string) => ReactNode;
+  /** La pieza aún no se eligió: "en cristal". */
+  fantasma?: boolean;
 }) {
   const { pila, fin } = useFundido(k, value, { carga: false, reducido });
   return (
-    <g className={className}>
+    <g className={className} data-fantasma={fantasma ? "" : undefined}>
       {pila.map((c, i) => {
         const top = i === pila.length - 1;
         return (

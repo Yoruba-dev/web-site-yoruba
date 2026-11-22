@@ -1,85 +1,141 @@
 "use client";
 
-import WatchFront from "@/components/watch/WatchFront";
-import WatchStage3D, { useWebGL } from "./WatchStage3D";
-import OptionGroup, { type OptionItem } from "./OptionGroup";
-import { WATCH_RENDER_NOTE, type WatchConfig } from "@/lib/watch";
-
 // ---------------------------------------------------------------------------
-// El escenario del creador: el reloj de FRENTE que se va armando con cada
-// elección (WatchFront, el compositor de capas fotográficas), con las vistas
-// Frente / Tapa / Noche / 3D y la nota de render debajo. Este componente solo
-// decide QUÉ se muestra; cómo se pinta es cosa de WatchFront (o, con "3D", de
-// WatchStage3D, que descarga la escena 3D solo cuando se pide).
+// El escenario del creador (spec V2 §4.8 / §4.10). El reloj 3D es la vista
+// PRINCIPAL; la foto real (el compositor de capas, WatchFront) es la opción
+// "Foto real", el póster mientras la 3D carga y la vista de siempre sin WebGL
+// o en un equipo modesto. Las dos enseñan la MISMA máscara de cristal.
 //
-// UNA sola vista 3D en la página: en el resumen del escritorio la 3D va AQUÍ
-// (el escenario grande; el resumen no monta otra) y en el del móvil va en el
-// propio resumen, porque este escenario se oculta: aquí no se monta (`sin3d`).
+//   • support "completo" → se monta WatchStage3D (UN lienzo por página; "Foto
+//     real" solo lo pone en pausa: active=false, el contexto se conserva).
+//   • "ligero" → foto + "Ver en 3D" (se monta al pedirlo).
+//   • "no" → solo foto.
+// La foto se queda ENCIMA del visor hasta que este dice "listo" y entonces se
+// funde (400 ms): el cambio del póster de servidor al lienzo no parpadea.
+// Los controles (chips, dock, hoja) los pone el editor como hijos.
 // ---------------------------------------------------------------------------
+import { useState, type ReactNode, type Ref } from "react";
+import WatchFront from "./WatchFront";
+import { WatchStage3D } from "./shell/stage3d";
+import type {
+  PartMask,
+  Stage3DMode,
+  Stage3DStatus,
+  View3D,
+  ViewInsets,
+  WatchPart,
+  WatchStage3DHandle,
+} from "./stage3d-contract";
+import type { WatchConfig } from "@/lib/watch";
 
-export type StageView = "frente" | "tapa" | "noche" | "3d";
+/** El reloj de foto, encajado en el rectángulo que la interfaz deja libre. */
+function PhotoFit({ insets, children }: { insets: ViewInsets; children: ReactNode }) {
+  return (
+    <div className="rl-fit" style={{ top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left }}>
+      {children}
+    </div>
+  );
+}
 
-const VIEWS: readonly OptionItem<StageView>[] = [
-  { id: "frente", label: "Frente" },
-  { id: "tapa", label: "Tapa" },
-  { id: "noche", label: "Noche" },
-];
-const VIEWS_3D: readonly OptionItem<StageView>[] = [...VIEWS, { id: "3d", label: "3D" }];
+export interface WatchStageProps {
+  config: WatchConfig;
+  mask: PartMask;
+  mode: Stage3DMode;
+  view: View3D;
+  viewSeq: number;
+  noche: boolean;
+  /** Montar el visor 3D (support "completo" o pedido por el cliente). */
+  mount3d: boolean;
+  /** La foto real delante (el visor, en pausa). */
+  foto: boolean;
+  fotoVista: "frente" | "tapa";
+  insets: ViewInsets;
+  status: Stage3DStatus;
+  onStatus: (s: Stage3DStatus) => void;
+  onPartPick?: (p: WatchPart) => void;
+  onViewRequest?: (v: View3D) => void;
+  onInteract?: () => void;
+  stage3dRef?: Ref<WatchStage3DHandle>;
+  stageRef?: Ref<HTMLDivElement>;
+  children?: ReactNode;
+}
 
 export default function WatchStage({
   config,
+  mask,
+  mode,
   view,
-  onView,
-  armar,
-  code,
-  sin3d = false,
-  compacto = false,
-}: {
-  config: WatchConfig;
-  view: StageView;
-  onView: (v: StageView) => void;
-  /** Animación de montaje: solo en la primera entrada. */
-  armar: boolean;
-  code: string;
-  /** La 3D está en otro sitio de la página (resumen del móvil): aquí no. */
-  sin3d?: boolean;
-  /** Escenario pequeño (móvil): la 3D encuadra la cabeza del reloj. */
-  compacto?: boolean;
-}) {
-  // El chip "3D" solo aparece si el navegador puede pintarlo.
-  const webgl = useWebGL();
-  const puede3d = webgl === true && !sin3d;
-  const tres = view === "3d" && puede3d;
+  viewSeq,
+  noche,
+  mount3d,
+  foto,
+  fotoVista,
+  insets,
+  status,
+  onStatus,
+  onPartPick,
+  onViewRequest,
+  onInteract,
+  stage3dRef,
+  stageRef,
+  children,
+}: WatchStageProps) {
+  // Una vez montado, el visor no se desmonta (se conserva el contexto WebGL).
+  const [montado, setMontado] = useState(mount3d);
+  if (mount3d && !montado) setMontado(true);
+
+  const sin3d = !montado || status === "sin-3d";
+  const tres = !sin3d && !foto;
+  // La foto va delante: sin 3D, con "Foto real", o mientras la 3D carga.
+  const fotoDelante = sin3d || foto || status === "cargando";
+  const vista = tres ? "frente" : fotoVista;
+
   return (
-    <div className="pyj-reloj_stage">
-      <div className={`pyj-reloj_stagebox${tres ? " is-3d" : ""}`}>
-        {tres ? (
-          <WatchStage3D config={config} compacto={compacto} className="pyj-reloj3d--stage" />
-        ) : (
+    <div ref={stageRef} className="rl-stage" data-tres={tres ? "" : undefined}>
+      {montado && (
+        <div className={`rl-stage_3d${foto || status === "sin-3d" ? " is-hidden" : ""}`}>
+          <WatchStage3D
+            ref={stage3dRef}
+            config={config}
+            confirmed={mask}
+            view={view}
+            viewSeq={viewSeq}
+            noche={noche}
+            mode={mode}
+            active={tres}
+            insets={insets}
+            // Mientras la foto del editor va delante (carga, "Foto real"), el
+            // visor no pinta su propio póster: dos fotos casi iguales una sobre
+            // otra se verían dobles en las piezas en cristal. Con error o
+            // contexto perdido, la foto del editor se aparta y el póster es
+            // el del visor (con su mensaje).
+            poster={
+              fotoDelante ? null : (
+                <PhotoFit insets={insets}>
+                  <WatchFront config={config} fantasma={mask} noche={noche} className="rl-watch" />
+                </PhotoFit>
+              )
+            }
+            onStatus={onStatus}
+            onPartPick={onPartPick}
+            onViewRequest={onViewRequest}
+            onInteract={onInteract}
+          />
+        </div>
+      )}
+      <div className={`rl-stage_photo${fotoDelante ? "" : " is-gone"}`} aria-hidden={!fotoDelante || undefined}>
+        <PhotoFit insets={insets}>
           <WatchFront
             config={config}
-            vista={view === "tapa" ? "tapa" : "frente"}
-            noche={view === "noche"}
-            armar={armar}
+            vista={vista}
+            noche={noche}
+            fantasma={mask}
             priority
-            className="pyj-reloj_watch"
+            className="rl-watch"
           />
-        )}
-        <span className="pyj-reloj_code" aria-label={`Código de diseño ${code}`}>
-          {code}
-        </span>
+        </PhotoFit>
       </div>
-      <div className="pyj-reloj_views">
-        <OptionGroup<StageView>
-          label="Vista del reloj"
-          hideLabel
-          variant="chips"
-          value={tres || view !== "3d" ? view : "frente"}
-          onChange={onView}
-          options={puede3d ? VIEWS_3D : VIEWS}
-        />
-      </div>
-      <p className="pyj-reloj_rendernote">{WATCH_RENDER_NOTE}</p>
+      {children}
     </div>
   );
 }

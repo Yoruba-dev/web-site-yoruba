@@ -1,0 +1,203 @@
+/* ---------------------------------------------------------------------------
+   EL ESCENARIO 3D (components/watch/WatchStage3D.tsx). Prefijo pyj-r3d.
+   Llena la caja de su padre (position:relative con tamaño explícito, del
+   editor). Encima: el poster (compositor de fotos) mientras carga y cuando
+   "Foto real" está delante; el lienzo aparece sobre él en 400 ms.
+   Los avisos van dentro del rectángulo libre (.pyj-r3d_safe = insets).
+   Tokens: los del editor (--rl-*) con respaldo; radios con !important (la
+   hoja global pone border-radius:0 !important a todo).
+   --------------------------------------------------------------------------- */
+.pyj-r3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* — Poster: el compositor de fotos, centrado en el rectángulo libre — */
+.pyj-r3d_poster {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition:
+    opacity 400ms var(--rl-inout, cubic-bezier(0.65, 0, 0.35, 1)),
+    visibility 0s linear 0s;
+}
+.pyj-r3d[data-listo] .pyj-r3d_poster {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 400ms var(--rl-inout, cubic-bezier(0.65, 0, 0.35, 1)),
+    visibility 0s linear 400ms;
+}
+
+/* — Lienzo — */
+.pyj-r3d_stage {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 400ms var(--rl-inout, cubic-bezier(0.65, 0, 0.35, 1));
+  outline: none;
+}
+.pyj-r3d[data-listo] .pyj-r3d_stage {
+  opacity: 1;
+}
+.pyj-r3d[data-inactivo] .pyj-r3d_stage {
+  visibility: hidden;
+  pointer-events: none;
+}
+.pyj-r3d_stage:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--rl-gold-hi, #f2d896);
+}
+.pyj-r3d_canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.pyj-r3d_canvas:active {
+  cursor: grabbing;
+}
+/* La página no se desplaza: el dedo gira (los dos ejes) y el pellizco
+   acerca. OrbitControls ya lo pone en línea; aquí también por si acaso. */
+.pyj-r3d_canvas,
+.pyj-r3d_canvas canvas {
+  touch-action: none;
+}
+.pyj-r3d_canvas[data-sobre-pieza] {
+  cursor: pointer;
+}
+
+/* — Rectángulo libre: los avisos, abajo y centrados — */
+.pyj-r3d_safe {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--rl-2, 8px);
+  padding: var(--rl-4, 16px);
+  pointer-events: none;
+}
+.pyj-r3d_pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rl-2, 8px);
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--rl-glass-line, rgba(255, 255, 255, 0.1));
+  border-radius: var(--rl-r-pill, 999px) !important;
+  background: var(--rl-glass-bg-solid, rgba(24, 19, 12, 0.9));
+  box-shadow: var(--rl-glass-hi, inset 0 1px 0 rgba(255, 255, 255, 0.14));
+  font: 400 12px/16px Lato, system-ui, sans-serif;
+  color: var(--rl-head, #f1e7d2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: pyj-r3d-in 200ms var(--rl-out, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+.pyj-r3d_pill--hint {
+  color: var(--rl-muted, #a99d83);
+  letter-spacing: 0.02em;
+}
+.pyj-r3d_spin {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(227, 178, 60, 0.25);
+  border-top-color: var(--rl-gold, #e3b23c);
+  border-radius: 50% !important;
+  animation: pyj-r3d-spin 0.9s linear infinite;
+}
+.pyj-r3d_msg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rl-2, 8px) var(--rl-3, 12px);
+  max-width: min(440px, 100%);
+  margin: 0;
+  padding: var(--rl-3, 12px) var(--rl-4, 16px);
+  border: 1px solid var(--rl-glass-line, rgba(255, 255, 255, 0.1));
+  border-radius: var(--rl-r-md, 12px) !important;
+  background: var(--rl-glass-bg-solid, rgba(24, 19, 12, 0.9));
+  box-shadow: var(--rl-shadow-1, 0 8px 24px rgba(0, 0, 0, 0.35)), var(--rl-glass-hi, inset 0 1px 0 rgba(255, 255, 255, 0.14));
+  font: 400 13px/18px Lato, system-ui, sans-serif;
+  color: var(--rl-text, #d6cbb2);
+  text-align: center;
+  pointer-events: auto;
+  animation: pyj-r3d-in 200ms var(--rl-out, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+.pyj-r3d_msg p {
+  margin: 0;
+}
+.pyj-r3d_btn {
+  min-height: var(--rl-h-chip, 36px);
+  padding: 0 var(--rl-4, 16px);
+  border: 1px solid var(--rl-gold, #e3b23c);
+  border-radius: var(--rl-r-pill, 999px) !important;
+  background: transparent;
+  font: 600 12px/1 Cinzel, Georgia, serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rl-gold-hi, #f2d896);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 120ms var(--rl-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity 160ms var(--rl-out, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.pyj-r3d_btn:active {
+  transform: scale(0.97);
+}
+.pyj-r3d_btn:focus-visible {
+  outline: 2px solid var(--rl-gold-hi, #f2d896);
+  outline-offset: 2px;
+}
+
+@keyframes pyj-r3d-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pyj-r3d-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyj-r3d_poster,
+  .pyj-r3d[data-listo] .pyj-r3d_poster,
+  .pyj-r3d_stage {
+    transition-duration: 150ms;
+  }
+  .pyj-r3d_pill,
+  .pyj-r3d_msg {
+    animation: none;
+  }
+  .pyj-r3d_spin {
+    animation-duration: 2.4s;
+  }
+  .pyj-r3d_btn:active {
+    transform: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .pyj-r3d_pill,
+  .pyj-r3d_msg {
+    background: #1c160e;
+  }
+}
+@media (forced-colors: active) {
+  .pyj-r3d_pill,
+  .pyj-r3d_msg,
+  .pyj-r3d_btn {
+    border-color: CanvasText;
+  }
+}

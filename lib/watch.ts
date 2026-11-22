@@ -788,7 +788,8 @@ export interface Tapa {
   linea2: string;
   /** Opcional, AAAA-MM-DD (Itá, Mano de Orula o la que elija). */
   fecha?: string;
-  /** 'clasica' = py-dial (Cinzel); 'fina' = py-dial-fina (Cormorant). */
+  /** 'clasica' = py-dial (Cinzel, capitales romanas); 'fina' = py-dial-fina
+   *  (Cormorant Garamond Italic 500: una cursiva de verdad). */
   fuente: "clasica" | "fina";
 }
 
@@ -1441,6 +1442,41 @@ export function withGradientStep(c: WatchConfig, step: DialGradientStep): WatchC
   return { ...c, esfera: { ...c.esfera, degradado: step } };
 }
 
+/** Cambia el TIPO de correa (caucho / piel / brazalete) en un solo gesto: la
+ *  tarjeta de tipo del paso Correa. Puro e idempotente; siempre devuelve una
+ *  pieza que se ofrece. Si la correa ya es de ese tipo, devuelve `c` tal cual.
+ *  Orden para elegir la correa del tipo nuevo:
+ *    1. `recordado` (la que el cliente llevaba antes en ese tipo), si es de ese
+ *       tipo y está disponible;
+ *    2. el mismo color en el tipo nuevo (caucho rojo ↔ piel roja);
+ *    3. la preferida del preset de ese tipo;
+ *    4. la primera disponible de ese tipo (en el orden del catálogo).
+ *  El brazalete es una sola pieza: "brazalete". */
+export function withStrapType(
+  c: WatchConfig,
+  tipo: StrapType,
+  recordado?: StrapId,
+  disp: Availability = availability(),
+): WatchConfig {
+  const now = getStrap(c.correa);
+  if (now?.tipo === tipo) return c;
+  const offered = STRAPS.filter((s) => s.tipo === tipo && isOffered(s, FLAGS));
+  if (!offered.length) return c;
+  const usable = (id: string | undefined) =>
+    !!id && offered.some((s) => s.id === id) && isUsable("correa", id, disp) ? (id as StrapId) : undefined;
+  const sameColour = now?.color ? offered.find((s) => s.color === now.color)?.id : undefined;
+  const fromPreset = c.preset
+    ? (ORISHA_WATCH_PRESETS[c.preset]?.prefer.correa ?? []).find((id) => usable(id))
+    : undefined;
+  const id =
+    usable(recordado) ??
+    usable(sameColour) ??
+    fromPreset ??
+    offered.find((s) => isUsable("correa", s.id, disp))?.id ??
+    offered[0].id;
+  return setPart(c, "correa", id);
+}
+
 /** El cambio sin comprobar: solo para ids que ya se sabe que existen. */
 function setPart(c: WatchConfig, cat: PartCategory, id: string): WatchConfig {
   switch (cat) {
@@ -1786,7 +1822,7 @@ export function lineProperties(
   if (c.tapa.linea2) props.push({ key: "Tapa · línea 2", value: `«${c.tapa.linea2}»` });
   if (c.tapa.fecha) props.push({ key: "Tapa · fecha", value: formatFecha(c.tapa.fecha) });
   if (c.tapa.signo || c.tapa.linea1 || c.tapa.linea2 || c.tapa.fecha) {
-    props.push({ key: "Tapa · fuente", value: c.tapa.fuente === "fina" ? "Fina" : "Clásica" });
+    props.push({ key: "Tapa · fuente", value: c.tapa.fuente === "fina" ? "Fina (cursiva)" : "Clásica (romana)" });
   }
   if (opts.politicaAceptada) props.push({ key: "Política aceptada", value: `Sí · ${opts.politicaAceptada}` });
   props.push({ key: "🔗 Ver e imprimir el diseño", value: url });

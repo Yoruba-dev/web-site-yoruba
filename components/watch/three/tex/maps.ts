@@ -106,9 +106,30 @@ export function radialAniso(maxAniso: number, size = 512): THREE.CanvasTexture {
   return t;
 }
 
-/** Vetas del cepillado lineal: rugosidad (canal G) que cambia a lo largo de v
- *  y casi nada a lo largo de u. UV en mm (repetición 20 × 4 mm). */
-export function brushStreaks(maxAniso: number): THREE.CanvasTexture {
+/** Vetas del cepillado lineal: rugosidad (canal G). dir "u": vetas a lo
+ *  largo de u (la cara del bisel, paralelas a 3–9); dir "v": a lo largo de v
+ *  (flancos verticales, eslabones y hojas a lo largo). UV en mm. */
+export function brushStreaks(maxAniso: number, dir: "u" | "v" = "u"): THREE.CanvasTexture {
+  const t = streaksU(maxAniso);
+  if (dir === "u") return t;
+  // Las mismas vetas giradas: se cambia el orden de los ejes en la textura.
+  const src = t.image as HTMLCanvasElement;
+  const c = document.createElement("canvas");
+  c.width = src.height;
+  c.height = src.width;
+  const ctx = c.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D no disponible");
+  ctx.translate(c.width, 0);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(src, 0, 0);
+  t.dispose();
+  const out = canvasTexture(c, false, maxAniso);
+  out.wrapS = out.wrapT = THREE.RepeatWrapping;
+  out.repeat.set(1 / 4, 1 / 20);
+  return out;
+}
+
+function streaksU(maxAniso: number): THREE.CanvasTexture {
   const W = 256;
   const H = 512;
   const canvas = document.createElement("canvas");
@@ -471,165 +492,185 @@ export const CROCO_TILE_MM = 32;
 export interface CrocoMaps {
   normal: THREE.CanvasTexture;
   color: THREE.CanvasTexture;
+  /** G = rugosidad (surco .78, cresta .42); R = capa de laca (surco .71 de la
+   *  de la cresta: .25 / .35 con clearcoat .35). */
+  rough: THREE.CanvasTexture;
   dispose(): void;
 }
 
-/** Escamas de cocodrilo: celdas de Voronoi sobre una rejilla con jitter
- *  (grandes y casi rectangulares en el centro, menudas hacia los cantos; cada
- *  fila de alto distinto), con el surco entre escamas, y el pespunte a 1.1 mm
- *  del canto. Se repite sin costura a lo largo. u = de canto a canto (0…1),
- *  v = a lo largo (CROCO_TILE_MM por repetición). */
+/** Grabado cocodrilo por COLUMNAS (§4.9 #19, sin Voronoi): una columna
+ *  central de 0.36·ancho con escamas de 7–10 mm, dos laterales de 0.22·ancho
+ *  con escamas de 4–7 mm y dos de canto de 0.10·ancho (escamas menudas, y la
+ *  vía del pespunte lisa a 1.3 mm del canto). Celdas rectangulares de
+ *  esquinas redondeadas (r 0.6 mm), surcos de 0.35 mm, juego de ±12 %. Se
+ *  repite sin costura a lo largo. u = de canto a canto (0…1), v = a lo largo
+ *  (CROCO_TILE_MM por repetición). 1024². */
 export function crocoMaps(maxAniso: number, widthMm = 20): CrocoMaps {
-  const W = 512;
-  const H = Math.round((W * CROCO_TILE_MM) / widthMm);
-  const kx = W / widthMm;
-  const ky = H / CROCO_TILE_MM;
-  const height = document.createElement("canvas");
-  height.width = W;
-  height.height = H;
-  const hc = height.getContext("2d");
-  if (!hc) throw new Error("Canvas 2D no disponible");
-  const r = rng(5);
-  // Columnas (mm desde el canto izquierdo): menudas, medianas, grandes al centro.
-  const cols = [0, 1.5, 3.2, 5.5, 10, 14.5, 16.8, 18.5, 20];
-  const rowsH: number[] = [];
-  let y = 0;
-  while (y < CROCO_TILE_MM - 0.1) {
-    const h = Math.min(CROCO_TILE_MM - y, 2.6 + r() * 1.8);
-    rowsH.push(h);
-    y += h;
-  }
-  // Si la última fila queda muy corta, se reparte en la anterior.
-  if (rowsH.length > 1 && rowsH[rowsH.length - 1] < 1.6) rowsH[rowsH.length - 2] += rowsH.pop() ?? 0;
-  // Semillas (mm): una por celda, desplazada al azar dentro de ella.
-  const seeds: { x: number; y: number; row: number }[] = [];
-  y = 0;
-  rowsH.forEach((h, ri) => {
-    for (let ci = 0; ci + 1 < cols.length; ci++) {
-      const central = ci === 3 || ci === 4;
-      const parts = central ? 1 : ci === 0 || ci === cols.length - 2 ? 3 : 2;
-      const cw = cols[ci + 1] - cols[ci];
-      for (let pi = 0; pi < parts; pi++) {
-        const ph = h / parts;
-        seeds.push({
-          x: cols[ci] + cw * (0.5 + (r() - 0.5) * 0.45),
-          y: y + ph * (pi + 0.5 + (r() - 0.5) * 0.5),
-          row: ri,
-        });
-      }
-    }
-    y += h;
-  });
-  // Distancia con métrica algo aplastada a lo largo (escamas más anchas que
-  // altas en el centro) y periódica en y (la textura se repite).
+  const W = 1024;
+  const H = 1024;
   const T = CROCO_TILE_MM;
-  const img = hc.createImageData(W, H);
+  const kx = W / widthMm;
+  const ky = H / T;
+  const r = rng(5);
+  // Columnas (fracción del ancho) y rango del largo de sus escamas (mm).
+  const COLS: [number, [number, number]][] = [
+    [0.1, [2.4, 3.6]],
+    [0.22, [4, 7]],
+    [0.36, [7, 10]],
+    [0.22, [4, 7]],
+    [0.1, [2.4, 3.6]],
+  ];
+  interface Cell {
+    x0: number;
+    x1: number;
+    y0: number;
+    y1: number;
+    tone: number;
+    dome: number;
+  }
+  const cells: Cell[][] = [];
+  let acc = 0;
+  for (const [frac, [lo, hi]] of COLS) {
+    const x0 = acc * widthMm;
+    acc += frac;
+    const x1 = acc * widthMm;
+    const lens: number[] = [];
+    let sum = 0;
+    while (sum < T) {
+      const l = lo + (hi - lo) * r();
+      lens.push(l);
+      sum += l;
+    }
+    const k = T / sum;
+    const col: Cell[] = [];
+    // Arranque desfasado por columna (las juntas no se alinean).
+    let y = r() * lens[0] * k;
+    for (const l of lens) {
+      const h = l * k;
+      // Juego ±12 % en los bordes laterales de cada celda.
+      const jx = (x1 - x0) * 0.12;
+      col.push({
+        x0: x0 + (r() - 0.5) * jx,
+        x1: x1 + (r() - 0.5) * jx,
+        y0: y,
+        y1: y + h * (1 + (r() - 0.5) * 0.24),
+        tone: 1 + (r() - 0.5) * 0.12,
+        dome: 0.75 + 0.25 * r(),
+      });
+      y += h;
+    }
+    cells.push(col);
+  }
+  const R = 0.6;
+  const G = 0.35;
   const hgt = new Float32Array(W * H);
+  const tone = new Float32Array(W * H);
+  const colStart: number[] = [];
+  acc = 0;
+  for (const [frac] of COLS) {
+    colStart.push(acc * widthMm);
+    acc += frac;
+  }
   for (let py = 0; py < H; py++) {
     const ym = (py + 0.5) / ky;
-    // Solo las semillas a ±5 mm de esta fila de píxeles (con su dy ya hecho).
-    const near: { x: number; dy: number }[] = [];
-    for (const sd of seeds) {
-      let dy = ym - sd.y;
-      if (dy > T / 2) dy -= T;
-      else if (dy < -T / 2) dy += T;
-      if (dy <= 5 && dy >= -5) near.push({ x: sd.x, dy });
-    }
     for (let px = 0; px < W; px++) {
       const xm = (px + 0.5) / kx;
-      let d1 = 1e9;
-      let d2 = 1e9;
-      for (const sd of near) {
-        const dy = sd.dy;
-        const dx = xm - sd.x;
-        const d = Math.sqrt(dx * dx * 1.0 + dy * dy * 1.35);
-        if (d < d1) {
-          d2 = d1;
-          d1 = d;
-        } else if (d < d2) d2 = d;
+      let ci = 0;
+      while (ci + 1 < COLS.length && xm >= colStart[ci + 1]) ci++;
+      let best = -1e9;
+      let bt = 1;
+      let bd = 1;
+      // La celda dueña: la de mayor distancia interior (con su vecina).
+      for (const cc of [ci - 1, ci, ci + 1]) {
+        if (cc < 0 || cc >= COLS.length) continue;
+        for (const c of cells[cc]) {
+          for (const shift of [-T, 0, T]) {
+            const y0 = c.y0 + shift;
+            const y1 = c.y1 + shift;
+            if (ym < y0 - 2 || ym > y1 + 2) continue;
+            const hx = (c.x1 - c.x0) / 2 - G / 2;
+            const hy = (y1 - y0) / 2 - G / 2;
+            const dx = Math.abs(xm - (c.x0 + c.x1) / 2) - (hx - R);
+            const dy = Math.abs(ym - (y0 + y1) / 2) - (hy - R);
+            const outside = Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
+            const sdf = outside + Math.min(Math.max(dx, dy), 0) - R;
+            const inside = -sdf;
+            if (inside > best) {
+              best = inside;
+              bt = c.tone;
+              bd = c.dome;
+            }
+          }
+        }
       }
-      // Surco: donde las dos semillas más cercanas están casi a la par.
-      const edge = d2 - d1;
-      const groove = Math.min(1, edge / 0.32);
-      const dome = 1 - Math.min(1, d1 / 3.2) * 0.35;
-      hgt[py * W + px] = 0.18 + 0.82 * groove * groove * (3 - 2 * groove) * dome;
+      // Surco → 0; cresta abombada hacia el centro de la escama.
+      const e = Math.max(0, Math.min(1, best / 0.22));
+      const crest = e * e * (3 - 2 * e);
+      const domeH = Math.min(1, Math.max(0, best) / 1.6);
+      let h = crest * (0.72 + 0.28 * domeH * bd);
+      // La vía del pespunte: lisa y algo hundida a 1.3 mm de cada canto.
+      const ds = Math.min(Math.abs(xm - 1.3), Math.abs(xm - (widthMm - 1.3)));
+      if (ds < 0.55) h = 0.55 + 0.1 * (ds / 0.55);
+      hgt[py * W + px] = h;
+      tone[py * W + px] = bt;
     }
   }
-  for (let i = 0; i < W * H; i++) {
-    const v = Math.round(255 * hgt[i]);
-    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
-    img.data[i * 4 + 3] = 255;
-  }
-  hc.putImageData(img, 0, 0);
-  // Pespunte: puntadas de 1.1 mm cada 1.6 mm, a 1.1 mm de cada canto.
-  const stitch: [number, number][] = [];
-  for (const xs of [1.1, widthMm - 1.1]) {
-    hc.save();
-    hc.fillStyle = "#0e0e0e";
-    hc.fillRect((xs - 0.32) * kx, 0, 0.64 * kx, H);
-    hc.restore();
-    for (let s = 0.3; s < CROCO_TILE_MM; s += 1.6) stitch.push([xs, s]);
-  }
-  for (const [xs, s] of stitch) {
-    const g = hc.createLinearGradient((xs - 0.2) * kx, 0, (xs + 0.2) * kx, 0);
-    g.addColorStop(0, "rgb(170,170,170)");
-    g.addColorStop(0.5, "rgb(250,250,250)");
-    g.addColorStop(1, "rgb(170,170,170)");
-    hc.fillStyle = g;
-    hc.beginPath();
-    roundRect(hc, (xs - 0.2) * kx, s * ky, 0.4 * kx, 1.1 * ky, 0.2 * kx);
-    hc.fill();
-  }
-
-  // Normales a partir de la altura (Sobel), con flipY: v = −y del canvas.
-  const hd = hc.getImageData(0, 0, W, H).data;
-  const nCanvas = document.createElement("canvas");
-  nCanvas.width = W;
-  nCanvas.height = H;
-  const nc = nCanvas.getContext("2d");
-  const cCanvas = document.createElement("canvas");
-  cCanvas.width = W;
-  cCanvas.height = H;
-  const cc = cCanvas.getContext("2d");
-  if (!nc || !cc) throw new Error("Canvas 2D no disponible");
-  const ni = nc.createImageData(W, H);
-  const ci = cc.createImageData(W, H);
-  const hAt = (x: number, yy: number) => hd[(((yy + H) % H) * W + ((x + W) % W)) * 4] / 255;
-  const strength = 2.2;
-  for (let yy = 0; yy < H; yy++) {
+  const at = (x: number, y: number) => hgt[(((y % H) + H) % H) * W + Math.max(0, Math.min(W - 1, x))];
+  const mk = () => {
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D no disponible");
+    return { c, ctx, img: ctx.createImageData(W, H) };
+  };
+  const nC = mk();
+  const cC = mk();
+  const rC = mk();
+  // Gradiente en mm: alto del surco 0.35 mm.
+  const DEPTH = 0.35;
+  for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const dx = (hAt(x + 1, yy) - hAt(x - 1, yy)) * strength;
-      const dy = (hAt(x, yy + 1) - hAt(x, yy - 1)) * strength;
-      // n = (−dh/du, −dh/dv, 1); dh/dv = −dh/dy (el canvas va hacia abajo).
-      const nx = -dx;
-      const ny = dy;
-      const len = Math.hypot(nx, ny, 1);
-      const i = (yy * W + x) * 4;
-      ni.data[i] = Math.round((nx / len) * 127.5 + 127.5);
-      ni.data[i + 1] = Math.round((ny / len) * 127.5 + 127.5);
-      ni.data[i + 2] = Math.round((1 / len) * 127.5 + 127.5);
-      ni.data[i + 3] = 255;
-      // Color: las ranuras más oscuras, la cresta de cada escama más clara.
-      const h = hAt(x, yy);
-      const v = Math.round(255 * Math.min(1, 0.62 + h * 0.42));
-      ci.data[i] = ci.data[i + 1] = ci.data[i + 2] = v;
-      ci.data[i + 3] = 255;
+      const dhx = ((at(x + 1, y) - at(x - 1, y)) * DEPTH) / (2 / kx);
+      const dhy = ((at(x, y + 1) - at(x, y - 1)) * DEPTH) / (2 / ky);
+      const s = 0.55;
+      const nx = -dhx * s;
+      const ny = dhy * s;
+      const l = Math.hypot(nx, ny, 1);
+      const i = (y * W + x) * 4;
+      nC.img.data[i] = Math.round((nx / l) * 127.5 + 127.5);
+      nC.img.data[i + 1] = Math.round((ny / l) * 127.5 + 127.5);
+      nC.img.data[i + 2] = Math.round((1 / l) * 127.5 + 127.5);
+      nC.img.data[i + 3] = 255;
+      const h = hgt[y * W + x];
+      // Color: ±6 % por escama; surcos más oscuros.
+      const v = Math.round(255 * Math.min(1, (0.6 + 0.4 * h) * tone[y * W + x]));
+      cC.img.data[i] = cC.img.data[i + 1] = cC.img.data[i + 2] = v;
+      cC.img.data[i + 3] = 255;
+      rC.img.data[i] = Math.round(255 * (0.714 + 0.286 * h));
+      rC.img.data[i + 1] = Math.round(255 * (0.78 - 0.36 * h));
+      rC.img.data[i + 2] = 255;
+      rC.img.data[i + 3] = 255;
     }
   }
-  nc.putImageData(ni, 0, 0);
-  cc.putImageData(ci, 0, 0);
-  const normal = canvasTexture(nCanvas, false, maxAniso);
-  const color = canvasTexture(cCanvas, true, maxAniso);
-  for (const t of [normal, color]) {
+  nC.ctx.putImageData(nC.img, 0, 0);
+  cC.ctx.putImageData(cC.img, 0, 0);
+  rC.ctx.putImageData(rC.img, 0, 0);
+  const normal = canvasTexture(nC.c, false, maxAniso);
+  const color = canvasTexture(cC.c, true, maxAniso);
+  const rough = canvasTexture(rC.c, false, maxAniso);
+  for (const t of [normal, color, rough]) {
     t.wrapS = THREE.ClampToEdgeWrapping;
     t.wrapT = THREE.RepeatWrapping;
   }
   return {
     normal,
     color,
+    rough,
     dispose() {
       normal.dispose();
       color.dispose();
+      rough.dispose();
     },
   };
 }
@@ -642,4 +683,129 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+// ===========================================================================
+// Caucho: micro-grano (normal, 512², se repite cada 6 mm)
+// ===========================================================================
+/** Grano fino del caucho vulcanizado (§4.9 #18): ruido de valor suavizado →
+ *  normales (Sobel). UV en mm de la correa (u de canto a canto 0…1: la
+ *  repetición se ajusta en el material). */
+export function rubberGrain(maxAniso: number): THREE.CanvasTexture {
+  const N = 512;
+  const r = rng(77);
+  const h = new Float32Array(N * N);
+  // Tres octavas de ruido de valor periódico.
+  const oct = (cells: number, amp: number) => {
+    const g = new Float32Array(cells * cells);
+    for (let i = 0; i < g.length; i++) g[i] = r();
+    for (let y = 0; y < N; y++) {
+      const fy = (y / N) * cells;
+      const y0 = Math.floor(fy);
+      const ty = fy - y0;
+      const sy = ty * ty * (3 - 2 * ty);
+      for (let x = 0; x < N; x++) {
+        const fx = (x / N) * cells;
+        const x0 = Math.floor(fx);
+        const tx = fx - x0;
+        const sx = tx * tx * (3 - 2 * tx);
+        const a = g[(y0 % cells) * cells + (x0 % cells)];
+        const b = g[(y0 % cells) * cells + ((x0 + 1) % cells)];
+        const c = g[((y0 + 1) % cells) * cells + (x0 % cells)];
+        const d = g[((y0 + 1) % cells) * cells + ((x0 + 1) % cells)];
+        h[y * N + x] += amp * ((a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy);
+      }
+    }
+  };
+  oct(64, 0.5);
+  oct(128, 0.3);
+  oct(256, 0.2);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = N;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D no disponible");
+  const img = ctx.createImageData(N, N);
+  const at = (x: number, y: number) => h[((y + N) % N) * N + ((x + N) % N)];
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const dx = (at(x + 1, y) - at(x - 1, y)) * 3;
+      const dy = (at(x, y + 1) - at(x, y - 1)) * 3;
+      const l = Math.hypot(dx, dy, 1);
+      const i = (y * N + x) * 4;
+      img.data[i] = Math.round((-dx / l) * 127.5 + 127.5);
+      img.data[i + 1] = Math.round((dy / l) * 127.5 + 127.5);
+      img.data[i + 2] = Math.round((1 / l) * 127.5 + 127.5);
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const t = canvasTexture(canvas, false, maxAniso);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+// ===========================================================================
+// Aplique: normales de su canto (Sobel del alfa desenfocado, 256 px)
+// ===========================================================================
+/** Normales del aplique PY a partir del alfa de su foto (desenfoque de caja
+ *  dos veces y Sobel): redondea el canto de la cara de arriba. */
+export function logoNormalMap(img: HTMLImageElement, maxAniso: number, N = 256): THREE.CanvasTexture {
+  const c = document.createElement("canvas");
+  c.width = c.height = N;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("Canvas 2D no disponible");
+  ctx.drawImage(img, 0, 0, N, N);
+  const src = ctx.getImageData(0, 0, N, N).data;
+  let a = new Float32Array(N * N);
+  for (let i = 0; i < N * N; i++) a[i] = src[i * 4 + 3] / 255;
+  const blur = (inp: Float32Array, r: number) => {
+    const tmp = new Float32Array(N * N);
+    const out = new Float32Array(N * N);
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        let s = 0;
+        let n = 0;
+        for (let k = -r; k <= r; k++) {
+          const xx = x + k;
+          if (xx < 0 || xx >= N) continue;
+          s += inp[y * N + xx];
+          n++;
+        }
+        tmp[y * N + x] = s / n;
+      }
+    }
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        let s = 0;
+        let n = 0;
+        for (let k = -r; k <= r; k++) {
+          const yy = y + k;
+          if (yy < 0 || yy >= N) continue;
+          s += tmp[yy * N + x];
+          n++;
+        }
+        out[y * N + x] = s / n;
+      }
+    }
+    return out;
+  };
+  a = blur(blur(a, 2), 2);
+  const at = (x: number, y: number) => a[Math.min(N - 1, Math.max(0, y)) * N + Math.min(N - 1, Math.max(0, x))];
+  const img2 = ctx.createImageData(N, N);
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const gx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1);
+      const gy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1);
+      const nx = -gx * 1.4;
+      const ny = gy * 1.4;
+      const l = Math.hypot(nx, ny, 1);
+      const i = (y * N + x) * 4;
+      img2.data[i] = Math.round((nx / l) * 127.5 + 127.5);
+      img2.data[i + 1] = Math.round((ny / l) * 127.5 + 127.5);
+      img2.data[i + 2] = Math.round((1 / l) * 127.5 + 127.5);
+      img2.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img2, 0, 0);
+  return canvasTexture(c, false, maxAniso);
 }

@@ -1,11 +1,15 @@
 import type { WatchConfig } from "@/lib/watch";
-import type { CreatorAction, StepId } from "../creator-state";
+import type { CreatorAction, StepId, SubId } from "../creator-state";
+import type { View3D } from "../stage3d-contract";
 
 /** Lo que recibe cada paso del creador. */
 export interface StepProps {
   config: WatchConfig;
   dispatch: (a: CreatorAction) => void;
-  goTo: (s: StepId) => void;
+  /** Ir a un paso (y a una sub-pestaña suya). */
+  goTo: (s: StepId, sub?: SubId | null) => void;
+  /** Pedir un encuadre de la cámara (tipo de correa → "lado", cierre → "cierre"). */
+  requestView: (v: View3D) => void;
 }
 
 /** "Pendiente / agotado / bloqueado" → los estados que pinta OptionGroup. */

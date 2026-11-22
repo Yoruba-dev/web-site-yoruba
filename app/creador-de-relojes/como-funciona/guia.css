@@ -1,0 +1,139 @@
+/* ===========================================================================
+   "CÓMO FUNCIONA" DEL CREADOR DE RELOJES — /creador-de-relojes/como-funciona
+   (components/watch/WatchGuide.tsx + GuideResume.tsx). Página normal de la
+   web: se apoya en el fondo oscuro del sitio. Todo con prefijo (.pyj-guia,
+   .pyj-reloj_guide*): Next no descarga una hoja al navegar.
+   Lo redondo: la web tiene `* { border-radius: 0 !important }`.
+=========================================================================== */
+
+.pyj-guia {
+  padding: 36px 0 8px;
+  background: var(--dk-bg, #18120b);
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-guia--end {
+  padding: 8px 0 56px;
+}
+.pyj-guia_lead {
+  max-width: 680px;
+  margin: 0 auto 20px;
+  font-size: 17px;
+  line-height: 1.65;
+  text-align: center;
+}
+.pyj-guia_lead strong {
+  color: var(--pyj-gold-light, #f2d896);
+  font-weight: 700;
+}
+.pyj-guia_ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 24px;
+}
+.pyj-guia_resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--dk-text, #d6cbb2);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.pyj-guia_resume strong {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-guia_resume:hover {
+  color: var(--pyj-gold-light, #f2d896);
+}
+
+.pyj-reloj_guide {
+  padding: 40px 0 36px;
+  background: var(--dk-bg, #18120b);
+  color: var(--dk-text, #d6cbb2);
+}
+.pyj-reloj_guidehead {
+  margin: 0 0 22px;
+  text-align: center;
+}
+.pyj-reloj_guideh2 {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(21px, 2.6vw, 28px);
+  letter-spacing: 0.04em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_guidesteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+.pyj-reloj_guidesteps li {
+  padding: 18px 16px;
+  border: 1px solid rgba(227, 178, 60, 0.18);
+  background: var(--dk-surface, #221a10);
+}
+.pyj-reloj_guidenum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--pyj-gold, #e3b23c);
+  font-family: var(--font-display);
+  color: var(--pyj-gold, #e3b23c);
+}
+.pyj-reloj_guidesteps h3 {
+  margin: 10px 0 6px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--dk-head, #f1e7d2);
+}
+.pyj-reloj_guidesteps p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pyj-reloj_facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 28px;
+  margin: 0;
+}
+.pyj-reloj_facts dt {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pyj-gold-light, #f2d896);
+}
+.pyj-reloj_facts dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 1023px) {
+  .pyj-reloj_guidesteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575px) {
+  .pyj-guia_lead {
+    font-size: 15.5px;
+  }
+  .pyj-reloj_guidesteps,
+  .pyj-reloj_facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

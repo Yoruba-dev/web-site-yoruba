@@ -268,7 +268,7 @@ export default function RelojesCreador() {
               <a href={SECCION_RELOJES.ruta} className="pyj-btn-gold">
                 Diseñar mi reloj
               </a>
-              <a href={`${SECCION_RELOJES.ruta}#como-funciona`} className="pyj-rc_link">
+              <a href={`${SECCION_RELOJES.ruta}/como-funciona`} className="pyj-rc_link">
                 Cómo funciona <span aria-hidden="true">→</span>
               </a>
             </div>

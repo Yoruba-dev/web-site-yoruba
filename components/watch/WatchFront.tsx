@@ -18,12 +18,17 @@
 //   la vista. Si el cliente edita antes, se muestra entero sin animación.
 // • Al cambiar una opción solo se funde la capa que cambió; la vieja se queda
 //   debajo hasta que la nueva ha cargado (front/layers.tsx).
+// • fantasma (spec V2 §4.8): las piezas que aún no se eligieron se pintan "en
+//   cristal" (gris claro y translúcido) y se vuelven reales en 480 ms; la
+//   correa se descubre desde las asas hacia fuera. Es la misma máscara que la
+//   vista 3D (PartMask: true = real).
 // • prefers-reduced-motion: todo instantáneo.
 // • preloadWatchLayers(config) precarga las capas de una opción (hover).
 // ---------------------------------------------------------------------------
 import "@/app/creador-de-relojes/watch-front.css";
 import { useEffect, useId, useRef, useState } from "react";
 import { summary, type WatchConfig } from "@/lib/watch";
+import type { PartMask, WatchPart } from "./stage3d-contract";
 import { dialHasDate, handMetalHex, handPose, rimMetalHex } from "@/lib/watch-art";
 import { apliqueUrl, nombresCapas, tapaUrl } from "@/lib/watch-capas";
 import { AppliedArt, AppliqueArt, CasebackArt, FrontDefs, GlassArt, HandsArt, NightArt, PrintArt, ShadowArt } from "./front/art";
@@ -45,6 +50,9 @@ export interface WatchFrontProps {
   className?: string;
   /** Prioridad de carga (true en el escenario principal). */
   priority?: boolean;
+  /** Qué piezas son reales (true) y cuáles van en cristal (false). Sin
+   *  máscara, todo real. */
+  fantasma?: PartMask;
 }
 
 /** Lo que dura la secuencia de montaje en CSS (último retraso + duración). */
@@ -63,11 +71,28 @@ export default function WatchFront({
   armar = false,
   className,
   priority = false,
+  fantasma,
 }: WatchFrontProps) {
   const uid = `wf${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const reducido = useReducedMotion();
   const n = nombresCapas(config);
   const e = config.esfera;
+
+  // — Cristal: qué capas van "fantasma". La correa y el cierre son una sola
+  //   capa (la foto de la correa): real cuando las dos lo son. —
+  const g = (p: WatchPart) => !!fantasma && !fantasma[p];
+  const correaFantasma = g("correa") || g("cierre");
+  // La correa que se vuelve real se descubre desde las asas (480 ms).
+  const [revela, setRevela] = useState(false);
+  const antes = useRef(correaFantasma);
+  useEffect(() => {
+    const era = antes.current;
+    antes.current = correaFantasma;
+    if (!era || correaFantasma || reducido) return;
+    setRevela(true);
+    const t = window.setTimeout(() => setRevela(false), 520);
+    return () => window.clearTimeout(t);
+  }, [correaFantasma, reducido]);
 
   // — Montaje: espera a las fotos (con tope) y a que el reloj se vea, corre
   //   la secuencia, termina. —
@@ -153,8 +178,15 @@ export default function WatchFront({
           <svg className="wf-capa wf-part wf-p-sombra wf-correa-mask" viewBox={VIEWBOX} focusable="false">
             <ShadowArt p={`${uid}s`} />
           </svg>
-          <PhotoLayer className="wf-part wf-p-correa wf-correa-mask" name={n.correa} priority={priority} reducido={reducido} />
-          <PhotoLayer className="wf-part wf-p-esfera" name={n.esfera} priority={priority} reducido={reducido} />
+          <PhotoLayer
+            className="wf-part wf-p-correa wf-correa-mask"
+            name={n.correa}
+            priority={priority}
+            reducido={reducido}
+            fantasma={correaFantasma}
+            revela={revela}
+          />
+          <PhotoLayer className="wf-part wf-p-esfera" name={n.esfera} priority={priority} reducido={reducido} fantasma={g("esfera")} />
           <svg className="wf-capa" viewBox={VIEWBOX} focusable="false">
             <FrontDefs p={uid} />
             <SvgFundido
@@ -163,6 +195,7 @@ export default function WatchFront({
               k={kImpresion}
               value={config}
               reducido={reducido}
+              fantasma={g("esfera")}
               render={(v, q) => <PrintArt c={v} p={uid} q={q} />}
             />
             <SvgFundido
@@ -171,6 +204,7 @@ export default function WatchFront({
               k={kIndices}
               value={config}
               reducido={reducido}
+              fantasma={g("esfera")}
               render={(v, q) => <AppliedArt c={v} p={uid} q={q} />}
             />
             <SvgFundido
@@ -179,6 +213,7 @@ export default function WatchFront({
               k={aplique}
               value={config}
               reducido={reducido}
+              fantasma={g("esfera")}
               render={(v) => <AppliqueArt c={v} p={uid} href={apliqueUrl(nombresCapas(v).aplique, 600)} />}
             />
             <SvgFundido
@@ -187,13 +222,14 @@ export default function WatchFront({
               k={kAgujas}
               value={config}
               reducido={reducido}
+              fantasma={g("agujas")}
               render={(v, q) => <HandsArt c={v} p={uid} q={q} />}
             />
             <g className="wf-part wf-p-cristal">
               <GlassArt p={uid} />
             </g>
           </svg>
-          <PhotoLayer className="wf-part wf-p-caja" name={n.caja} priority={priority} reducido={reducido} />
+          <PhotoLayer className="wf-part wf-p-caja" name={n.caja} priority={priority} reducido={reducido} fantasma={g("caja")} />
           <svg className="wf-capa wf-noche" viewBox={VIEWBOX} focusable="false">
             <NightArt c={config} p={`${uid}n`} />
           </svg>
@@ -205,11 +241,11 @@ export default function WatchFront({
               <svg className="wf-capa wf-correa-mask" viewBox={VIEWBOX} focusable="false">
                 <ShadowArt p={`${uid}ts`} />
               </svg>
-              <PhotoLayer className="wf-espejo wf-correa-mask" name={n.correa} reducido={reducido} />
-              <svg className="wf-capa" viewBox={VIEWBOX} focusable="false">
+              <PhotoLayer className="wf-espejo wf-correa-mask" name={n.correa} reducido={reducido} fantasma={correaFantasma} />
+              <svg className="wf-capa" viewBox={VIEWBOX} focusable="false" data-fantasma={g("tapa") ? "" : undefined}>
                 <CasebackArt c={config} p={`${uid}t`} />
               </svg>
-              <PhotoLayer className="wf-espejo" name={n.caja} reducido={reducido} />
+              <PhotoLayer className="wf-espejo" name={n.caja} reducido={reducido} fantasma={g("caja")} />
             </div>
           </div>
         )}

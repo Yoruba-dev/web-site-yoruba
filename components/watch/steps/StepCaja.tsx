@@ -13,13 +13,15 @@ export default function StepCaja({ config, dispatch }: StepProps) {
   const brazalete = getStrap(config.correa)?.tipo === "brazalete";
   return (
     <>
-      <p className="pyj-reloj_lead">
-        Caja octogonal de {WATCH_SPECS.caseMm} mm en acero 316L, con movimiento automático. Elige su acabado: el
-        reloj cambia al momento.
+      <p className="rl-lead">
+        Caja octogonal de {WATCH_SPECS.caseMm} mm en acero 316L, automática. Elige el acabado.
       </p>
       <OptionGroup<FinishId>
-        label="Acabado de la caja"
-        hint={brazalete ? "Llevas brazalete: va siempre en el mismo acabado que la caja." : undefined}
+        label="Acabado"
+        variant="tiles"
+        columns={3}
+        field="acabado"
+        hint={brazalete ? "Tu brazalete va en el mismo acabado." : undefined}
         value={config.acabado}
         onChange={(id) => isPartId("acabado", id) && dispatch({ type: "pieza", cat: "acabado", id })}
         onPreview={(id) => previewPart(config, "acabado", id)}

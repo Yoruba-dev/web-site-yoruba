@@ -1,28 +1,26 @@
-import type { Metadata } from "next";
-import "./reloj.css";
-import Link from "next/link";
+import type { Metadata, Viewport } from "next";
 import JsonLd from "@/components/seo/JsonLd";
 import WatchCreator, { type CreatorInitial } from "@/components/watch/WatchCreator";
-import WatchGuide from "@/components/watch/WatchGuide";
+import { isStepId } from "@/components/watch/creator-state";
 import type { WatchProductVM } from "@/components/watch/order";
 import { breadcrumbSchema } from "@/lib/schema";
 import { getProductByHandle } from "@/lib/products";
 import { isWatchConfigurable } from "@/lib/commerce";
 import { SECCION_RELOJES } from "@/lib/site";
-import { WATCH_PRICE_TBD, decodeWatchDesign, isPresetId, resolvePreset, DEFAULT_WATCH } from "@/lib/watch";
+import { decodeWatchDesign, isPresetId, resolvePreset, DEFAULT_WATCH } from "@/lib/watch";
 
 // ---------------------------------------------------------------------------
 // /creador-de-relojes — RUTA BLOQUEADA PARA SIEMPRE (la enlazan la portada, la
 // ficha de producto, WhatsApp y los pedidos: no hay capa de redirecciones).
 //
-// Lee ?d= (un diseño completo: se restaura exacto), ?preset= (abre el editor
-// con ese Orisha, sin pasar por la entrada) y ?reloj= (el producto de Shopify
-// cuando exista; hoy no hay ninguno y todo funciona sin él).
+// Lee ?d= (un diseño completo: se restaura exacto), ?paso= (en qué paso abre
+// un enlace compartido; por defecto "Listo"), ?preset= (abre el editor con ese
+// Orisha, sin pasar por la entrada) y ?reloj= (el producto de Shopify cuando
+// exista; hoy no hay ninguno y todo funciona sin él).
 //
-// Es una herramienta a pantalla completa (ruta de enfoque): en lugar del banner
-// grande de Breadcrumb lleva una cabecera fina (migas + h1), y la frase de
-// presentación va DEBAJO del creador, para que el reloj que "se arma ante tus
-// ojos" quede arriba, a la vista, también en un portátil de 768 px.
+// La página es SOLO el editor (spec V2 §3.1, R4): un armazón fijo a pantalla
+// completa con su propia cabecera (el h1 va en ella). "Cómo funciona" vive en
+// /creador-de-relojes/como-funciona.
 // ---------------------------------------------------------------------------
 
 /** Interruptor de lanzamiento: mientras sea false, la página NO se indexa. Es
@@ -33,6 +31,13 @@ const CREATOR_INDEXABLE = SECCION_RELOJES.lanzado;
 const OG = "/assets/images/reloj/home/orula-marmol-1024.webp";
 const DESCRIPTION =
   "Diseña tu reloj en los colores de tu Orisha: caja octogonal de acero, esfera con la pista de cuentas, tu signo de Ifá grabado al dorso. Ensamblado y personalizado a mano en Miami.";
+
+/** El teclado del móvil achica el contenido (Chrome Android): así 100dvh y el
+ *  armazón fijo siguen al teclado. iOS usa visualViewport (WatchCreator). */
+export const viewport: Viewport = {
+  themeColor: "#0d0a07",
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: { absolute: "Crea tu reloj de Orisha | Pedro Yoruba Jewelry" },
@@ -64,17 +69,28 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 export default async function CreadorDeRelojesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ d?: string | string[]; preset?: string | string[]; reloj?: string | string[] }>;
+  searchParams: Promise<{
+    d?: string | string[];
+    preset?: string | string[];
+    reloj?: string | string[];
+    paso?: string | string[];
+  }>;
 }) {
   const sp = await searchParams;
   const d = first(sp.d);
   const preset = first(sp.preset);
   const reloj = first(sp.reloj);
+  const paso = first(sp.paso);
 
   // ?d= manda sobre ?preset=: un enlace guardado se abre tal cual.
   const fromLink = d ? decodeWatchDesign(d) : null;
   const initial: CreatorInitial = fromLink
-    ? { config: fromLink.config, source: "d", descontinuado: fromLink.descontinuado }
+    ? {
+        config: fromLink.config,
+        source: "d",
+        descontinuado: fromLink.descontinuado,
+        ...(isStepId(paso) ? { paso } : {}),
+      }
     : isPresetId(preset)
       ? { config: resolvePreset(preset), source: "preset", descontinuado: [] }
       : { config: DEFAULT_WATCH, source: null, descontinuado: [] };
@@ -109,41 +125,7 @@ export default async function CreadorDeRelojesPage({
 
   return (
     <>
-      <section className="pyj-reloj-page">
-        <div className="container">
-          <header className="pyj-reloj_top">
-            <nav className="pyj-reloj_crumbs" aria-label="Ruta de navegación">
-              <ol>
-                <li>
-                  <Link href="/">Inicio</Link>
-                </li>
-                <li aria-current="page">Creador de relojes</li>
-              </ol>
-            </nav>
-            <h1 className="pyj-reloj_h1">Crea tu reloj de Orisha</h1>
-          </header>
-
-          <WatchCreator initial={initial} product={product} />
-
-          <div className="pyj-cfg-intro pyj-reloj_intro">
-            <p className="pyj-cfg-intro_lead">
-              {product ? (
-                <>
-                  Diseña tu <strong>{product.title}</strong>: caja, esfera, correa y tu signo al dorso.
-                </>
-              ) : (
-                <>
-                  Tu reloj en los <strong>colores de tu Orisha</strong>, con tu <strong>signo de Ifá</strong> grabado
-                  al dorso. Se arma ante tus ojos; {WATCH_PRICE_TBD.toLowerCase()} con tu diseño.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <WatchGuide />
-
+      <WatchCreator initial={initial} product={product} />
       <JsonLd data={breadcrumbLd} />
     </>
   );

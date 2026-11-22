@@ -1,6 +1,5 @@
 "use client";
 
-import "@/app/creador-de-relojes/odu-picker.css";
 import { useEffect, useId, useRef, useState } from "react";
 import OduGlyph from "@/components/configurator/OduGlyph";
 import ComposedInput from "./ComposedInput";
@@ -40,16 +39,24 @@ export default function OduPicker({
   value,
   onChange,
   titulo,
+  ocultarTitulo = false,
   ayuda,
   errorNombre,
+  field,
 }: {
   value: OduSign | null;
   onChange: (s: OduSign | null) => void;
   /** Título del bloque ("Signo en la esfera", "Signo en la tapa"). */
   titulo: string;
+  /** El título ya lo pinta quien lo contiene (la capa de la esfera): solo
+   *  para lectores de pantalla. */
+  ocultarTitulo?: boolean;
   ayuda?: string;
   /** Motivo de validate() para el nombre de la combinación, si lo hay. */
   errorNombre?: string;
+  /** data-field ("tapa.signo"): "Corregir" lleva el foco aquí (al nombre de
+   *  la combinación si está a la vista). */
+  field?: string;
 }) {
   const uid = useId();
   const modoDe = (v: OduSign | null): Modo => (v ? (v.tipo === "meyi" ? "meyi" : "combinacion") : "ninguno");
@@ -100,38 +107,39 @@ export default function OduPicker({
   const mismaPierna = !!d && !!i && d.id === i.id;
 
   return (
-    <fieldset className="pyj-reloj_odu">
-      <legend className="pyj-reloj_grouplabel">{titulo}</legend>
-      {ayuda && <p className="pyj-reloj_note">{ayuda}</p>}
+    <fieldset className="rl-odu" data-field={field}>
+      <legend className={ocultarTitulo ? "rl-sr" : "rl-group_label"}>{titulo}</legend>
+      {ayuda && <p className="rl-note">{ayuda}</p>}
 
       <OptionGroup<Modo>
         label="Tipo de signo"
         hideLabel
-        variant="chips"
+        variant="segmented"
         value={modo}
         onChange={cambiarModo}
         options={[
           { id: "ninguno", label: "Sin signo" },
-          { id: "meyi", label: "Uno de los 16 Meyis" },
-          { id: "combinacion", label: "Mi signo es una combinación" },
+          { id: "meyi", label: "16 Meyis" },
+          { id: "combinacion", label: "Combinación" },
         ]}
       />
 
       {modo === "meyi" && (
-        <div className="pyj-reloj_meyis">
+        <div className="rl-meyis">
           <OptionGroup<string>
-            label="La tabla de los Meyis"
-            hint="En su orden de Ifá. Cada signo se imprime derecho, tal como lo ves."
+            label="Los 16 Meyis, en su orden de Ifá"
+            hideLabel
+            variant="tiles"
+            columns={4}
             value={meyiId}
             onChange={(id) => emitir({ tipo: "meyi", oduId: id })}
             options={ODU_MEJI.map((o) => ({
               id: o.id,
               label: lucumiName(o.id) ?? o.name,
-              detalle: o.name,
               visual: (
-                <span className="pyj-reloj_meyi">
-                  <span className="pyj-reloj_meyinum">{o.number}</span>
-                  <OduGlyph odu={o} decorative className="pyj-reloj_meyiglyph" />
+                <span className="rl-meyi" title={o.name}>
+                  <span className="rl-meyi_num">{o.number}</span>
+                  <OduGlyph odu={o} decorative className="rl-meyi_glyph" />
                 </span>
               ),
             }))}
@@ -140,11 +148,11 @@ export default function OduPicker({
       )}
 
       {modo === "combinacion" && (
-        <div className="pyj-reloj_combo">
-          <div className="pyj-reloj_combocols">
+        <div className="rl-combo">
+          <div className="rl-combo_cols">
             {/* La izquierda a la izquierda y la derecha a la derecha, como se
                 dibuja el signo. En el DOM va primero la derecha: se lee primero. */}
-            <div className="pyj-reloj_combocol pyj-reloj_combocol--der">
+            <div className="rl-combo_col rl-combo_col--der">
               <LegPicker
                 label="Derecha"
                 hint="Se lee primero"
@@ -156,20 +164,20 @@ export default function OduPicker({
                 columna="right"
               />
             </div>
-            <div className="pyj-reloj_combopreview" aria-live="polite">
+            <div className="rl-combo_preview" aria-live="polite">
               {d && i ? (
                 <>
-                  <OduGlyph odu={comboOdu(d, i, nombre.trim())} className="pyj-reloj_comboglyph" />
-                  <span className="pyj-reloj_combolegs">
+                  <OduGlyph odu={comboOdu(d, i, nombre.trim())} className="rl-combo_glyph" />
+                  <span className="rl-combo_legs">
                     <span>Izq. {lucumiLeg(i.id)}</span>
                     <span>Der. {lucumiLeg(d.id)}</span>
                   </span>
                 </>
               ) : (
-                <span className="pyj-reloj_note">Elige las dos piernas de tu signo.</span>
+                <span className="rl-note">Elige las dos piernas de tu signo.</span>
               )}
             </div>
-            <div className="pyj-reloj_combocol pyj-reloj_combocol--izq">
+            <div className="rl-combo_col rl-combo_col--izq">
               <LegPicker
                 label="Izquierda"
                 hint="Se lee después"
@@ -184,17 +192,17 @@ export default function OduPicker({
           </div>
 
           {mismaPierna ? (
-            <p className="pyj-reloj_note" role="status">
+            <p className="rl-note" role="status">
               Con las dos piernas iguales tu signo es un Meyi: <strong>{lucumiName(d.id)}</strong>.
             </p>
           ) : (
-            <div className="pyj-reloj_field">
-              <label htmlFor={`${uid}-nombre`} className="pyj-reloj_fieldlabel">
-                Nombre de tu signo, tal como está en tu libreta <span aria-hidden="true">*</span>
+            <div className="rl-field">
+              <label htmlFor={`${uid}-nombre`} className="rl-group_label">
+                Nombre, tal como está en tu libreta <span aria-hidden="true">*</span>
               </label>
               <ComposedInput
                 id={`${uid}-nombre`}
-                className="pyj-reloj_input"
+                className="rl-input"
                 type="text"
                 inputMode="text"
                 autoComplete="off"
@@ -212,15 +220,15 @@ export default function OduPicker({
                   emitirCombo(derecha, izquierda, limpio);
                 }}
               />
-              <span id={`${uid}-nombre-ayuda`} className="pyj-reloj_fieldhelp">
-                <span>
+              <span id={`${uid}-nombre-ayuda`} className="rl-field_help">
+                <span className={d && i && errorNombre ? "is-error" : undefined}>
                   {rechazado
                     ? "Este carácter no se puede grabar."
                     : d && i && errorNombre
                       ? errorNombre
                       : "Lo escribes tú: nunca lo generamos."}
                 </span>
-                <span className="pyj-reloj_count">
+                <span className="rl-count">
                   {nombre.length}/{SIGN_NAME_MAX}
                 </span>
               </span>
@@ -229,7 +237,7 @@ export default function OduPicker({
         </div>
       )}
 
-      {modo !== "ninguno" && <p className="pyj-reloj_note pyj-reloj_note--odu">{WATCH_ODU_NOTE}</p>}
+      {modo !== "ninguno" && <p className="rl-note rl-note--odu">{WATCH_ODU_NOTE}</p>}
     </fieldset>
   );
 }
@@ -253,13 +261,14 @@ function LegPicker({
     <OptionGroup<string>
       label={label}
       hint={hint}
-      variant="tiles"
+      variant="rows"
+      columns={2}
       value={value}
       onChange={onChange}
       options={ODU_MEJI.map((o) => ({
         id: o.id,
         label: lucumiLeg(o.id) ?? o.name,
-        visual: <OduGlyph odu={o} tower={columna} decorative className="pyj-reloj_legglyph" />,
+        visual: <OduGlyph odu={o} tower={columna} decorative className="rl-leg_glyph" />,
       }))}
     />
   );

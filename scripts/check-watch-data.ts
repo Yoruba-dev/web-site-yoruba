@@ -121,6 +121,27 @@ import { capaUrl, nombresCapas } from "../lib/watch-capas";
 import { dialPrintSvgCurvas, laserSvgCurvas, missingGlyphs, pathBounds, pathReach, textRunToPath, textWidthMm } from "../lib/watch-curvas";
 import { CASEBACK_LAYOUT } from "../lib/watch-art";
 import { decodeDesign, encodeDesign, encodeWatchDesign, isWatchPayload } from "../lib/design-code";
+import { createHash } from "node:crypto";
+import {
+  BUILD_STEPS,
+  PART_STEP,
+  STEPS,
+  STEP_VIEW,
+  SUBS,
+  confirmedMask,
+  creatorReducer,
+  fixSub,
+  isStepId,
+  parseDraft,
+  stepOfField,
+} from "../components/watch/creator-state";
+import { ALL_GHOST, ALL_SOLID, WATCH_PARTS, maskKey } from "../components/watch/stage3d-contract";
+import { buildOrderInfo, isLocalOrigin } from "../components/watch/order";
+import { isFocusRoute } from "../lib/focus-routes";
+import { SITE_URL } from "../lib/site";
+import { GLYPH_FONTS } from "../lib/watch-glyphs";
+import { FONT_STYLES } from "../lib/watch-art";
+import { getStrap, withStrapType, type WatchField } from "../lib/watch";
 
 let failures = 0;
 let checks = 0;
@@ -1376,6 +1397,145 @@ section("gradient dials: same colours as the layers, every step legible, the ste
   const props = lineProperties(g4, "PY-R-TEST", "https://x/diseno?d=x").find((p) => p.key === "Esfera")?.value ?? "";
   ok(/Degradado Orula \(amarillo → verde\), paso 4 de 5/.test(props), `the order line does not state the step: ${props}`);
   ok(/paso 4 de 5/.test(summary(g4)), "the summary does not state the step");
+});
+
+// ===========================================================================
+// EDITOR V2 (spec design-assets/creador-relojes/SPEC-EDITOR-V2.md): el modelo
+// de pasos (4 + "Listo"), el borrador v2, el cambio de tipo de correa, los
+// enlaces que se comparten, la ruta de enfoque y la letra fina.
+// ===========================================================================
+section("editor v2: steps, sub-tabs, assembly mask, field → step", () => {
+  ok(same(STEPS.map((s) => s.id), ["caja", "esfera", "correa", "tapa", "resumen"]), "the steps are not caja · esfera · correa · tapa · resumen");
+  ok(same(STEPS.map((s) => s.label), ["Caja", "Esfera", "Correa", "Tapa", "Listo"]), "the stepper labels changed");
+  ok(BUILD_STEPS === 4 && STEPS.length === BUILD_STEPS + 1, "4 build steps + Listo");
+  ok(!isStepId("agujas"), "'agujas' is still a step (it lives in Esfera › Detalles)");
+  ok(same(SUBS.esfera, ["color", "pista", "texto", "detalles"]) && same(SUBS.tapa, ["signo", "grabado"]), "wrong sub-tabs");
+  for (const st of STEPS) {
+    const list = SUBS[st.id] ?? [];
+    ok(fixSub(st.id, null) === (list[0] ?? null), `${st.id}: fixSub(null) is not the first sub-tab`);
+    ok(fixSub(st.id, "grabado") === (list.includes("grabado") ? "grabado" : (list[0] ?? null)), `${st.id}: fixSub keeps a foreign sub-tab`);
+    ok(STEP_VIEW[st.id] !== undefined, `${st.id}: no camera view`);
+  }
+  for (const p of WATCH_PARTS) ok(isStepId(PART_STEP[p]) && PART_STEP[p] !== "resumen", `${p}: no build step`);
+  // Ghost counts per moment (§2 R2.2): entry 6 · caja 5 · esfera 3 · correa 1 · tapa 0 · Listo 0.
+  const ghosts = (m: Record<string, boolean>) => WATCH_PARTS.filter((p) => !m[p]).length;
+  ok(same([-1, 0, 1, 2, 3, 4].map((max) => ghosts(confirmedMask(max, false))), [6, 5, 3, 1, 0, 0]), "ghost counts are not 6/5/3/1/0/0");
+  ok(ghosts(confirmedMask(-1, true)) === 0 && maskKey(confirmedMask(0, true)) === maskKey(ALL_SOLID), "'Ver completo' / a shared link does not show every part solid");
+  ok(maskKey(ALL_GHOST) === "000000" && maskKey(ALL_SOLID) === "111111", "maskKey");
+  // Every field a rule can blame lands on a real step and one of ITS sub-tabs.
+  const fields = new Set<WatchField>(["caja", "acabado", "esfera.modelo", "esfera.base", "esfera.pista", "esfera.texto", "esfera.signo", "aplique", "segundero", "correa", "cierre", "tapa.signo", "tapa.linea1", "tapa.linea2", "tapa.fecha"]);
+  for (const f of fields) {
+    const { step, sub } = stepOfField(f);
+    const list = SUBS[step] ?? [];
+    ok(isStepId(step) && step !== "resumen", `${f}: "Corregir" goes nowhere`);
+    ok(list.length ? !!sub && list.includes(sub) : sub === null, `${f}: sub-tab ${sub} is not one of ${step}'s`);
+  }
+  ok(stepOfField("segundero").sub === "detalles" && stepOfField("tapa.linea1").sub === "grabado", "the old Agujas / Grabado fields moved");
+  // Every preset is order-ready (R5.1: preset → Pedir → WhatsApp, ≤ 3 taps).
+  for (const [id, c] of presets) ok(validate(c).ok, `preset ${id} is not order-ready`);
+  // The new reducer action is withStrapType, exactly.
+  const c0 = resolvePreset("chango", disp);
+  ok(same(creatorReducer(c0, { type: "tipoCorrea", tipo: "piel" }), withStrapType(c0, "piel")), "tipoCorrea ≠ withStrapType");
+});
+
+section("editor v2: Draft v2 + migration of v1 drafts", () => {
+  const c = resolvePreset("oshun", disp);
+  const v1 = (step: string) => JSON.stringify({ v: 1, config: c, step, at: 5 });
+  const a = parseDraft(v1("agujas"));
+  ok(!!a && a.v === 2 && a.step === "esfera" && a.sub === "detalles" && a.max === 1, `v1 "agujas" does not open Esfera › Detalles (max 1): ${JSON.stringify(a && { step: a.step, sub: a.sub, max: a.max })}`);
+  const r = parseDraft(v1("resumen"));
+  ok(!!r && r.step === "resumen" && r.sub === null && r.max === 4, "v1 'resumen' does not open Listo with every part solid");
+  const t = parseDraft(v1("tapa"));
+  ok(!!t && t.step === "tapa" && t.sub === "signo" && t.max === 3, "v1 'tapa' → tapa/signo, max 3");
+  ok(parseDraft(v1("inventado"))?.step === "caja", "an unknown step does not fall back to caja");
+  const d2 = { v: 2, config: c, step: "esfera", sub: "pista", max: 3, at: 9 };
+  const b = parseDraft(JSON.stringify(d2));
+  ok(!!b && b.step === "esfera" && b.sub === "pista" && b.max === 3 && b.at === 9, "a v2 draft does not round-trip");
+  ok(canonicalJson(b!.config) === canonicalJson(c), "the draft's design changed on the way");
+  ok(parseDraft(JSON.stringify({ ...d2, sub: "grabado" }))?.sub === "color", "a foreign sub-tab is not fixed");
+  ok(parseDraft(JSON.stringify({ ...d2, step: "tapa", max: 0 }))?.max === 3, "max below the saved step is not raised");
+  ok(parseDraft(JSON.stringify({ ...d2, max: 99 }))?.max === 4, "max above Listo is not clamped");
+  ok(parseDraft(null) === null && parseDraft("{nope") === null && parseDraft("{}") === null && parseDraft("null") === null, "garbage drafts are not null");
+});
+
+section("editor v2: withStrapType (R6 type cards)", () => {
+  const types = ["caucho", "piel", "brazalete"] as const;
+  const offered = visibleParts(CATALOG.correa) as { id: string; tipo?: string }[];
+  for (const [id, c] of [...presets, ["brazalete", withPart(resolvePreset("orula", disp), "correa", "brazalete")] as [string, WatchConfig]]) {
+    for (const tipo of types) {
+      const n = withStrapType(c, tipo);
+      const s = getStrap(n.correa);
+      ok(s?.tipo === tipo, `${id} → ${tipo}: got ${n.correa}`);
+      ok(offered.some((p) => p.id === n.correa) && partState("correa", n.correa, disp) === "disponible", `${id} → ${tipo}: ${n.correa} is not offered`);
+      ok(withStrapType(n, tipo) === n, `${id} → ${tipo}: not idempotent`);
+      ok(same({ ...n, correa: c.correa }, c), `${id} → ${tipo}: changed more than the strap`);
+      if (tipo === "brazalete") ok(n.correa === "brazalete", `${id}: the bracelet is not "brazalete"`);
+    }
+  }
+  const rojo = withPart(resolvePreset("chango", disp), "correa", "caucho-rojo");
+  ok(withStrapType(rojo, "piel").correa === "piel-rojo", "caucho rojo → piel does not keep the red");
+  ok(withStrapType(withStrapType(rojo, "piel"), "caucho").correa === "caucho-rojo", "piel roja → caucho does not keep the red");
+  ok(withStrapType(rojo, "piel", "piel-verde").correa === "piel-verde", "the remembered strap of that type is ignored");
+  ok(withStrapType(rojo, "piel", "caucho-azul").correa === "piel-rojo", "a remembered strap of ANOTHER type is used");
+  const brz = withPart(rojo, "correa", "brazalete");
+  ok(getStrap(withStrapType(brz, "caucho").correa)?.tipo === "caucho", "bracelet → caucho has no rubber strap");
+  ok(withStrapType(withPart(resolvePreset("yemaya", disp), "correa", "brazalete"), "caucho").correa === resolvePreset("yemaya", disp).correa, "bracelet → caucho does not use the preset's own strap");
+  ok(same(rojo, withStrapType(rojo, "caucho")), "same type changes the strap");
+});
+
+section("editor v2: share links (R8) — origin, paso=resumen, local note", () => {
+  const c = normalize(resolvePreset("ifa", disp));
+  const def = buildOrderInfo(c);
+  ok(def.creatorUrl.startsWith(`${SITE_URL}/creador-de-relojes?d=`) && def.sheetUrl.startsWith(`${SITE_URL}/diseno?d=`), "the default origin is not SITE_URL");
+  ok(def.creatorUrl.endsWith("&paso=resumen"), "creatorUrl does not end with &paso=resumen");
+  ok(!def.origenLocal, "SITE_URL is flagged as a local origin");
+  const lan = buildOrderInfo(c, null, "http://192.168.1.20:3000/");
+  ok(lan.creatorUrl.startsWith("http://192.168.1.20:3000/creador-de-relojes?d=") && lan.sheetUrl.startsWith("http://192.168.1.20:3000/diseno?d="), "the given origin is not used");
+  ok(lan.origenLocal && buildOrderInfo(c, null, "http://localhost:3000").origenLocal, "localhost / LAN are not flagged");
+  ok(!buildOrderInfo(c, null, "https://deploy-preview-12--pyj.netlify.app").origenLocal, "a deploy preview is flagged as local");
+  for (const [o, want] of [
+    ["http://127.0.0.1:3000", true],
+    ["http://10.0.0.4", true],
+    ["http://172.20.1.1", true],
+    ["http://172.40.1.1", false],
+    ["http://mac.local:3000", true],
+    ["https://pedrojewelryyoruba.com", false],
+  ] as const)
+    ok(isLocalOrigin(o) === want, `isLocalOrigin(${o}) ≠ ${want}`);
+  const d = new URL(lan.creatorUrl).searchParams.get("d") ?? "";
+  ok(designCode(decodeWatchDesign(d)!.config) === lan.code && canonicalJson(decodeWatchDesign(d)!.config) === canonicalJson(c), "the shared link does not rebuild the same design");
+  ok(new URL(lan.creatorUrl).searchParams.get("paso") === "resumen", "?paso is not resumen");
+  ok(decodeURIComponent(lan.shareHref).includes(lan.creatorUrl), "the WhatsApp share does not carry the creator link");
+  ok(decodeURIComponent(lan.whatsappHref.split("text=")[1] ?? "") === lan.whatsappText, "the copied message is not the WhatsApp text");
+  ok(lan.whatsappText.includes(lan.code) && lan.whatsappText.includes(lan.sheetUrl), "the order text lacks the code or the /diseno link");
+  ok(lan.ctaLabel === "Solicitar por WhatsApp", "CTA label");
+  // The editor really passes the origin (pre-launch: this deployment; after: SITE_URL).
+  const read = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
+  const hooks = read("components/watch/shell/hooks.ts");
+  ok(/SECCION_RELOJES\.lanzado\s*\?\s*SITE_URL\s*:\s*window\.location\.origin/.test(hooks), "useShareOrigin is not `lanzado ? SITE_URL : location.origin`");
+  ok(/buildOrderInfo\(final, product, origin\)/.test(read("components/watch/WatchCreator.tsx")), "WatchCreator does not pass the share origin");
+});
+
+section("editor v2: focus route is exact (the guide page keeps the site chrome)", () => {
+  ok(isFocusRoute("/creador-de-relojes") && isFocusRoute("/creador-de-relojes/") && isFocusRoute("/creador-de-relojes?d=x#y"), "the creator is not a focus route");
+  ok(!isFocusRoute("/creador-de-relojes/como-funciona"), "the guide page is a focus route");
+  ok(!isFocusRoute("/creador-de-relojes-viejo") && !isFocusRoute("/") && !isFocusRoute(null), "a prefix / other route is a focus route");
+});
+
+section("letra fina (R7): Cormorant Garamond Italic 500, py-dial untouched", () => {
+  const fina = readFileSync(join(process.cwd(), "lib/watch-glyphs-fina.ts"), "utf8");
+  ok(/Cormorant Garamond Italic 500, OFL 1\.1/.test(fina), "the fina glyph file does not name Cormorant Garamond Italic 500, OFL 1.1");
+  // py-dial (Cinzel) is byte-identical to the table before the split (sha-256
+  // of JSON.stringify of the pre-V2 GLYPH_FONTS["py-dial"]).
+  const h = createHash("sha256").update(JSON.stringify(GLYPH_FONTS["py-dial"])).digest("hex");
+  ok(h === "43a7c7fa87695b03117bd365d8c0529219c9732ccacd4c067b029defe6c37d70", `GLYPH_FONTS["py-dial"] changed (${h})`);
+  // Every sign name the caseback can carry, and the specimen default, has an outline in fina.
+  const names = [...ODU_MEJI.map((o) => ODU_LUCUMI[o.id] ?? o.name), ...ODU_MEJI.map((o) => o.name), "Omo Orula"];
+  for (const n of names) ok(missingGlyphs(n, "py-dial-fina").length === 0, `fina: no outline for a char of «${n}»`);
+  ok(FONT_STYLES["py-dial-fina"] === "italic" && FONT_STYLES["py-dial"] === "normal", "FONT_STYLES");
+  ok(textWidthMm("Omo Orula", "py-dial-fina", 2) < textWidthMm("OMO ORULA", "py-dial", 2), "fina is not narrower than the roman capitals");
+  const props = lineProperties({ ...resolvePreset("orula", disp), tapa: { ...resolvePreset("orula", disp).tapa, linea1: "Omo Orula", fuente: "fina" } }, "PY-R-T", "https://x");
+  ok(props.find((p) => p.key === "Tapa · fuente")?.value === "Fina (cursiva)", "the order line does not say 'Fina (cursiva)'");
 });
 
 console.log(`\n${checks - failures}/${checks} checks passed`);

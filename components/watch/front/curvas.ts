@@ -4,12 +4,12 @@
 // LAS LETRAS DE LA VISTA PREVIA = LAS DEL ARCHIVO DE IMPRENTA.
 //
 // El texto de la esfera y el grabado de la tapa se imprimen / graban con los
-// contornos de lib/watch-glyphs.ts (Cinzel Regular y Cormorant Light, en
-// curvas). La web solo carga Cinzel 500–700, así que un <text> nunca saldría
+// contornos de lib/watch-glyphs.ts (Cinzel Regular y Cormorant Garamond
+// cursiva 500, en curvas). La web solo carga Cinzel 500–700, así que un <text> nunca saldría
 // con el grosor de imprenta (decisión del dueño 2026-11-22: "igualar a la de
 // imprenta"). Por eso la vista previa pinta EXACTAMENTE esos contornos.
 //
-// La tabla de contornos pesa ~43 KB gzip: se carga aparte (import dinámico),
+// Las tablas de contornos pesan ~46 KB gzip: se carga aparte (import dinámico),
 // la primera vez que hace falta, y se comparte con la vista 3D. Hasta que
 // llega (un instante), se ve el <text> con la fuente de la web.
 // ---------------------------------------------------------------------------

@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, type MouseEvent } from "react";
-import WatchFront from "@/components/watch/WatchFront";
-import { BeadRow } from "./Swatches";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, type MouseEvent, type PointerEvent as RPointerEvent } from "react";
+import { BeadRow, LayerThumb } from "./Swatches";
+import { layerUrl } from "./creator-state";
+import { GUIA_HREF } from "./shell/FocusHeader";
+import { Icon } from "./shell/icons";
 import {
   ORISHA_WATCH_PRESETS,
   PRESET_ORDER,
@@ -13,16 +16,18 @@ import {
   type OrishaId,
   type PresetId,
 } from "@/lib/watch";
+import { nombresCapas } from "@/lib/watch-capas";
 
 // ---------------------------------------------------------------------------
-// Entrada del creador: "Empieza con tu Orisha". Ifá primero (la pieza
-// estrella, con el reloj de verdad en vivo: no hay render de Ifá), luego los
-// seis Orishas con su render ilustrativo y al final "Diseñar desde cero".
-// Cada ficha es un enlace ?preset=… (funciona sin JavaScript y se puede
-// compartir); con JavaScript se abre el editor sin recargar.
+// Entrada del creador (spec V2 §3.8): "Empieza con tu Orisha", en el mismo
+// armazón sin desplazamiento. Ifá primero (la pieza estrella, a dos
+// columnas), los seis Orishas con un recorte de la CABEZA real (caja + esfera,
+// las mismas capas que arma el escenario: lo que ves es lo que se arma) y sus
+// cuentas, "Desde cero" y el enlace a "Cómo funciona". Cada ficha es un enlace
+// ?preset=… (funciona sin JavaScript y se puede compartir); con JavaScript
+// abre el editor sin recargar. Al pasar por una ficha (escritorio), el
+// escenario enseña ese reloj entero.
 // ---------------------------------------------------------------------------
-
-const RENDER = "/assets/images/reloj/presets";
 
 /** "Caucho blanco mientras llega el caucho amarillo" cuando el preset tuvo que
  *  usar su segunda opción porque la primera aún no está en el taller. */
@@ -47,109 +52,130 @@ function fallbackNote(id: PresetId): string | null {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** El recorte de la cabeza del reloj de un preset (caja + esfera reales). */
+function Cabeza({ id }: { id: PresetId }) {
+  const c = resolvePreset(id);
+  const n = nombresCapas(c);
+  return <LayerThumb crop="cabeza" layers={[layerUrl(`caja-${c.acabado}`), layerUrl(n.esfera)]} />;
+}
+
+/** "hace 2 h", "hace 3 días": cuándo se tocó el borrador por última vez. */
+function hace(at: number): string {
+  const min = Math.round((Date.now() - at) / 60000);
+  if (!at || min < 1) return "ahora";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return `hace ${d} ${d === 1 ? "día" : "días"}`;
+}
+
 export default function WatchEntry({
   onPick,
+  onHover,
   onContinue,
-  draftCode,
+  draft,
 }: {
   onPick: (id: PresetId) => void;
+  /** Escritorio: la ficha bajo el cursor / con el foco (null al salir). */
+  onHover?: (id: PresetId | null) => void;
   /** Hay un diseño guardado en este navegador. */
   onContinue?: () => void;
-  draftCode?: string;
+  draft?: { code: string; at: number } | null;
 }) {
-  const ifaConfig = useMemo(() => resolvePreset("ifa"), []);
-  const orishas = PRESET_ORDER.filter((id): id is OrishaId => id !== "ifa" && id !== "cero");
+  const orishas = useMemo(() => PRESET_ORDER.filter((id): id is OrishaId => id !== "ifa" && id !== "cero"), []);
+  const timer = useRef(0);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
   const go = (id: PresetId) => (e: MouseEvent<HTMLAnchorElement>) => {
     // Clic normal → editor sin recargar; con Ctrl/⌘ o rueda, el enlace de siempre.
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
+    window.clearTimeout(timer.current);
     onPick(id);
   };
+  // Pasar por una ficha: 120 ms de espera, así cruzar la rejilla no hace parpadear el reloj.
+  const hover = (id: PresetId | null) => {
+    if (!onHover) return;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => onHover(id), 120);
+  };
+  const props = (id: PresetId) => ({
+    href: `?preset=${id}`,
+    onClick: go(id),
+    onPointerEnter: (e: RPointerEvent) => e.pointerType === "mouse" && hover(id),
+    onFocus: () => hover(id),
+  });
 
   return (
-    <section className="pyj-reloj_entry" aria-labelledby="pyj-reloj-entry-title">
-      <header className="pyj-reloj_entryhead">
-        <span className="pyj-eyebrow">✦ Creador de relojes ✦</span>
-        <h2 id="pyj-reloj-entry-title" className="pyj-reloj_h2">
-          Empieza con tu Orisha
-        </h2>
-        <p className="pyj-reloj_lead">Elige los colores de tu Orisha; después lo cambias todo.</p>
-      </header>
-
-      {onContinue && (
-        <button type="button" className="pyj-reloj_continue" onClick={onContinue}>
-          <span>Continuar mi diseño{draftCode ? ` · ${draftCode}` : ""}</span>
-          <span aria-hidden="true">→</span>
+    <div
+      className="rl-entry"
+      onPointerLeave={(e) => e.pointerType === "mouse" && hover(null)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) hover(null);
+      }}
+    >
+      {onContinue && draft && (
+        <button type="button" className="rl-entry_draft" onClick={onContinue}>
+          <span className="rl-entry_drafttxt">
+            <span className="rl-entry_draftk">Continuar mi diseño</span>
+            <span className="rl-entry_draftv">
+              {draft.code} · {hace(draft.at)}
+            </span>
+          </span>
+          <Icon name="next" />
         </button>
       )}
 
-      <a href="?preset=ifa" className="pyj-reloj_ifa" onClick={go("ifa")}>
-        <span className="pyj-reloj_ifawatch">
-          <WatchFront config={ifaConfig} className="pyj-reloj_watch" />
-        </span>
-        <span className="pyj-reloj_ifatext">
-          <span className="pyj-reloj_badge">✦ Pieza estrella</span>
-          <span className="pyj-reloj_ifatitle">Ifá</span>
-          <span className="pyj-reloj_ifanote">{WATCH_IFA_NOTE}</span>
-          <BeadRow orisha="orula" count={12} />
-          <span className="pyj-reloj_cardcta">Empezar con Ifá →</span>
-          <span className="pyj-reloj_micro">Vista previa en vivo</span>
-        </span>
-      </a>
-
-      <ul className="pyj-reloj_cards">
-        {orishas.map((id, i) => {
+      <ul className="rl-entry_grid" aria-label="Empieza con tu Orisha">
+        <li className="rl-entry_ifa">
+          <a className="rl-card rl-card--ifa" {...props("ifa")}>
+            <span className="rl-card_thumb" aria-hidden="true">
+              <Cabeza id="ifa" />
+            </span>
+            <span className="rl-card_body">
+              <span className="rl-card_badge">✦ Pieza estrella</span>
+              <span className="rl-card_title">Ifá</span>
+              <span className="rl-card_note">{WATCH_IFA_NOTE}</span>
+            </span>
+          </a>
+        </li>
+        {orishas.map((id) => {
           const p = ORISHA_WATCH_PRESETS[id];
           const note = fallbackNote(id);
           return (
             <li key={id}>
-              <a href={`?preset=${id}`} className="pyj-reloj_card" onClick={go(id)}>
-                <picture className="pyj-reloj_cardimg">
-                  <source
-                    type="image/avif"
-                    srcSet={`${RENDER}/${id}-480.avif 480w, ${RENDER}/${id}-720.avif 720w`}
-                    sizes="(min-width: 1024px) 240px, 46vw"
-                  />
-                  <source
-                    type="image/webp"
-                    srcSet={`${RENDER}/${id}-480.webp 480w, ${RENDER}/${id}-720.webp 720w`}
-                    sizes="(min-width: 1024px) 240px, 46vw"
-                  />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`${RENDER}/${id}-480.webp`}
-                    alt={`Reloj en los colores de ${p.label}`}
-                    width={480}
-                    height={480}
-                    loading={i < 2 ? "eager" : "lazy"}
-                    decoding="async"
-                  />
-                  <span className="pyj-reloj_micro pyj-reloj_micro--img">Render ilustrativo</span>
-                </picture>
-                <span className="pyj-reloj_cardbody">
-                  <span className="pyj-reloj_cardtitle">{p.label}</span>
-                  {p.orisha && <BeadRow orisha={p.orisha} />}
-                  {note && <span className="pyj-reloj_cardnote">{note}</span>}
+              <a className="rl-card" {...props(id)} title={note ?? undefined}>
+                <span className="rl-card_thumb" aria-hidden="true">
+                  <Cabeza id={id} />
+                </span>
+                <span className="rl-card_body">
+                  <span className="rl-card_title">{p.label}</span>
+                  {p.orisha && <BeadRow orisha={p.orisha} count={7} />}
                 </span>
               </a>
             </li>
           );
         })}
-        <li>
-          <a href="?preset=cero" className="pyj-reloj_card pyj-reloj_card--cero" onClick={go("cero")}>
-            <span className="pyj-reloj_cerosign" aria-hidden="true">
-              <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-                <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M32 18v28M18 32h28" stroke="currentColor" strokeWidth="1.5" />
+        <li className="rl-entry_cero">
+          <a className="rl-card rl-card--cero" {...props("cero")}>
+            <span className="rl-card_plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="24" height="24" focusable="false">
+                <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M12 7v10M7 12h10" stroke="currentColor" strokeWidth="1.2" />
               </svg>
             </span>
-            <span className="pyj-reloj_cardbody">
-              <span className="pyj-reloj_cardtitle">Diseñar desde cero</span>
-              <span className="pyj-reloj_cardnote">Esfera blanca, rayas lisas y tú decides el resto.</span>
+            <span className="rl-card_body">
+              <span className="rl-card_title">Desde cero</span>
+              <span className="rl-card_note">Esfera blanca y rayas lisas</span>
             </span>
           </a>
         </li>
       </ul>
-    </section>
+
+      <Link href={GUIA_HREF} className="rl-entry_guide">
+        ¿Cómo funciona? Precio, plazo y prueba <span aria-hidden="true">→</span>
+      </Link>
+    </div>
   );
 }

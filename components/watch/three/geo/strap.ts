@@ -1,98 +1,84 @@
 // ---------------------------------------------------------------------------
-// CORREAS — una sola curva de muñeca y tres maneras de vestirla:
-//   caucho     banda barrida con la sección real (rieles laterales, panel
-//              central rebajado con las costillas transversales junto a la
-//              caja, como en las capas correa-caucho-*);
-//   piel       banda acolchada (más gruesa en el centro) con el grabado
-//              cocodrilo y el pespunte en sus texturas;
-//   brazalete  eslabones (InstancedMesh) a lo largo de la misma curva: fila
-//              ancha cepillada + fila con el eslabón central pulido y sus
-//              dos brazos cepillados.
-// Y el CIERRE que eligió el cliente (config.cierre), con el reloj
-// "desabrochado" como en las fotos de catálogo: la curva se queda abierta por
-// detrás para que la tapa se vea entera desde atrás.
-//   puas         hebilla de púa (marco + púa) al final de la correa de las 12,
-//                con su trabilla; la de las 6 acaba en punta con 5 agujeros;
-//   desplegable  las dos correas acaban en recto y cada una lleva su ala de
-//                la mariposa (la de las 12, con la cabeza y sus pulsadores);
-//   brazalete    tapa del cierre plegable a las 12 y su pieza final a las 6.
-//
-// Coordenadas: mm, y arriba (las 12), la esfera mira a +z y la muñeca queda
-// detrás (−z). Se construye la correa de las 12 (+y); la de las 6 es la misma
-// reflejada (scale.y = −1: three invierte las caras solo).
+// CORREAS en el ESPACIO LOCAL de la correa (s a lo largo desde el asa, u a lo
+// ancho, v hacia fuera de la muñeca). Se construyen UNA vez "en recto"
+// (x = u, y = s, z = v) y se colocan con ../pose.ts (cerrada en la muñeca de
+// 17 cm o abierta boca abajo). Tres maneras de vestir la muñeca:
+//   caucho     banda barrida con su sección real: rieles laterales y panel
+//              central rebajado con costillas (RIB.dir) junto a la caja;
+//   piel       banda acolchada (corona de 0.55 mm), grabado cocodrilo en las
+//              texturas, pespunte de hilo (cápsulas) y canto pintado;
+//   brazalete  eslabones H (piezas rígidas colocadas con los marcos) sobre un
+//              alma oscura que sigue la curva (las juntas se leen oscuras).
+// Y el CIERRE (ver geo/clasp.ts para las piezas de metal):
+//   hebilla      la de las 12 acaba en L − 7 abrazando la barra; la de las 6
+//                mide 120, pasa por el marco y su cola sube por fuera de la
+//                de las 12, sujeta por dos trabillas; 7 agujeros cada 7 mm;
+//   desplegable  las dos acaban en recto en L − 8 sobre su bisagra;
+//   brazalete    eslabones hasta la tapa del cierre plegable (30 mm, abajo).
+// L = L_BOTTOM: arco del asa al punto de abajo (≈ 78.9 mm).
+// Grupos de material de una banda: 0 = cara vista, tapas y biseles de los
+// agujeros; 1 = forro (contra la muñeca, liso); 2 = cantos (la piel los
+// pinta).
 // ---------------------------------------------------------------------------
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { CASE_DIM } from "./outline";
 import { CROCO_TILE_MM } from "../tex/maps";
+import { L_BOTTOM, toStrapSpace } from "../pose";
 
 export type StrapKind = "caucho" | "piel" | "brazalete";
+export type ClaspKind = "puas" | "desplegable" | "brazalete";
 
-/** Línea media de la correa de las 12 (y, z en mm): sale del asa y rodea una
- *  muñeca imaginaria de ~70 × 47 mm, hasta quedar detrás de la caja. */
-const WRIST_PATH: readonly [number, number][] = [
-  [22.6, -2.6],
-  [25.0, -2.85],
-  [28.0, -4.0],
-  [30.8, -6.4],
-  [33.0, -10.0],
-  [34.4, -14.6],
-  [35.0, -20.0],
-  [34.6, -25.6],
-  [33.0, -31.0],
-  [30.2, -36.0],
-  [26.4, -40.2],
-  [22.4, -43.0],
-  // Más allá: solo para el cierre (la hebilla, las alas, la tapa plegable).
-  [18.4, -45.2],
-  [14.2, -46.6],
-  [10.0, -47.4],
-];
+/** Costillas del caucho. `dir`: "trans" (las de las capas y los renders del
+ *  dueño, por defecto) o "long" (las de las fotos del proveedor, refs 1 y 7).
+ *  Pregunta Q1 al dueño (SPEC §9). */
+export const RIB: { dir: "trans" | "long"; s0: number; s1: number; period: number; panel: number; depth: number; rib: number } = {
+  dir: "trans",
+  s0: 2.4,
+  s1: 26,
+  period: 1.15,
+  panel: 0.31,
+  depth: 0.5,
+  rib: 0.42,
+};
 
-/** Dónde acaba cada pieza (mm de arco sobre la curva). Nada pasa de y ≈ 16:
- *  desde atrás, la tapa (Ø31) se sigue viendo entera entre las dos puntas. */
-export const STRAP_S = {
-  /** Correa de las 6 con agujeros: hasta la punta. */
-  punta: 55,
-  /** Correa que acaba en recto (la de la hebilla, o las dos con desplegable). */
-  recto: 44,
-  /** Marco de la hebilla y ala de la mariposa de las 12. */
-  cierreFin: 58,
-  /** Ala de la mariposa de las 6. */
-  alaFin: 53,
-  /** Límite de los eslabones del brazalete (el último acaba en ~39.9); el
-   *  cierre plegable empieza en eslabones − 0.6, montado sobre él. */
-  eslabones: 40.3,
+/** Agujeros de la correa de las 6. "redondo" hoy; "oblongo" (3.2 × 1.8) si
+ *  el dueño confirma la ref 1. Cada agujero lleva un bisel de 0.2 mm. */
+export const HOLE: { forma: "redondo" | "oblongo"; d: number; oblongo: readonly [number, number]; bevel: number } = {
+  forma: "redondo",
+  d: 1.9,
+  oblongo: [3.2, 1.8],
+  bevel: 0.2,
+};
+
+/** Cómo acaba la piel junto a la caja: con terminal de metal (refs 5, 9) o
+ *  con muesca sin terminal (ref 10). Pregunta Q2 al dueño. */
+export const PIEL: { final: "terminal" | "muesca" } = { final: "terminal" };
+
+/** Largos (mm de arco desde el asa). */
+export const STRAP_LEN = {
+  /** Hebilla: la de las 12 abraza la barra del marco. */
+  hebilla12: L_BOTTOM - 7,
+  /** Hebilla: la de los agujeros. */
+  hebilla6: 120,
+  /** Desplegable: las dos, hasta su bisagra. */
+  desplegable: L_BOTTOM - 8,
+  /** Agujeros (s de la de las 6): 7 cada 7 mm. La púa entra en el 4.º. */
+  holes: [64, 71, 78, 85, 92, 99, 106] as readonly number[],
+  /** Trabillas sobre la de las 12: fija (6 mm) y flotante (5 mm). */
+  keepers: [
+    { s: 66, len: 6 },
+    { s: 52, len: 5 },
+  ] as readonly { s: number; len: number }[],
+  /** Brazalete: los eslabones paran a 15 mm del punto de abajo (la tapa del
+   *  cierre mide 30). */
+  eslabones: L_BOTTOM - 15,
 } as const;
 
-/** Altura (y) del suelo bajo el reloj: el punto más bajo de la correa de las
- *  6 por fuera (para las sombras de contacto). */
-export const FLOOR_Y = -37.2;
-
-export function wristCurve(): THREE.CatmullRomCurve3 {
-  return new THREE.CatmullRomCurve3(
-    WRIST_PATH.map(([y, z]) => new THREE.Vector3(0, y, z)),
-    false,
-    "centripetal",
-  );
-}
-
-/** Marco en la posición `s` (mm de arco): T a lo largo, B a lo ancho (+x),
- *  N hacia fuera de la muñeca (la cara vista de la correa). */
-export interface Frame {
-  p: THREE.Vector3;
-  t: THREE.Vector3;
-  b: THREE.Vector3;
-  n: THREE.Vector3;
-}
-
-export function frameAt(curve: THREE.CatmullRomCurve3, s: number, L = curve.getLength()): Frame {
-  const u = Math.max(0, Math.min(1, s / L));
-  const p = curve.getPointAt(u);
-  const t = curve.getTangentAt(u).normalize();
-  const b = new THREE.Vector3(1, 0, 0);
-  const n = new THREE.Vector3().crossVectors(b, t).normalize();
-  return { p, t, b, n };
-}
+/** Altura (y) del suelo: el punto más bajo de la correa por fuera (la línea
+ *  media llega a −32.76; medio grueso del final 1.6–1.7, el eslabón con su
+ *  corona 2.05) y un pelo de aire para la sombra de contacto. */
+export const FLOOR_Y = -35.0;
 
 const smooth = (e0: number, e1: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
@@ -100,52 +86,44 @@ const smooth = (e0: number, e1: number, x: number) => {
 };
 
 interface StrapSpec {
-  /** Ancho (mm) en el arco s. */
   width: (s: number) => number;
-  /** Grosor (mm) en el arco s. */
   thick: (s: number) => number;
-  /** Relieve de la cara vista: altura extra (mm) en (u ∈ [−1, 1], s). */
+  /** Altura extra de la cara vista (mm) en (u ∈ [−1, 1], s). */
   relief: (u: number, s: number, w: number) => number;
-  /** Radio de los cantos de la sección. */
   edgeR: number;
-  /** Pasos del barrido (mm) dentro / fuera de la zona fina. */
-  fine: [number, number, number];
 }
 
-const RIB = { z0: 2.4, z1: 20.5, period: 1.15, panel: 0.31, depth: 0.5, rib: 0.42 } as const;
+/** Relieve de las costillas en (u ∈ [−1, 1], s). */
+function ribRelief(u: number, s: number, w: number): number {
+  const half = (RIB.panel * w) / (w / 2);
+  const panel = 1 - smooth(half - 0.025, half + 0.025, Math.abs(u));
+  const zone = smooth(RIB.s0 - 0.35, RIB.s0, s) * (1 - smooth(RIB.s1, RIB.s1 + 0.35, s));
+  const x = RIB.dir === "trans" ? s - RIB.s0 : (u * w) / 2;
+  const ph = Math.cos((2 * Math.PI * x) / RIB.period);
+  const rib = 0.5 + 0.5 * Math.tanh(4 * ph);
+  const dome = 0.12 * (1 - u * u);
+  return dome + panel * zone * (-RIB.depth + RIB.rib * rib);
+}
 
 const SPECS: Record<Exclude<StrapKind, "brazalete">, StrapSpec> = {
   caucho: {
-    width: (s) => 22.0 - 4.1 * smooth(0, 24, s),
+    // Ancho MEDIDO en correa-caucho-*-1200.webp (vista de frente, R1.4): un
+    // hombro rápido al salir del asa (22 → 20.4 en 7 mm) y luego 20.4 → 18.
+    width: (s) => 22.0 - 1.6 * smooth(0, 7, s) - 2.4 * smooth(7, 40, s),
     thick: (s) => 3.8 - 0.6 * smooth(0, 30, s),
-    relief: (u, s, w) => {
-      const half = (RIB.panel * w) / (w / 2);
-      const panel = 1 - smooth(half - 0.025, half + 0.025, Math.abs(u));
-      const zone = smooth(RIB.z0 - 0.35, RIB.z0, s) * (1 - smooth(RIB.z1, RIB.z1 + 0.35, s));
-      const ph = Math.cos((2 * Math.PI * (s - RIB.z0)) / RIB.period);
-      const rib = 0.5 + 0.5 * Math.tanh(4 * ph);
-      const dome = 0.12 * (1 - u * u);
-      return dome + panel * zone * (-RIB.depth + RIB.rib * rib);
-    },
+    relief: ribRelief,
     edgeR: 0.9,
-    fine: [RIB.z0 - 0.6, RIB.z1 + 0.6, 0.09],
   },
   piel: {
-    width: (s) => 22.2 - 3.4 * smooth(0, 34, s),
-    thick: (s) => 2.6 - 0.3 * smooth(0, 30, s),
+    // Medido en correa-piel-*-1200.webp: 22.6 en el terminal, hombro de
+    // 1.2 mm en 7 mm y luego hasta 18.8.
+    width: (s) => 22.6 - 1.2 * smooth(0, 7, s) - 2.6 * smooth(7, 45, s),
+    thick: (s) => 2.65 - 0.2 * smooth(0, 30, s),
+    // Acolchada: corona de 0.55 mm en el centro.
     relief: (u) => 0.55 * (1 - u ** 4),
     edgeR: 0.7,
-    fine: [0, 0, 0.5],
   },
 };
-
-/** Grosor de la cara vista (mm sobre la línea media) en el centro de la
- *  correa, en el arco s: donde se apoyan los agujeros y la trabilla. */
-export function strapTop(kind: Exclude<StrapKind, "brazalete">, s: number, end: number = STRAP_S.punta): number {
-  const spec = SPECS[kind];
-  const e = Math.max(0, s - (end - TIP)) / TIP;
-  return (spec.thick(s) * (1 - 0.25 * e)) / 2 + spec.relief(0, s, spec.width(s));
-}
 
 /** Ancho de la correa en el arco s (sin la punta). */
 export function strapWidth(kind: Exclude<StrapKind, "brazalete">, s: number): number {
@@ -155,30 +133,34 @@ export function strapWidth(kind: Exclude<StrapKind, "brazalete">, s: number): nu
 /** Largo (mm) de la punta redondeada. */
 const TIP = 5;
 
-/** Barrido de una correa de caucho o piel (correa de las 12; la de las 6 es
- *  la misma reflejada). `fin`: "punta" (la de los agujeros, redondeada) o
- *  "recto" (la que entra en la hebilla o en el ala del desplegable).
- *  UV: u de canto a canto (0…1), v = s / CROCO_TILE_MM. Grupos de material:
- *  0 = cara vista y cantos, 1 = forro (la cara que toca la muñeca: sin
- *  grabado). */
-export function strapGeometry(kind: Exclude<StrapKind, "brazalete">, fin: "punta" | "recto" = "punta"): THREE.BufferGeometry {
+/** Mitad del grueso + relieve en el centro (la cara vista sobre la línea
+ *  media) en el arco s. */
+export function strapTop(kind: Exclude<StrapKind, "brazalete">, s: number, end = Infinity, u = 0): number {
   const spec = SPECS[kind];
-  const curve = wristCurve();
-  const L = curve.getLength();
-  const S = fin === "punta" ? STRAP_S.punta : STRAP_S.recto;
+  const e = end === Infinity ? 0 : Math.max(0, s - (end - TIP)) / TIP;
+  return (spec.thick(s) * (1 - 0.25 * e)) / 2 + spec.relief(u, s, spec.width(s));
+}
+
+export function strapThick(kind: Exclude<StrapKind, "brazalete">, s: number): number {
+  return SPECS[kind].thick(s);
+}
+
+type Zone = 0 | 1 | 2;
+
+/** Barrido de una banda en recto (x = u, y = s, z = v). `fin`: "punta"
+ *  (redondeada) o "recto". `fineStep`: paso en la zona de costillas. */
+function sweepBand(kind: Exclude<StrapKind, "brazalete">, S: number, fin: "punta" | "recto", fineStep: number): THREE.BufferGeometry {
+  const spec = SPECS[kind];
   const END = fin === "punta" ? TIP : 0;
-  // Muestras a lo largo: finas en la zona de costillas y en la punta.
+  const ribs = kind === "caucho";
   const ss: number[] = [];
-  const [f0, f1, fstep] = spec.fine;
   for (let s = 0; s < S; ) {
     ss.push(s);
-    const fine = s >= f0 && s <= f1;
-    s += fine ? fstep : END && s > S - END - 0.5 ? 0.25 : 0.6;
+    const fine = ribs && s >= RIB.s0 - 0.6 && s <= RIB.s1 + 0.6;
+    s += fine ? fineStep : END && s > S - END - 0.5 ? 0.25 : kind === "piel" ? 0.5 : 0.6;
   }
   ss.push(S);
 
-  // La sección: cara vista (izquierda → derecha), canto derecho, fondo, canto
-  // izquierdo. (u en mm a lo ancho, v en mm hacia fuera.)
   const TOP = 44;
   const ARC = 5;
   const BOT = 10;
@@ -214,48 +196,47 @@ export function strapGeometry(kind: Exclude<StrapKind, "brazalete">, fin: "punta
     }
     return pts;
   };
-  // Las caras del forro: del final del canto derecho (punto TOP+2·ARC+1) al
-  // principio del izquierdo (BOT segmentos).
-  const botFrom = TOP + 2 * ARC;
-  const botTo = botFrom + BOT;
 
   const pos: number[] = [];
   const uv: number[] = [];
-  const idxTop: number[] = [];
-  const idxBot: number[] = [];
+  const idx: number[][] = [[], [], []];
   let M = 0;
-  const frames: Frame[] = [];
+  // Índices del anillo: 0…TOP la cara vista; el canto derecho baja hasta su
+  // tangente de abajo (RB); el forro va de RB a la tangente izquierda (LB).
+  const RB = TOP + 2 * ARC + 1;
+  const LB = RB + BOT;
+  const zoneOf = (j: number): Zone => (j < TOP ? 0 : j >= RB && j < LB ? 1 : 2);
   ss.forEach((s, i) => {
-    const fr = frameAt(curve, s, L);
-    // Punta: el ancho se cierra en un cuarto de elipse (sin llegar a cero: la
-    // tapa final es una cara pequeña con sus propios vértices, sin costura).
     const e = END ? Math.min(0.94, Math.max(0, s - (S - END)) / END) : 0;
     const w = spec.width(s) * Math.sqrt(1 - e * e);
     const th = spec.thick(s) * (1 - 0.25 * e);
     const pts = ring(w, th, s);
     M = pts.length;
     for (const q of pts) {
-      const p = fr.p.clone().addScaledVector(fr.b, q.u).addScaledVector(fr.n, q.v);
-      pos.push(p.x, p.y, p.z);
+      pos.push(q.u, s, q.v);
       uv.push(q.tu, s / CROCO_TILE_MM);
     }
-    frames.push(fr);
     if (i > 0) {
       const a = (i - 1) * M;
       const b = i * M;
       for (let j = 0; j < M; j++) {
         const j1 = (j + 1) % M;
-        (j >= botFrom && j < botTo ? idxBot : idxTop).push(a + j, a + j1, b + j1, a + j, b + j1, b + j);
+        // La cara vista mira a +z (u crece, s crece: u × s = +v).
+        idx[zoneOf(j)].push(a + j, a + j1, b + j1, a + j, b + j1, b + j);
       }
     }
   });
-  // Tapas de los dos extremos: vértices PROPIOS (normal = la del corte), así
-  // computeVertexNormals no mezcla la tapa con los cantos.
+  // Tapas de los extremos (vértices propios: normal = la del corte).
   const capAt = (k: number, flip: boolean) => {
     const o = k * M;
     const ci = pos.length / 3;
-    const c = frames[k].p;
-    pos.push(c.x, c.y, c.z);
+    let cu = 0;
+    let cv = 0;
+    for (let j = 0; j < M; j++) {
+      cu += pos[(o + j) * 3];
+      cv += pos[(o + j) * 3 + 2];
+    }
+    pos.push(cu / M, ss[k], cv / M);
     uv.push(0.5, ss[k] / CROCO_TILE_MM);
     for (let j = 0; j < M; j++) {
       pos.push(pos[(o + j) * 3], pos[(o + j) * 3 + 1], pos[(o + j) * 3 + 2]);
@@ -264,316 +245,367 @@ export function strapGeometry(kind: Exclude<StrapKind, "brazalete">, fin: "punta
     for (let j = 0; j < M; j++) {
       const a = ci + 1 + j;
       const b = ci + 1 + ((j + 1) % M);
-      if (flip) idxTop.push(ci, b, a);
-      else idxTop.push(ci, a, b);
+      if (flip) idx[2].push(ci, b, a);
+      else idx[2].push(ci, a, b);
     }
   };
-  // La sección va en sentido horario vista desde atrás: la tapa del principio
-  // (que mira hacia −T) se cierra al revés que la del final.
   capAt(0, true);
   capAt(ss.length - 1, false);
 
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex([...idxTop, ...idxBot]);
-  g.addGroup(0, idxTop.length, 0);
-  g.addGroup(idxTop.length, idxBot.length, 1);
+  g.setIndex([...idx[0], ...idx[1], ...idx[2]]);
+  g.addGroup(0, idx[0].length, 0);
+  g.addGroup(idx[0].length, idx[1].length, 1);
+  g.addGroup(idx[0].length + idx[1].length, idx[2].length, 2);
   g.computeVertexNormals();
   return g;
 }
 
-/** Los agujeros de la correa de las 6 (cierre de púa): óvalos en la cara
- *  vista, cada 6 mm desde cerca de la punta. Local del círculo: x a lo ancho,
- *  y a lo largo, z hacia fuera. */
-export function holeMatrices(kind: Exclude<StrapKind, "brazalete">): THREE.Matrix4[] {
-  const curve = wristCurve();
-  const L = curve.getLength();
-  return [46, 40, 34, 28, 22].map((s) => {
-    const fr = frameAt(curve, s, L);
-    const m = new THREE.Matrix4().makeBasis(fr.b, fr.t, fr.n);
-    m.scale(new THREE.Vector3(1, 1.3, 1));
-    m.setPosition(fr.p.clone().addScaledVector(fr.n, strapTop(kind, s) + 0.03));
-    return m;
-  });
+/** Banda de caucho o piel en el espacio de la correa, lista para posar.
+ *  `fineStep`: paso de las costillas (0.12 mm en escritorio, 0.16 táctil). */
+export function bandGeometry(
+  kind: Exclude<StrapKind, "brazalete">,
+  S: number,
+  fin: "punta" | "recto",
+  fineStep = 0.12,
+): THREE.BufferGeometry {
+  return toStrapSpace(sweepBand(kind, S, fin, fineStep));
 }
 
-/** Una lámina de metal curvada que sigue la muñeca entre s0 y s1 (sección
- *  rectangular de cantos redondeados, centrada en la línea media + `lift`
- *  hacia fuera). Para las alas del desplegable y el cierre del brazalete. */
-export function bladeGeometry(s0: number, s1: number, w: number, th: number, r: number, lift = 0): THREE.BufferGeometry {
-  const curve = wristCurve();
-  const L = curve.getLength();
-  const sec: [number, number][] = [];
-  const rr = Math.min(r, th / 2 - 0.02, w / 2 - 0.02);
-  const corners: [number, number, number][] = [
-    [w / 2 - rr, th / 2 - rr, 0],
-    [-w / 2 + rr, th / 2 - rr, Math.PI / 2],
-    [-w / 2 + rr, -th / 2 + rr, Math.PI],
-    [w / 2 - rr, -th / 2 + rr, (3 * Math.PI) / 2],
-  ];
-  for (const [cx, cy, a0] of corners) {
-    for (let i = 0; i <= 4; i++) {
-      const a = a0 + (Math.PI / 2) * (i / 4);
-      sec.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]);
-    }
+// ===========================================================================
+// Agujeros, trabillas y pespunte (también en el espacio de la correa)
+// ===========================================================================
+/** Contorno de un agujero (mm, x a lo ancho, y a lo largo). */
+function holeOutline(grow: number, n = 28): THREE.Vector2[] {
+  const [L, W] = HOLE.forma === "oblongo" ? HOLE.oblongo : [HOLE.d, HOLE.d];
+  const rx = W / 2 + grow;
+  const ry = L / 2 + grow;
+  const r = Math.min(rx, ry);
+  const pts: THREE.Vector2[] = [];
+  // Estadio: semicírculos de radio r en los extremos del largo.
+  const straight = ry - r;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    pts.push(new THREE.Vector2(r * c, s * r + Math.sign(s) * straight));
   }
-  const N = Math.max(2, Math.ceil((s1 - s0) / 0.5));
-  const pos: number[] = [];
-  const idx: number[] = [];
-  const M = sec.length;
-  const fr0 = frameAt(curve, s0, L);
-  const fr1 = frameAt(curve, s1, L);
-  for (let i = 0; i <= N; i++) {
-    const fr = frameAt(curve, s0 + ((s1 - s0) * i) / N, L);
-    for (const [u, v] of sec) {
-      const p = fr.p.clone().addScaledVector(fr.b, u).addScaledVector(fr.n, v + lift);
-      pos.push(p.x, p.y, p.z);
+  return pts;
+}
+
+/** Los agujeros de la de las 6: el hueco oscuro (`dark`) y su bisel de
+ *  0.2 mm en el color de la correa (`bevel`, va al grupo 0 de la banda). */
+export function holeGeometries(kind: Exclude<StrapKind, "brazalete">): { dark: THREE.BufferGeometry; bevel: THREE.BufferGeometry } {
+  const darks: THREE.BufferGeometry[] = [];
+  const bevels: THREE.BufferGeometry[] = [];
+  const inner = holeOutline(0);
+  const outer = holeOutline(HOLE.bevel);
+  for (const s of STRAP_LEN.holes) {
+    const top = strapTop(kind, s);
+    // El hueco: un disco hundido 0.12 mm (se ve oscuro desde cualquier lado).
+    const disc = new THREE.ShapeGeometry(new THREE.Shape(inner), 1);
+    disc.translate(0, s, top - 0.04);
+    darks.push(disc.toNonIndexed());
+    // El bisel: un anillo inclinado del borde del hueco a la cara vista.
+    const pos: number[] = [];
+    for (let i = 0; i < inner.length; i++) {
+      const j = (i + 1) % inner.length;
+      const a0 = [inner[i].x, s + inner[i].y, top - 0.04];
+      const a1 = [inner[j].x, s + inner[j].y, top - 0.04];
+      const b0 = [outer[i].x, s + outer[i].y, top + 0.02];
+      const b1 = [outer[j].x, s + outer[j].y, top + 0.02];
+      pos.push(...a0, ...b0, ...b1, ...a0, ...b1, ...a1);
     }
-    if (i > 0) {
-      const a = (i - 1) * M;
-      const b = i * M;
-      for (let j = 0; j < M; j++) {
-        const j1 = (j + 1) % M;
-        idx.push(a + j, b + j1, a + j1, a + j, b + j, b + j1);
-      }
-    }
+    const ring = new THREE.BufferGeometry();
+    ring.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    ring.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array((pos.length / 3) * 2).fill(0.5), 2));
+    ring.computeVertexNormals();
+    bevels.push(ring);
   }
-  const cap = (fr: Frame, flip: boolean) => {
-    const ci = pos.length / 3;
-    const c = fr.p.clone().addScaledVector(fr.n, lift);
-    pos.push(c.x, c.y, c.z);
-    for (const [u, v] of sec) {
-      const p = fr.p.clone().addScaledVector(fr.b, u).addScaledVector(fr.n, v + lift);
-      pos.push(p.x, p.y, p.z);
-    }
-    for (let j = 0; j < M; j++) {
-      const a = ci + 1 + j;
-      const b = ci + 1 + ((j + 1) % M);
-      if (flip) idx.push(ci, b, a);
-      else idx.push(ci, a, b);
-    }
-  };
-  cap(fr0, false);
-  cap(fr1, true);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  return g;
+  const dark = mergeGeometries(darks);
+  darks.forEach((g) => g.dispose());
+  dark.computeVertexNormals();
+  const bevel = mergeGeometries(bevels);
+  bevels.forEach((g) => g.dispose());
+  return { dark: toStrapSpace(dark), bevel: toStrapSpace(bevel) };
 }
 
-/** Base plana (x a lo ancho, y a lo largo, z hacia fuera) apoyada en la
- *  cuerda de la curva entre s0 y s1: para piezas rectas (la hebilla). */
-export function chordMatrix(s0: number, s1: number, lift = 0): THREE.Matrix4 {
-  const curve = wristCurve();
-  const L = curve.getLength();
-  const a = frameAt(curve, s0, L).p;
-  const b = frameAt(curve, s1, L).p;
-  const t = b.clone().sub(a).normalize();
-  const bx = new THREE.Vector3(1, 0, 0);
-  const n = new THREE.Vector3().crossVectors(bx, t).normalize();
-  const m = new THREE.Matrix4().makeBasis(bx, t, n);
-  m.setPosition(a.clone().add(b).multiplyScalar(0.5).addScaledVector(n, lift));
-  return m;
-}
-
-/** Base en el arco s (x a lo ancho, y a lo largo, z hacia fuera). */
-export function frameMatrix(s: number, lift = 0): THREE.Matrix4 {
-  const curve = wristCurve();
-  const fr = frameAt(curve, s);
-  const m = new THREE.Matrix4().makeBasis(fr.b, fr.t, fr.n);
-  m.setPosition(fr.p.clone().addScaledVector(fr.n, lift));
-  return m;
-}
-
-function roundedRectPath(p: THREE.Path, w: number, l: number, r: number): void {
-  const x0 = -w / 2;
-  const y0 = -l / 2;
-  p.moveTo(x0 + r, y0);
-  p.lineTo(x0 + w - r, y0);
-  p.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
-  p.lineTo(x0 + w, y0 + l - r);
-  p.quadraticCurveTo(x0 + w, y0 + l, x0 + w - r, y0 + l);
-  p.lineTo(x0 + r, y0 + l);
-  p.quadraticCurveTo(x0, y0 + l, x0, y0 + l - r);
-  p.lineTo(x0, y0 + r);
-  p.quadraticCurveTo(x0, y0, x0 + r, y0);
-}
-
-/** Pieza extruida (x a lo ancho, y a lo largo, centrada en z) con bisel. */
-function extruded(shape: THREE.Shape, th: number, bevel: number): THREE.BufferGeometry {
-  const g = new THREE.ExtrudeGeometry(shape, {
-    depth: Math.max(0.01, th - 2 * bevel),
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelOffset: -bevel,
-    bevelSegments: 3,
-    curveSegments: 6,
-  });
-  g.translate(0, 0, -(th - 2 * bevel) / 2);
-  return g;
-}
-
-/** Hebilla de púa para una correa de ancho `w` (local: x a lo ancho, y a lo
- *  largo hacia la punta, z hacia fuera; el centro del marco en el origen):
- *  marco, púa y la trabilla (pasador de la correa, en su propio origen). */
-export function buckleGeometries(w: number, th: number): {
-  frame: THREE.BufferGeometry;
-  tongue: THREE.BufferGeometry;
-  keeper: THREE.BufferGeometry;
-  length: number;
-} {
-  const inW = w + 0.8;
-  const side = 2.1;
-  const L = 15;
-  const end = 2.4;
-  const outer = new THREE.Shape();
-  roundedRectPath(outer, inW + 2 * side, L, 3.2);
-  const hole = new THREE.Path();
-  roundedRectPath(hole, inW, L - 2 * end, 1.4);
-  outer.holes.push(hole);
-  const frame = extruded(outer, 2.3, 0.45);
-  // La púa: sale de la barra de cerca y descansa sobre la de lejos.
-  const t = new THREE.Shape();
-  t.moveTo(-0.8, -L / 2 + 0.6);
-  t.lineTo(0.8, -L / 2 + 0.6);
-  t.lineTo(0.55, L / 2 - 0.3);
-  t.quadraticCurveTo(0, L / 2 + 0.6, -0.55, L / 2 - 0.3);
-  t.closePath();
-  const tongue = extruded(t, 1.1, 0.3);
-  tongue.translate(0, 0, 1.35);
-  // Trabilla: un aro rectangular alrededor de la correa, 5 mm de largo.
-  const kw = w + 1.3;
-  const kh = th + 1.2;
-  const ko = new THREE.Shape();
-  roundedRectPath(ko, kw, kh, 0.6);
-  const ki = new THREE.Path();
-  roundedRectPath(ki, w + 0.1, th + 0.1, 0.4);
-  ko.holes.push(ki);
-  const keeper = new THREE.ExtrudeGeometry(ko, { depth: 5, bevelEnabled: false, curveSegments: 6 });
-  keeper.translate(0, 0, -2.5);
-  // Del plano (x, y=grosor) extruido en z → (x, y=largo, z=grosor).
-  keeper.rotateX(-Math.PI / 2);
-  keeper.computeVertexNormals();
-  return { frame, tongue, keeper, length: L };
-}
-
-/** Cabeza de la mariposa (bloque pulido con sus dos pulsadores) y lengüeta
- *  del cierre plegable del brazalete. Local como la hebilla. */
-export function claspHeadGeometries(): { head: THREE.BufferGeometry; buttons: THREE.BufferGeometry; tab: THREE.BufferGeometry } {
-  const hs = new THREE.Shape();
-  roundedRectPath(hs, 12, 8, 2.2);
-  const head = extruded(hs, 2.4, 0.5);
-  const b1 = new THREE.CylinderGeometry(1.05, 1.05, 1.4, 20);
-  b1.rotateZ(Math.PI / 2);
-  b1.translate(6.4, 0, 0);
-  const b2 = b1.clone();
-  b2.translate(-12.8, 0, 0);
-  const buttons = mergePair(b1, b2);
-  const ts = new THREE.Shape();
-  roundedRectPath(ts, 7, 3.6, 1.4);
-  const tab = extruded(ts, 1.3, 0.35);
-  return { head, buttons, tab };
-}
-
-function mergePair(a: THREE.BufferGeometry, b: THREE.BufferGeometry): THREE.BufferGeometry {
-  const A = a.index ? a.toNonIndexed() : a;
-  const B = b.index ? b.toNonIndexed() : b;
+/** Pega `extra` (sin índice, con aLocal) al grupo 0 de una banda ya en el
+ *  espacio de la correa. Devuelve una geometría nueva (y libera las dos). */
+export function appendToBand(band: THREE.BufferGeometry, extra: THREE.BufferGeometry): THREE.BufferGeometry {
+  const names = ["position", "normal", "uv", "aLocal", "aNLocal"] as const;
+  const nb = band.getAttribute("position").count;
+  const ne = extra.getAttribute("position").count;
   const out = new THREE.BufferGeometry();
-  for (const name of ["position", "normal", "uv"] as const) {
-    const x = A.getAttribute(name);
-    const y = B.getAttribute(name);
-    const arr = new Float32Array(x.array.length + y.array.length);
-    arr.set(x.array as Float32Array, 0);
-    arr.set(y.array as Float32Array, x.array.length);
-    out.setAttribute(name, new THREE.BufferAttribute(arr, x.itemSize));
+  for (const name of names) {
+    const a = band.getAttribute(name) as THREE.BufferAttribute;
+    const b = extra.getAttribute(name) as THREE.BufferAttribute;
+    const arr = new Float32Array((nb + ne) * a.itemSize);
+    arr.set(a.array as Float32Array, 0);
+    if (b) arr.set(b.array as Float32Array, nb * a.itemSize);
+    const attr = new THREE.BufferAttribute(arr, a.itemSize);
+    if (name === "position" || name === "normal") attr.setUsage(THREE.DynamicDrawUsage);
+    out.setAttribute(name, attr);
   }
-  [a, b, A, B].forEach((g) => g.dispose());
+  const bi = band.getIndex()!.array;
+  const g0 = band.groups[0];
+  const extraIdx: number[] = [];
+  const ei = extra.getIndex();
+  if (ei) for (let i = 0; i < ei.count; i++) extraIdx.push(nb + ei.getX(i));
+  else for (let i = 0; i < ne; i++) extraIdx.push(nb + i);
+  const idx: number[] = [];
+  for (let i = 0; i < g0.count; i++) idx.push(bi[g0.start + i]);
+  idx.push(...extraIdx);
+  const rest: number[] = [];
+  for (let i = g0.start + g0.count; i < bi.length; i++) rest.push(bi[i]);
+  out.setIndex([...idx, ...rest]);
+  out.addGroup(0, idx.length, 0);
+  let o = idx.length;
+  for (const g of band.groups.slice(1)) {
+    out.addGroup(o, g.count, g.materialIndex ?? 0);
+    o += g.count;
+  }
+  band.dispose();
+  extra.dispose();
   return out;
 }
 
-/** Ancho del brazalete en el arco s. */
-export const braceletWidth = (s: number) => 22.0 - 3.8 * smooth(0, 30, s);
-
-export interface BraceletLayout {
-  /** Eslabones anchos (fila cepillada a todo lo ancho). */
-  outer: THREE.Matrix4[];
-  /** Eslabones centrales pulidos. */
-  center: THREE.Matrix4[];
-  /** Brazos cepillados a los lados del central. */
-  side: THREE.Matrix4[];
+/** Una trabilla (aro alrededor de la correa de las 12 y la cola de la de las
+ *  6), en el espacio de la pista de las 12. Acanalada en caucho (ref 1). */
+export function keeperGeometry(kind: Exclude<StrapKind, "brazalete">, s: number, len: number): THREE.BufferGeometry {
+  const th = strapThick(kind, s);
+  const w = strapWidth(kind, s);
+  // Por dentro: la de las 12 (v = 0) y la cola encima (v = th + 0.3).
+  const cola = th + 0.3;
+  const innerW = w + 0.4;
+  const v0 = -th / 2 - 0.25;
+  const v1 = cola + th / 2 + 0.25;
+  const wall = 0.9;
+  const outer = roundRect2(innerW + 2 * wall, v1 - v0 + 2 * wall, 1.2);
+  const inner = roundRect2(innerW, v1 - v0, 0.6);
+  const shape = new THREE.Shape(outer);
+  shape.holes.push(new THREE.Path(inner.slice().reverse()));
+  const ribbed = kind === "caucho";
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: len,
+    bevelEnabled: true,
+    bevelThickness: 0.25,
+    bevelSize: 0.25,
+    bevelOffset: -0.25,
+    bevelSegments: 2,
+    curveSegments: 6,
+    steps: ribbed ? Math.round(len / 0.25) : 1,
+  });
+  // (x, y = alto, z = largo) → (x = u, y = s, z = v).
+  g.rotateX(Math.PI / 2);
+  g.translate(0, s - len / 2 + len, (v0 + v1) / 2);
+  g.scale(1, 1, 1);
+  if (ribbed) {
+    // Acanalado transversal en la cara de fuera (pequeñas ondas de 0.12 mm).
+    const p = g.getAttribute("position");
+    const top = (v1 - v0) / 2 + wall - 0.05 + (v0 + v1) / 2;
+    for (let i = 0; i < p.count; i++) {
+      if (p.getZ(i) > top - 0.3) {
+        const k = Math.cos(((p.getY(i) - s) * 2 * Math.PI) / 1.0);
+        p.setZ(i, p.getZ(i) + 0.06 * k);
+      }
+    }
+  }
+  g.deleteAttribute("normal");
+  g.computeVertexNormals();
+  return toStrapSpace(g);
 }
 
-/** Geometrías de los eslabones (nominales a 20 mm de ancho; cada instancia se
- *  escala al ancho de su sitio). Local: x a lo ancho, y a lo largo, z grosor. */
-export function braceletGeometries(): { outer: THREE.BufferGeometry; center: THREE.BufferGeometry; side: THREE.BufferGeometry } {
-  const link = (w: number, l: number, th: number, r: number, bevel: number) => {
-    const sh = new THREE.Shape();
-    const x0 = -w / 2;
-    const y0 = -l / 2;
-    sh.moveTo(x0 + r, y0);
-    sh.lineTo(x0 + w - r, y0);
-    sh.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
-    sh.lineTo(x0 + w, y0 + l - r);
-    sh.quadraticCurveTo(x0 + w, y0 + l, x0 + w - r, y0 + l);
-    sh.lineTo(x0 + r, y0 + l);
-    sh.quadraticCurveTo(x0, y0 + l, x0, y0 + l - r);
-    sh.lineTo(x0, y0 + r);
-    sh.quadraticCurveTo(x0, y0, x0 + r, y0);
+/** Rectángulo redondeado centrado (puntos antihorarios). */
+function roundRect2(w: number, h: number, r: number, seg = 5): THREE.Vector2[] {
+  const rr = Math.min(r, w / 2, h / 2);
+  const out: THREE.Vector2[] = [];
+  const corners: [number, number, number][] = [
+    [w / 2 - rr, -h / 2 + rr, -Math.PI / 2],
+    [w / 2 - rr, h / 2 - rr, 0],
+    [-w / 2 + rr, h / 2 - rr, Math.PI / 2],
+    [-w / 2 + rr, -h / 2 + rr, Math.PI],
+  ];
+  for (const [cx, cy, a0] of corners) {
+    for (let i = 0; i <= seg; i++) {
+      const a = a0 + ((Math.PI / 2) * i) / seg;
+      out.push(new THREE.Vector2(cx + rr * Math.cos(a), cy + rr * Math.sin(a)));
+    }
+  }
+  return out;
+}
+
+/** Pespunte de la piel: cápsulas de 2.4 mm (Ø0.5) cada 3.2 mm, a 1.3 mm de
+ *  cada canto, medio hundidas en la cara vista. Hasta `S` (sin la punta). */
+export function stitchGeometry(S: number, fin: "punta" | "recto"): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const cap = new THREE.CapsuleGeometry(0.25, 1.9, 2, 6);
+  const end = fin === "punta" ? S - TIP - 1 : S - 2;
+  for (let s = 3.2; s <= end; s += 3.2) {
+    const w = SPECS.piel.width(s);
+    for (const side of [-1, 1]) {
+      const u = side * (w / 2 - 1.3);
+      const v = strapTop("piel", s, Infinity, u / (w / 2)) - 0.08;
+      const g = cap.clone();
+      g.translate(u, s, v);
+      parts.push(g.index ? g.toNonIndexed() : g);
+    }
+  }
+  // La vuelta de la punta: puntadas siguiendo el contorno redondeado.
+  if (fin === "punta") {
+    for (let k = 0; k <= 4; k++) {
+      const a = (-Math.PI / 2) * (1 - k / 4) + (Math.PI / 2) * (k / 4);
+      const w = SPECS.piel.width(S - TIP) / 2 - 1.3;
+      const s = S - TIP + Math.cos(a) * (TIP - 1.3);
+      const u = Math.sin(a) * w;
+      const g = cap.clone();
+      g.rotateZ(-a + Math.PI / 2);
+      g.translate(u, s, strapTop("piel", s) - 0.2);
+      parts.push(g.index ? g.toNonIndexed() : g);
+    }
+  }
+  cap.dispose();
+  const out = mergeGeometries(parts);
+  parts.forEach((g) => g.dispose());
+  return toStrapSpace(out);
+}
+
+// ===========================================================================
+// Brazalete
+// ===========================================================================
+/** Ancho del brazalete en el arco s (medido en brazalete-*-1200.webp: 22.4
+ *  junto a la caja, hombro de 1.6 en 7 mm, luego hasta 18). */
+export const braceletWidth = (s: number) => 22.4 - 1.6 * smooth(0, 7, s) - 2.8 * smooth(7, 45, s);
+
+/** Paso de los eslabones (mm). */
+export const LINK_PITCH = 6.6;
+
+/** Las piezas del eslabón H (nominales a 20 mm de ancho; cada instancia se
+ *  escala a su sitio). Local: x a lo ancho, y a lo largo, z grosor.
+ *  - outer: la fila ancha cepillada (corona de 0.35 y chaflanes pulidos de
+ *    0.3 en `outerBevel`);
+ *  - side: los dos brazos cepillados a los lados del central;
+ *  - center: el central pulido, 0.4 más alto, con los extremos redondeados. */
+export function braceletGeometries(): { outer: THREE.BufferGeometry; side: THREE.BufferGeometry; center: THREE.BufferGeometry } {
+  const crowned = (w: number, l: number, th: number, r: number, bevel: number, crown: number) => {
+    const sh = new THREE.Shape(roundRect2(w, l, r, 4));
     const g = new THREE.ExtrudeGeometry(sh, {
       depth: th - 2 * bevel,
       bevelEnabled: true,
       bevelThickness: bevel,
       bevelSize: bevel,
       bevelOffset: -bevel,
-      bevelSegments: 3,
+      bevelSegments: 2,
       curveSegments: 4,
+      steps: 1,
+    });
+    g.translate(0, 0, -(th - 2 * bevel) / 2);
+    // Corona: la cara de arriba sube hasta `crown` en el centro (a lo ancho).
+    const p = g.getAttribute("position");
+    for (let i = 0; i < p.count; i++) {
+      if (p.getZ(i) > 0) {
+        const u = (2 * p.getX(i)) / w;
+        p.setZ(i, p.getZ(i) + crown * Math.max(0, 1 - u * u) * (p.getZ(i) / (th / 2)));
+      }
+    }
+    g.deleteAttribute("normal");
+    g.computeVertexNormals();
+    return g;
+  };
+  const center = (() => {
+    // Extremos redondeados (estadio) y 0.4 más alto.
+    const w = 9.2;
+    const l = 3.4;
+    const sh = new THREE.Shape(roundRect2(w, l, l / 2 - 0.05, 8));
+    const th = 2.4;
+    const bevel = 0.45;
+    const g = new THREE.ExtrudeGeometry(sh, {
+      depth: th - 2 * bevel,
+      bevelEnabled: true,
+      bevelThickness: bevel,
+      bevelSize: bevel,
+      bevelOffset: -bevel,
+      bevelSegments: 4,
+      curveSegments: 8,
     });
     g.translate(0, 0, -(th - 2 * bevel) / 2);
     return g;
-  };
-  // Un pelo más largos que el paso: en la curva de la muñeca la cara de fuera
-  // se estira (~0.3 mm por junta) y los eslabones se seguirían tocando.
+  })();
+  // Un pelo más largos que el paso a media altura: en la curva de la muñeca
+  // la cara de fuera se estira y las piezas se seguirían tocando.
   return {
-    outer: link(20, 3.9, 3.4, 0.5, 0.35),
-    center: link(9.4, 3.45, 2.0, 0.9, 0.45),
-    side: link(5.0, 3.3, 3.4, 0.4, 0.35),
+    outer: crowned(20, 3.9, 3.4, 0.5, 0.3, 0.35),
+    side: crowned(5.0, 3.3, 3.4, 0.4, 0.3, 0.2),
+    center,
   };
 }
 
-export function braceletLayout(): BraceletLayout {
-  const curve = wristCurve();
-  const L = curve.getLength();
-  const P = 6.6;
-  const out: BraceletLayout = { outer: [], center: [], side: [] };
-  const place = (s: number, dx: number, dn: number, wScale: number) => {
-    const fr = frameAt(curve, s, L);
-    const m = new THREE.Matrix4().makeBasis(fr.b, fr.t, fr.n);
-    m.scale(new THREE.Vector3(wScale, 1, 1));
-    const p = fr.p.clone().addScaledVector(fr.b, dx).addScaledVector(fr.n, dn);
-    m.setPosition(p);
-    return m;
-  };
-  const END = STRAP_S.eslabones;
-  for (let s = 1.9; s < END - 1.5; s += P) {
+export interface LinkSlot {
+  s: number;
+  /** Desplazamiento a lo ancho (mm) y hacia fuera. */
+  dx: number;
+  dn: number;
+  /** Escala a lo ancho. */
+  sx: number;
+}
+
+/** Dónde va cada pieza del brazalete (por lado, en el arco de la pista). */
+export function braceletSlots(): { outer: LinkSlot[]; center: LinkSlot[]; side: LinkSlot[] } {
+  const out = { outer: [] as LinkSlot[], center: [] as LinkSlot[], side: [] as LinkSlot[] };
+  const END = STRAP_LEN.eslabones;
+  for (let s = 1.9; s < END - 1.5; s += LINK_PITCH) {
     const w = braceletWidth(s);
-    out.outer.push(place(s, 0, 0, w / 20));
-    const s2 = s + P / 2;
+    out.outer.push({ s, dx: 0, dn: 0, sx: w / 20 });
+    const s2 = s + LINK_PITCH / 2;
     if (s2 > END - 1.5) break;
     const w2 = braceletWidth(s2);
-    out.center.push(place(s2, 0, 0.75, w2 / 20));
-    const arm = (w2 - 9.4 * (w2 / 20)) / 2;
-    const armX = w2 / 2 - arm / 2;
-    // Los brazos llegan casi al canto (de perfil el brazalete se ve seguido).
-    out.side.push(place(s2, -armX, 0, (arm - 0.1) / 5), place(s2, armX, 0, (arm - 0.1) / 5));
+    const cw = 9.2 * (w2 / 20);
+    out.center.push({ s: s2, dx: 0, dn: 0.9, sx: w2 / 20 });
+    const arm = (w2 - cw) / 2 - 0.15;
+    const armX = cw / 2 + 0.15 + arm / 2;
+    out.side.push({ s: s2, dx: -armX, dn: 0, sx: arm / 5 }, { s: s2, dx: armX, dn: 0, sx: arm / 5 });
   }
   return out;
 }
 
-/** La pieza que llena la muesca del asa (caucho: la propia correa; piel y
- *  brazalete: el terminal de metal), en coordenadas de la caja. */
+/** El alma oscura bajo los eslabones (sigue la curva hasta la tapa del
+ *  cierre): las juntas de 0.25 mm se leen como líneas oscuras. */
+export function braceletCoreGeometry(): THREE.BufferGeometry {
+  const S = L_BOTTOM + 2;
+  const pos: number[] = [];
+  const idx: number[] = [];
+  const N = Math.ceil(S / 1.0);
+  const sec = (w: number): [number, number][] => [
+    [-w / 2, -1.2],
+    [w / 2, -1.2],
+    [w / 2, 0.9],
+    [-w / 2, 0.9],
+  ];
+  for (let i = 0; i <= N; i++) {
+    const s = (S * i) / N;
+    for (const [u, v] of sec(braceletWidth(s) - 1.4)) pos.push(u, s, v);
+    if (i > 0) {
+      const a = (i - 1) * 4;
+      const b = i * 4;
+      for (let j = 0; j < 4; j++) {
+        const j1 = (j + 1) % 4;
+        idx.push(a + j, b + j1, a + j1, a + j, b + j, b + j1);
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return toStrapSpace(g.toNonIndexed());
+}
+
+// ===========================================================================
+// La pieza que llena la muesca del asa (caucho: la propia correa; piel y
+// brazalete: el terminal de metal), en coordenadas de la caja (fija).
+// ===========================================================================
 export function tongueGeometry(): THREE.BufferGeometry {
   const w = CASE_DIM.notchHalfW * 2 - 0.2;
   const y0 = CASE_DIM.notchY + 0.05;

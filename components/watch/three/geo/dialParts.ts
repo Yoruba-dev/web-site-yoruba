@@ -10,6 +10,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives } from "@/lib/watch-art";
 import type { WatchConfig } from "@/lib/watch";
 import { circlePts, offsetConvex, roundRectPts, shapeOf, type P2 } from "./outline";
+import { APLIQUE_IMG, APLIQUE_OUTLINE } from "./apliqueOutline";
 
 /** Alturas (z, mm) de cada nivel sobre la esfera. */
 export const Z = {
@@ -102,7 +103,8 @@ export function appliedGeometries(c: WatchConfig): { rims: THREE.BufferGeometry 
           // Marco de la fecha: el trazo cubre del hueco hacia fuera.
           const outer = roundRectPts(cx, cy, p.w + w, p.h + w, (p.rx ?? 0) + w / 2);
           const inner = roundRectPts(cx, cy, p.w - w, p.h - w, 0.02, 1).reverse();
-          add(rims, ringExtrude(outer, inner, 0.22, 0.05));
+          // 0.3 mm por encima de la esfera (§4.9 #12).
+          add(rims, ringExtrude(outer, inner, 0.3, 0.05));
         }
         break;
       }
@@ -177,10 +179,25 @@ export function swordHand(kind: "hour" | "minute"): { frame: THREE.BufferGeometr
     bevelSegments: 2,
   });
   frame.translate(0, 0, 0.06);
+  // Facetada (§4.9 #15): la cara de arriba son dos planos a ±8° que se
+  // juntan en una arista central (cresta de 0.12 mm sobre los cantos).
+  const tilt = Math.tan((8 * Math.PI) / 180);
+  const top = 0.06 + 0.1 + 0.06;
+  const p = frame.getAttribute("position");
+  for (let i = 0; i < p.count; i++) {
+    const z = p.getZ(i);
+    if (z > 0.12) {
+      const rise = Math.min(0.12, tilt * Math.max(0, b.halfW - Math.abs(p.getX(i))));
+      p.setZ(i, z + rise * ((z - 0.06) / (top - 0.06)));
+    }
+  }
+  frame.deleteAttribute("normal");
+  frame.computeVertexNormals();
   // El lume, un pelo más estrecho que el hueco del marco (si las paredes
-  // coinciden, parpadean) y por debajo del canto pulido.
+  // coinciden, parpadean) y hundido 0.1 mm bajo el canto del marco.
+  const holeRise = tilt * Math.max(0, b.halfW - Math.max(...lumePts.map(([x]) => Math.abs(x))));
   const lume = new THREE.ExtrudeGeometry(shapeOf(offsetConvex(lumePts, -0.01)), {
-    depth: 0.15,
+    depth: Math.max(0.05, top + holeRise - 0.1 - 0.02),
     bevelEnabled: false,
   });
   lume.translate(0, 0, 0.02);
@@ -228,3 +245,79 @@ export function secondsHand(): { body: THREE.BufferGeometry; lume: THREE.BufferG
 
 /** Grados (horario, 0 = las 12) → giro z de three (antihorario). */
 export const handRotation = (deg: number) => (-deg * Math.PI) / 180;
+
+// ===========================================================================
+// APLIQUE PY en relieve (§4.9 #14): el contorno trazado sin conexión
+// (apliqueOutline.ts), extruido 0.3 mm con bisel de 0.05. Las caras de arriba
+// y abajo llevan UV de la foto del aplique (u, v de la imagen cuadrada); las
+// paredes van en metal (grupo 1 de ExtrudeGeometry).
+// ===========================================================================
+export function appliqueGeometry(side: number, depth = 0.3, bevel = 0.05): THREE.BufferGeometry {
+  const k = side / APLIQUE_IMG.w;
+  const cx = APLIQUE_IMG.w / 2;
+  const cy = APLIQUE_IMG.h / 2;
+  const pts = (s: string): THREE.Vector2[] => {
+    const v = s.split(",").map(Number);
+    const out: THREE.Vector2[] = [];
+    for (let i = 0; i + 1 < v.length; i += 2) out.push(new THREE.Vector2((v[i] / 10 - cx) * k, (v[i + 1] / 10 - cy) * k));
+    return out;
+  };
+  const shapes = APLIQUE_OUTLINE.map(([outer, ...holes]) => {
+    const sh = new THREE.Shape(pts(outer));
+    for (const h of holes) sh.holes.push(new THREE.Path(pts(h)));
+    return sh;
+  });
+  const g = new THREE.ExtrudeGeometry(shapes, {
+    depth: Math.max(0.01, depth - 2 * bevel),
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel * 0.8,
+    bevelOffset: -bevel * 0.8,
+    bevelSegments: 1,
+    curveSegments: 1,
+  });
+  g.translate(0, 0, bevel);
+  const p = g.getAttribute("position");
+  const uv = g.getAttribute("uv");
+  for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / side + 0.5, p.getY(i) / side + 0.5);
+  uv.needsUpdate = true;
+  // ExtrudeGeometry deja DOS grupos por isla (27 islas → 54 llamadas de
+  // dibujo): se reordenan los vértices en dos grupos (caras / paredes).
+  return twoGroups(g);
+}
+
+/** Reordena una geometría sin índice para que todos los grupos de cada
+ *  material queden seguidos: un grupo por material. */
+function twoGroups(g: THREE.BufferGeometry): THREE.BufferGeometry {
+  if (g.index || g.groups.length <= 2) return g;
+  const names = Object.keys(g.attributes);
+  const byMat = new Map<number, { start: number; count: number }[]>();
+  for (const gr of g.groups) {
+    const m = gr.materialIndex ?? 0;
+    if (!byMat.has(m)) byMat.set(m, []);
+    byMat.get(m)!.push(gr);
+  }
+  const mats = [...byMat.keys()].sort((a, b) => a - b);
+  const out = new THREE.BufferGeometry();
+  const total = g.getAttribute("position").count;
+  for (const name of names) {
+    const a = g.getAttribute(name) as THREE.BufferAttribute;
+    const arr = new Float32Array(total * a.itemSize);
+    let o = 0;
+    for (const m of mats) {
+      for (const gr of byMat.get(m)!) {
+        arr.set((a.array as Float32Array).subarray(gr.start * a.itemSize, (gr.start + gr.count) * a.itemSize), o);
+        o += gr.count * a.itemSize;
+      }
+    }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, a.itemSize));
+  }
+  let start = 0;
+  for (const m of mats) {
+    const count = byMat.get(m)!.reduce((n, gr) => n + gr.count, 0);
+    out.addGroup(start, count, m);
+    start += count;
+  }
+  g.dispose();
+  return out;
+}

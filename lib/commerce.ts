@@ -393,9 +393,6 @@ export function whatsappRingDesignUrl(
   return `${SITE.contact.whatsapp}${sep}text=${encodeURIComponent(message)}`;
 }
 
-/** Label for the watch-creator call-to-action (no product / no real price yet). */
-export const WATCH_ORDER_LABEL = "Solicitar mi reloj";
-
 /** The shop's WhatsApp link with a prefilled message (brand number from SITE). */
 function whatsappWithText(message: string): string {
   const sep = SITE.contact.whatsapp.includes("?") ? "&" : "?";
@@ -412,6 +409,13 @@ function whatsappWithText(message: string): string {
  * words so both sides start from the same expectation.
  */
 export function whatsappWatchDesignUrl(code: string, url: string, summary: string): string {
+  return whatsappWithText(watchDesignMessage(code, url, summary));
+}
+
+/** The exact prefilled text of `whatsappWatchDesignUrl` (the creator's
+ *  "¿No se abrió? Copiar mensaje" copies this, so a customer whose WhatsApp did
+ *  not open can paste the same message by hand). */
+export function watchDesignMessage(code: string, url: string, summary: string): string {
   const lines: string[] = [
     "Hola 👋 Diseñé un *reloj personalizado* en el Creador de relojes de Pedro Yoruba Jewelry y quiero solicitarlo.",
     "",
@@ -423,7 +427,7 @@ export function whatsappWatchDesignUrl(code: string, url: string, summary: strin
     "",
     "¿Me confirman el precio y el plazo? Entiendo que antes de producirlo me envían una prueba para mi OK.",
   );
-  return whatsappWithText(lines.join("\n"));
+  return lines.join("\n");
 }
 
 /**
@@ -433,7 +437,7 @@ export function whatsappWatchDesignUrl(code: string, url: string, summary: strin
  */
 export function whatsappShareDesignUrl(code: string, url: string): string {
   const message = [
-    `Mira el reloj que diseñé en Pedro Yoruba Jewelry (${code.trim()}):`,
+    `Mira el reloj que diseñé en Pedro Yoruba Jewelry (${code.trim()}). ¿Qué te parece?`,
     url.trim(),
   ].join("\n");
   return `https://wa.me/?text=${encodeURIComponent(message)}`;

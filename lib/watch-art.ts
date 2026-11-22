@@ -49,6 +49,7 @@ import {
   type OduSign,
   type WatchConfig,
 } from "./watch";
+import { FINA_ADV } from "./watch-glyph-metrics";
 
 /** mm → texto SVG con 3 decimales (una micra). */
 const f = (n: number) => fmt(n);
@@ -56,8 +57,11 @@ const f = (n: number) => fmt(n);
 // ===========================================================================
 // PRIMITIVAS
 // ===========================================================================
-/** Fuentes de la esfera y la tapa. 'py-dial' = clásica (Cinzel), 'py-dial-fina'
- *  = fina (Cormorant). Las pilas de respaldo están en FONT_STACKS. */
+/** Fuentes de la esfera y la tapa. 'py-dial' = clásica (Cinzel Regular: la
+ *  esfera, el anillo de la tapa y el grabado "Clásica"); 'py-dial-fina' = fina
+ *  (Cormorant Garamond CURSIVA 500: el grabado "Fina" del centro de la tapa).
+ *  Pilas de respaldo en FONT_STACKS, estilo en FONT_STYLES, contornos en
+ *  lib/watch-glyphs.ts. */
 export type DialFont = "py-dial" | "py-dial-fina";
 
 /** Para qué sirve cada primitiva — los archivos de producción filtran por capa:
@@ -144,8 +148,10 @@ export interface ArcText extends PrimBase {
 
 export type Primitive = CirclePrim | RectPrim | PathPrim | TextRun | ArcText;
 
-/** Pilas de fuentes para SVG. Una <img> SVG no puede cargar fuentes web, así que
- *  fuera de la página cae en Georgia/serif; la vista 3D carga "PY Dial". */
+/** Pilas de fuentes para el <text> de respaldo del SVG. Una <img> SVG no puede
+ *  cargar fuentes web, así que fuera de la página cae en Georgia/serif; la
+ *  vista previa, la 3D y los archivos de producción pintan los contornos
+ *  (lib/watch-curvas.ts) y no dependen de esto. */
 export const FONT_STACKS: Readonly<Record<DialFont, string>> = {
   // Sin comillas a propósito (nombres de varias palabras son válidos sin ellas):
   // así el SVG puede ir en un data URL con comillas simples (ver svgDataUrl).
@@ -153,12 +159,22 @@ export const FONT_STACKS: Readonly<Record<DialFont, string>> = {
   "py-dial-fina": "PY Dial Fina, Cormorant Garamond, Cormorant, Georgia, Times New Roman, serif",
 };
 
+/** Estilo de cada letra: la fina es CURSIVA (Cormorant Garamond Italic). Sus
+ *  contornos ya son cursivos (la inclinación es la de la fuente, nunca un
+ *  sesgo); esto hace que el <text> de respaldo (antes de que lleguen los
+ *  contornos, o en un SVG sin curvas) sea la misma cursiva. */
+export const FONT_STYLES: Readonly<Record<DialFont, "normal" | "italic">> = {
+  "py-dial": "normal",
+  "py-dial-fina": "italic",
+};
+
 // ===========================================================================
 // MEDIDA DE TEXTO (estimada, sin fuentes cargadas: sirve en el servidor)
 // ===========================================================================
 // Avance aproximado de cada mayúscula en Cinzel, en em. Las tildes no cambian
-// el ancho; las minúsculas de Cinzel son versalitas (~85 %); Cormorant es más
-// estrecha (~82 %). Errar un poco hacia ancho es lo seguro: el texto encoge.
+// el ancho; las minúsculas de Cinzel son versalitas (~85 %). La fina mide con
+// sus avances reales (FINA_ADV). Errar un poco hacia ancho es lo seguro: el
+// texto encoge.
 const ADV: Record<string, number> = {
   A: 0.72, B: 0.64, C: 0.7, D: 0.76, E: 0.6, F: 0.56, G: 0.76, H: 0.8, I: 0.34, J: 0.36,
   K: 0.7, L: 0.56, M: 0.92, N: 0.78, O: 0.8, P: 0.6, Q: 0.8, R: 0.68, S: 0.56, T: 0.64,
@@ -168,12 +184,20 @@ const ADV: Record<string, number> = {
 
 export function estimateTextWidth(text: string, font: DialFont, size: number, letterSpacing = 0): number {
   let em = 0;
+  if (font === "py-dial-fina") {
+    // La fina: los avances reales de Cormorant Garamond Italic 500
+    // (lib/watch-glyph-metrics.ts), un 2 % de más por seguridad (el
+    // interletraje casi siempre junta). Un carácter que no esté mide como su
+    // letra sin tilde.
+    const chars = [...text.normalize("NFC")];
+    for (const ch of chars) em += FINA_ADV[ch] ?? FINA_ADV[ch.normalize("NFD")[0]] ?? 0.6;
+    return em * 1.02 * size + letterSpacing * Math.max(0, chars.length - 1);
+  }
   for (const ch of text.normalize("NFD").replace(/[̀-ͯ]/g, "")) {
     const up = ch.toUpperCase();
     const a = ADV[up] ?? (/[0-9]/.test(ch) ? 0.6 : 0.7);
     em += ch !== up ? a * 0.85 : a;
   }
-  if (font === "py-dial-fina") em *= 0.82;
   return em * size + letterSpacing * Math.max(0, [...text].length - 1);
 }
 
@@ -693,8 +717,8 @@ export function casebackPrimitives(c: WatchConfig, opts: { ink?: string } = {}):
   const chord = (y: number) => 2 * Math.sqrt(Math.max(0, L.centerR ** 2 - y ** 2)) - 2 * L.margin;
 
   // El grosor de los contornos del láser (dueño 2026-11-22: igual que imprenta):
-  // Cinzel Regular (400) o Cormorant Light (300).
-  const regular = font === "py-dial-fina" ? 300 : 400;
+  // Cinzel Regular (400) o Cormorant Garamond Italic Medium (500, la cursiva).
+  const regular = font === "py-dial-fina" ? 500 : 400;
   const textItem = (text: string, spec: { size: number; trackEm: number }, weight: number) => {
     const capH = spec.size * 0.72;
     items.push({
@@ -844,7 +868,8 @@ export function primitivesToSvg(
           p.maxWidth && est > p.maxWidth * 0.98 ? ` textLength="${f(p.maxWidth)}" lengthAdjust="spacingAndGlyphs"` : "";
         body +=
           `<text${id} x="${f(p.x + shift)}" y="${f(p.y)}" font-family="${FONT_STACKS[p.font]}" font-size="${f(p.size)}"` +
-          `${p.weight ? ` font-weight="${p.weight}"` : ""} text-anchor="${p.anchor}"` +
+          `${p.weight ? ` font-weight="${p.weight}"` : ""}${FONT_STYLES[p.font] === "italic" ? ' font-style="italic"' : ""}` +
+          ` text-anchor="${p.anchor}"` +
           `${p.letterSpacing ? ` letter-spacing="${f(p.letterSpacing)}"` : ""}${squeeze}${paint(p)}>${escapeXml(p.text)}</text>`;
         break;
       }
@@ -859,7 +884,8 @@ export function primitivesToSvg(
           )
           .join("");
         body +=
-          `<g${id} font-family="${FONT_STACKS[p.font]}" font-size="${f(p.size)}"${p.weight ? ` font-weight="${p.weight}"` : ""}${paint(p)}>` +
+          `<g${id} font-family="${FONT_STACKS[p.font]}" font-size="${f(p.size)}"${p.weight ? ` font-weight="${p.weight}"` : ""}` +
+          `${FONT_STYLES[p.font] === "italic" ? ' font-style="italic"' : ""}${paint(p)}>` +
           `${glyphs}</g>`;
         break;
       }
