@@ -139,7 +139,8 @@ import { ALL_GHOST, ALL_SOLID, WATCH_PARTS, maskKey } from "../components/watch/
 import { buildOrderInfo, isLocalOrigin } from "../components/watch/order";
 import { isFocusRoute } from "../lib/focus-routes";
 import { SITE_URL } from "../lib/site";
-import { GLYPH_FONTS } from "../lib/watch-glyphs";
+import { GLYPH_FONTS, type GlyphFont } from "../lib/watch-glyphs";
+import { CLASICA_ADV, CLASICA_KERN_POS, FINA_ADV, FINA_KERN_POS } from "../lib/watch-glyph-metrics";
 import { FONT_STYLES } from "../lib/watch-art";
 import { getStrap, withStrapType, type WatchField } from "../lib/watch";
 
@@ -1536,6 +1537,82 @@ section("letra fina (R7): Cormorant Garamond Italic 500, py-dial untouched", () 
   ok(textWidthMm("Omo Orula", "py-dial-fina", 2) < textWidthMm("OMO ORULA", "py-dial", 2), "fina is not narrower than the roman capitals");
   const props = lineProperties({ ...resolvePreset("orula", disp), tapa: { ...resolvePreset("orula", disp).tapa, linea1: "Omo Orula", fuente: "fina" } }, "PY-R-T", "https://x");
   ok(props.find((p) => p.key === "Tapa · fuente")?.value === "Fina (cursiva)", "the order line does not say 'Fina (cursiva)'");
+});
+
+section("caseback text: real widths, shrinks evenly (never squashed sideways), inside the field", () => {
+  // 1) The light first-load metrics (lib/watch-glyph-metrics.ts) are EXACTLY
+  //    the outline tables': advances / upm and only the kerning that spreads.
+  //    On a mismatch, print the right line to paste back.
+  const em = (u: number, upm: number) => Number((u / upm).toFixed(4));
+  const advOf = (F: GlyphFont) => Object.fromEntries(Object.entries(F.glyphs).map(([ch, g]) => [ch, em(g[0], F.upm)]));
+  const spreadOf = (F: GlyphFont) =>
+    Object.fromEntries(Object.entries(F.kern).filter(([, v]) => v > 0).map(([pair, v]) => [pair, em(v, F.upm)]));
+  const sameMap = (a: Readonly<Record<string, number>>, b: Record<string, number>) =>
+    Object.keys(a).length === Object.keys(b).length && Object.entries(b).every(([k, v]) => a[k] === v);
+  const tables: [string, Readonly<Record<string, number>>, Record<string, number>][] = [
+    ["CLASICA_ADV", CLASICA_ADV, advOf(GLYPH_FONTS["py-dial"])],
+    ["CLASICA_KERN_POS", CLASICA_KERN_POS, spreadOf(GLYPH_FONTS["py-dial"])],
+    ["FINA_ADV", FINA_ADV, advOf(GLYPH_FONTS["py-dial-fina"])],
+    ["FINA_KERN_POS", FINA_KERN_POS, spreadOf(GLYPH_FONTS["py-dial-fina"])],
+  ];
+  for (const [name, have, want] of tables) {
+    const good = sameMap(have, want);
+    ok(good, `lib/watch-glyph-metrics.ts: ${name} does not match the outline table`);
+    if (!good) console.error(`    export const ${name}: Readonly<Record<string, number>> = ${JSON.stringify(want)};`);
+  }
+
+  // 2) Worst-case lines, both letters, with and without a sign, alone (the
+  //    biggest text) and stacked with a second line and the date (the tightest
+  //    chords): every char 20×, every pair that kerning spreads 10×, and real
+  //    mixed-case lines. Each engraved line must keep its real width within
+  //    maxWidth — so textRunToPath never compresses it sideways (sx = 1: the
+  //    whole line shrank evenly) — and its outline stays inside the inner
+  //    filete of the ring.
+  const L = CASEBACK_LAYOUT;
+  const fill = (s: string) => s.repeat(Math.ceil(CASEBACK_MAX / s.length)).slice(0, CASEBACK_MAX);
+  const glyphs = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÁÉÍÓÚÜÑáéíóúüñ.,'·&/-"];
+  const real = ["Siempre contigo mamá", "Mercedes Rodríguez", "Ñañá & Tomás O'Neil", "Familia Rodríguez"];
+  const base = resolvePreset("orula", disp);
+  const fonts = [
+    ["clasica", CLASICA_KERN_POS],
+    ["fina", FINA_KERN_POS],
+  ] as const;
+  let worstSx = 1;
+  let worst = "";
+  for (const [fuente, spread] of fonts) {
+    const lines = [...glyphs.map(fill), ...Object.keys(spread).map(fill), ...real];
+    for (const line of lines) {
+      ok(isValidCasebackLine(line), `caseback test line «${line}» is not a valid line`);
+      for (const signo of [null, COMBO]) {
+        for (const stack of [false, true]) {
+          const c = withPatch(base, {
+            tapa: { signo, marcas: "barras", linea1: line, linea2: stack ? line : "", ...(stack ? { fecha: "2024-12-04" } : {}), fuente },
+          });
+          const runs = casebackPrimitives(c).filter((p): p is TextRun => p.kind === "text");
+          let squashed = "";
+          let outside = "";
+          for (const p of runs) {
+            const w = textWidthMm(p.text, p.font, p.size, p.letterSpacing);
+            const sx = p.maxWidth && w > p.maxWidth ? p.maxWidth / w : 1;
+            if (sx < worstSx) [worstSx, worst] = [sx, `«${p.text}» (${fuente})`];
+            if (sx < 1 - 1e-9) squashed ||= `«${p.text}» sx ${sx.toFixed(3)}`;
+            const reach = pathReach(textRunToPath(p).d);
+            if (reach !== null && reach > L.innerR - L.lineW / 2 + EPS) outside ||= `«${p.text}» reaches ${reach.toFixed(2)} mm`;
+          }
+          const tag = `${fuente}${signo ? " + sign" : ""}${stack ? " + 2 lines + date" : ""}`;
+          ok(runs.length >= (stack ? 3 : 1), `${tag}, «${line}»: the caseback lost a text line`);
+          ok(!squashed, `${tag}: caseback text compressed sideways — ${squashed}`);
+          ok(!outside, `${tag}: caseback text outside the ring's inner filete (${L.innerR} mm) — ${outside}`);
+        }
+      }
+    }
+  }
+  ok(worstSx > 1 - 1e-9, `worst caseback squash: ${worst} sx ${worstSx.toFixed(4)}`);
+  // The reviewer's case: a mixed-case Clásica line now shrinks evenly instead
+  // of being narrowed ~8 % (it used to be sized from the capitals estimate).
+  const mama = casebackPrimitives(withPatch(base, { tapa: { signo: null, marcas: "barras", linea1: "Siempre contigo mamá", linea2: "", fuente: "clasica" } }))
+    .find((p): p is TextRun => p.kind === "text" && p.text === "Siempre contigo mamá");
+  ok(mama && mama.maxWidth && textWidthMm(mama.text, mama.font, mama.size, mama.letterSpacing) <= mama.maxWidth + EPS, "«Siempre contigo mamá» (clásica) still overflows its line");
 });
 
 console.log(`\n${checks - failures}/${checks} checks passed`);

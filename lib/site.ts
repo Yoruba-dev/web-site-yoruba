@@ -44,7 +44,10 @@ export const SECCION_MONEDAS = {
 //   • lanzado  → la página es noindex hasta el lanzamiento. Mientras sea false
 //                NO entra al sitemap (app/sitemap.ts) y la página lleva
 //                noindex (CREATOR_INDEXABLE en app/creador-de-relojes/page.tsx
-//                lee este mismo valor). El día del lanzamiento: true aquí y,
+//                lee este mismo valor). Lo mismo su guía
+//                /creador-de-relojes/como-funciona: su noindex y su línea del
+//                sitemap siguen este mismo valor, sin pasos aparte.
+//                El día del lanzamiento: true aquí y,
 //                en public/llms.txt (archivo estático, no lee este valor),
 //                añadir estas dos líneas — hasta entonces NO van, para no
 //                mandar a los rastreadores de IA a una página noindex:

@@ -17,14 +17,18 @@ import { useSyncExternalStore } from "react";
 import type { Primitive } from "@/lib/watch-art";
 
 type Outline = (prims: readonly Primitive[]) => Primitive[];
+type Bounds = (d: string) => [number, number, number, number] | null;
 
 let listo: Outline | null = null;
+let limites: Bounds | null = null;
 let cargando: Promise<Outline> | null = null;
 const avisar = new Set<() => void>();
 
 /** Carga (una sola vez) la conversión de texto a contornos. */
 export function loadOutline(): Promise<Outline> {
   cargando ??= import("@/lib/watch-curvas").then((m) => {
+    // Del MISMO import diferido: así las tablas siguen fuera de la carga inicial.
+    limites = m.pathBounds;
     listo = m.outlinePrimitives;
     avisar.forEach((f) => f());
     return listo;
@@ -40,6 +44,13 @@ export function loadOutline(): Promise<Outline> {
  *  miniatura del carrito); null si todavía no. */
 export function outlineIfReady(): Outline | null {
   return listo;
+}
+
+/** La caja [x0, y0, x1, y1] de la tinta de un contorno (lib/watch-curvas
+ *  pathBounds), lista a la vez que la conversión; null si todavía no. Quien
+ *  recibe un contorno de useOutline() ya la tiene. */
+export function boundsIfReady(): Bounds | null {
+  return limites;
 }
 
 function suscribir(f: () => void): () => void {

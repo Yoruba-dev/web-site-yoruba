@@ -234,11 +234,19 @@ export function CameraRig({
     c.enableDamping = damp;
   };
 
+  /** El encaje con el que se midió el último reencuadre (ver refit). */
+  const lastFit = useRef<number | null>(null);
+
   const goTo = (v: View3D, opts: { cut?: boolean; fromR?: number } = {}) => {
     const def = VIEWS[v];
     const ins = insets.get();
     st.view = v;
     st.fit = fitDistance(viewRadius(v, size.width, size.height, ins, coarse), size.width, size.height, ins);
+    // refit escala por nf/prev: prev tiene que ser el encaje de ESTA vista.
+    // Con el de la anterior, el siguiente cambio de recuadros o de tamaño
+    // multiplicaría la distancia por R_nueva/R_vieja (la esfera desbordada,
+    // la correa diminuta).
+    lastFit.current = st.fit;
     killInertia();
     loadSprings();
     st.az.g = st.az.x + wrap(def.az - st.az.x);
@@ -266,7 +274,6 @@ export function CameraRig({
     camera.setViewOffset(W, H, (ins.right - ins.left) / 2, (ins.bottom - ins.top) / 2, W, H);
     camera.updateProjectionMatrix();
   };
-  const lastFit = useRef<number | null>(null);
   useLayoutEffect(() => {
     const refit = () => {
       applyOffset();
@@ -304,7 +311,6 @@ export function CameraRig({
     writeCamera(e.az, e.pol, d0, ...e.target);
     if (controls.current) controls.current.target.set(...e.target);
     goTo(view);
-    lastFit.current = st.fit;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

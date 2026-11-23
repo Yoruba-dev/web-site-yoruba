@@ -25,20 +25,31 @@ export default function SharePopover({
   returnFocus?: HTMLElement | null;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  // Lo último de cada prop, en refs: el efecto de foco corre UNA vez por
+  // apertura. Si dependiera de `onClose` (una función nueva en cada pintado
+  // del editor), cualquier re-pintado mientras está abierto (la pista que se
+  // va, el 3D que termina de cargar, la foto de "Listo", el teclado) devolvía
+  // el foco a "Cerrar" en mitad de "Copiar enlace".
+  const onCloseRef = useRef(onClose);
+  const returnRef = useRef(returnFocus);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    returnRef.current = returnFocus;
+  });
 
   useEffect(() => {
     const el = box.current;
     el?.querySelector<HTMLElement>("a[href], button")?.focus();
     const onDown = (e: PointerEvent) => {
-      if (!el || el.contains(e.target as Node) || returnFocus?.contains(e.target as Node)) return;
-      onClose();
+      if (!el || el.contains(e.target as Node) || returnRef.current?.contains(e.target as Node)) return;
+      onCloseRef.current();
     };
     document.addEventListener("pointerdown", onDown);
     return () => {
       document.removeEventListener("pointerdown", onDown);
-      returnFocus?.focus({ preventScroll: true });
+      returnRef.current?.focus({ preventScroll: true });
     };
-  }, [onClose, returnFocus]);
+  }, []);
 
   return (
     <div

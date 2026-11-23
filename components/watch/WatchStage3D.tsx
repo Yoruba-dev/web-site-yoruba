@@ -295,11 +295,16 @@ export default function WatchStage3D(props: WatchStage3DProps) {
   useLayoutEffect(() => {
     interactCb.current = onInteract;
   });
+  // El primer gesto avisa al editor UNA vez. Con una ref y fuera del
+  // actualizador de estado: los actualizadores corren durante el pintado, y
+  // llamar desde ahí al onInteract del editor (que cambia SU estado) daba
+  // "Cannot update a component while rendering a different component".
+  const tocadoRef = useRef(false);
   const handleInteract = useCallback(() => {
-    setTocado((was) => {
-      if (!was) interactCb.current?.();
-      return true;
-    });
+    if (tocadoRef.current) return;
+    tocadoRef.current = true;
+    setTocado(true);
+    interactCb.current?.();
   }, []);
   useEffect(() => {
     if (!ready || tocado) {

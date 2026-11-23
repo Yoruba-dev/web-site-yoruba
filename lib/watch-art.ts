@@ -49,7 +49,7 @@ import {
   type OduSign,
   type WatchConfig,
 } from "./watch";
-import { FINA_ADV } from "./watch-glyph-metrics";
+import { CLASICA_ADV, CLASICA_KERN_POS, FINA_ADV, FINA_KERN_POS } from "./watch-glyph-metrics";
 
 /** mm → texto SVG con 3 decimales (una micra). */
 const f = (n: number) => fmt(n);
@@ -125,7 +125,8 @@ export interface TextRun extends PrimBase {
   letterSpacing: number;
   weight?: number;
   /** Ancho máximo en mm: el tamaño ya viene ajustado con la estimación de
-   *  estimateTextWidth(); el renderer puede además comprimir hasta este ancho
+   *  estimateTextWidth() (en la tapa, además, con el ancho real:
+   *  fitCasebackSize); el renderer puede además comprimir hasta este ancho
    *  (canvas: fillText(…, maxWidth); SVG: textLength). */
   maxWidth?: number;
 }
@@ -206,6 +207,38 @@ export function estimateTextWidth(text: string, font: DialFont, size: number, le
 export function fitTextSize(text: string, font: DialFont, size: number, maxWidth: number, trackEm = 0): number {
   const w = estimateTextWidth(text, font, size, size * trackEm);
   return w > maxWidth ? (size * maxWidth) / w : size;
+}
+
+/** Ancho (mm) de una línea de la TAPA medido con los avances REALES de su
+ *  fuente más el interletraje que separa (lib/watch-glyph-metrics.ts); el que
+ *  junta se ignora. Es una cota por exceso del ancho de sus contornos
+ *  (textWidthMm, lib/watch-curvas.ts) sin cargar las tablas de contornos. */
+function casebackTextWidth(text: string, font: DialFont, size: number, letterSpacing: number): number {
+  const adv = font === "py-dial-fina" ? FINA_ADV : CLASICA_ADV;
+  const kern = font === "py-dial-fina" ? FINA_KERN_POS : CLASICA_KERN_POS;
+  const chars = [...text.normalize("NFC")];
+  let em = 0;
+  chars.forEach((ch, i) => {
+    // Un carácter fuera de la tabla no debería llegar (CASEBACK_ALLOW): si
+    // llega, mide como su letra sin tilde o, si no, como una letra ancha.
+    em += adv[ch] ?? adv[ch.normalize("NFD")[0]] ?? 1;
+    if (i + 1 < chars.length) em += kern[ch + chars[i + 1]] ?? 0;
+  });
+  return em * size + letterSpacing * Math.max(0, chars.length - 1);
+}
+
+/** El tamaño (mm) de una línea de la tapa. Parte de fitTextSize (la estimación
+ *  de siempre: lo que ya cabía no cambia ni crece) y, si con el ancho real aún
+ *  no cabe, encoge la línea ENTERA por igual hasta caber. Sin esto, las
+ *  minúsculas de la clásica (Cinzel mide hasta ~22 % más que la estimación)
+ *  llegaban anchas y textRunToPath las comprimía solo de lado: letras
+ *  estrechadas en la vista, la 3D y el archivo láser. La esfera no lo usa: sus
+ *  medidas no se mueven. */
+function fitCasebackSize(text: string, font: DialFont, size: number, maxWidth: number, trackEm: number): number {
+  const est = fitTextSize(text, font, size, maxWidth, trackEm);
+  const w = casebackTextWidth(text, font, size, size * trackEm);
+  // El ancho crece en proporción al tamaño (el espaciado también va en em).
+  return w > maxWidth ? Math.min(est, (size * maxWidth) / w) : est;
 }
 
 // ===========================================================================
@@ -725,7 +758,7 @@ export function casebackPrimitives(c: WatchConfig, opts: { ink?: string } = {}):
       h: capH,
       draw: (top) => {
         const maxW = Math.min(chord(top), chord(top + capH));
-        const size = fitTextSize(text, font, spec.size, maxW, spec.trackEm);
+        const size = fitCasebackSize(text, font, spec.size, maxW, spec.trackEm);
         out.push({
           kind: "text",
           capa: "grabado",

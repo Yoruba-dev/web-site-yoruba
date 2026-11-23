@@ -115,6 +115,22 @@ export default function BottomSheet({
   );
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
+  // — El alto REAL del pie: crece cuando aparece la tarjeta "Te abrimos
+  //   WhatsApp…" (Listo). La zona de opciones se acorta con él; con el valor
+  //   fijo de --rl-foot-h (64 px) el final de las opciones quedaba debajo de la
+  //   tarjeta, sin poder desplazarlo a la vista.
+  const [footH, setFootH] = useState(0);
+  useLayoutEffect(() => {
+    const el = foot.current;
+    if (!el) return;
+    const read = () => setFootH(el.offsetHeight);
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // — Ir a la altura pedida: crecer = la zona de opciones crece YA (el
   //   contenido entra con la hoja); encoger = al terminar.
   const settleTimer = useRef(0);
@@ -234,7 +250,7 @@ export default function BottomSheet({
         <div
           ref={optionsRef}
           className="rl-sheet_opts"
-          style={{ height: `max(0px, calc(${optionsH}px - var(--rl-foot-h, 64px)))` }}
+          style={{ height: `max(0px, calc(${optionsH}px - ${footH ? `${footH}px` : "var(--rl-foot-h, 64px)"}))` }}
         >
           {children}
         </div>

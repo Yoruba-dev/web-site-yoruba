@@ -273,7 +273,14 @@ function Content(p: WatchSceneProps & { coarse: boolean; reduced: boolean; onAct
         canvasEl.style.opacity = "1";
         invalidate();
       }, 75);
-      return () => window.clearTimeout(t);
+      // Interrumpido (otra vista antes de 75 ms, o desmontado): la pose no
+      // cambió, así que el lienzo vuelve a verse; la siguiente pasada decide
+      // con la pose real (si hace falta, otro parpadeo). Sin esto, ida y
+      // vuelta rápidas dejaban el lienzo a opacidad 0.
+      return () => {
+        window.clearTimeout(t);
+        canvasEl.style.opacity = "1";
+      };
     }
     pose.setOpen(open, performance.now(), false);
     invalidate();

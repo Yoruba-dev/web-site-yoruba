@@ -29,6 +29,7 @@ import {
   confirmedMask,
   creatorReducer,
   fixSub,
+  isStepId,
   parseDraft,
   stepIndex,
   stepOfField,
@@ -52,7 +53,7 @@ import {
   type WatchPart,
   type WatchStage3DHandle,
 } from "./stage3d-contract";
-import { AnnouncerProvider, useAnnouncer } from "./shell/announce";
+import { AnnouncerProvider, AnnouncerToast, useAnnouncer } from "./shell/announce";
 import BottomSheet, { type Snap } from "./shell/BottomSheet";
 import FocusHeader, { GUIA_HREF } from "./shell/FocusHeader";
 import { OverlayHostContext } from "./shell/overlay";
@@ -80,6 +81,7 @@ import {
   resolvePreset,
   decodeWatchDesign,
   summary,
+  validate,
   type Descontinuado,
   type PresetId,
   type StrapId,
@@ -189,9 +191,10 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const pushed = useRef(false);
   const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
   const optsShadow = useScrollShadow();
-  // La entrada del cuerpo: al cambiar de paso entra de lado (x 12 → 0); al
-  // cambiar de sub-pestaña, de abajo (y 6 → 0). Spec §6.2.
-  const animStep = useRef<string>("");
+  /** Llevar el foco al título en cuanto la pantalla nueva se pinte (elegir
+   *  Orisha, "Continuar mi diseño", volver a la entrada, atrás/adelante): el
+   *  botón o la tarjeta que tenía el foco desaparece y el foco caía a <body>. */
+  const focusTitle = useRef(false);
 
   const { addLine, setCartOpen, count } = useCart();
   const panel = usePanelLayout();
@@ -208,7 +211,37 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   // El reloj tal como se pide y se comparte: normalizado (y referencia estable).
   const final = useMemo(() => normalize(config), [config]);
   const order: OrderInfo = useMemo(() => buildOrderInfo(final, product, origin), [final, product, origin]);
+  // Lo que se valida para PEDIR es lo que el cliente ve. normalize() quita en
+  // silencio una fecha de tapa imposible (1899, 2205…): validando solo `final`
+  // no saltaba el bloqueo "fecha-tapa" y el pedido salía sin la fecha que el
+  // cliente sí ve escrita. Se suma la validación del config crudo para ese
+  // campo (solo cuando normalize la quitó, así no se valida dos veces).
+  const validation = useMemo(() => {
+    if (!config.tapa.fecha || config.tapa.fecha.trim() === final.tapa.fecha) return order.validation;
+    const extra = validate(config).issues.filter((x) => x.campo === "tapa.fecha");
+    return extra.length ? { ok: false, issues: [...extra, ...order.validation.issues] } : order.validation;
+  }, [config, final, order.validation]);
+  /** El pedido tal como lo ve "Listo" (con esa validación). */
+  const orderView: OrderInfo = useMemo(
+    () => (validation === order.validation ? order : { ...order, validation }),
+    [order, validation],
+  );
   const sub = fixSub(step, subMem[step]);
+
+  // La entrada del cuerpo: al cambiar de paso entra de lado (x 12 → 0); al
+  // cambiar de sub-pestaña, de abajo (y 6 → 0). Spec §6.2. El tipo se fija UNA
+  // vez por cuerpo (su `key`): derivarlo en cada pintado lo volvía "sub" en el
+  // re-pintado que dispara el propio cambio de paso, y la entrada de lado no
+  // se veía nunca. (Estado derivado del pintado anterior: patrón de React.)
+  const bodyKey = screen === "entrada" ? "entrada" : `${step}-${sub ?? ""}`;
+  const bodyParte = screen === "entrada" ? "entrada" : step;
+  const [anim, setAnim] = useState<{ key: string; parte: string; kind: "step" | "sub" }>({
+    key: bodyKey,
+    parte: bodyParte,
+    kind: "step",
+  });
+  if (anim.key !== bodyKey) setAnim({ key: bodyKey, parte: bodyParte, kind: anim.parte === bodyParte ? "sub" : "step" });
+  const animKind = anim.key === bodyKey ? anim.kind : anim.parte === bodyParte ? "sub" : "step";
 
   /** Toda edición pasa por aquí. */
   const dispatch = useCallback((a: CreatorAction) => {
@@ -233,17 +266,52 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const requestView = useCallback((v: View3D) => setView((s) => ({ v, seq: s.seq + 1 })), []);
 
   // — Llegada con ?d=: ¿recarga del mismo diseño (borrador) o enlace ajeno? ——
+  // Manda el ?d= VIVO de la barra, no `initial`: al volver con "atrás" desde
+  // otra página ("Cómo funciona", la ×), Next monta el editor con las props EN
+  // CACHÉ de la primera visita (?preset=… o la entrada) mientras la URL ya
+  // trae el diseño autoguardado. Sin esto se veía el diseño viejo y el
+  // autoguardado lo escribía encima del borrador (el diseño se perdía).
   useLayoutEffect(() => {
-    if (!desdeEnlace) return;
+    let sp: URLSearchParams | null = null;
+    try {
+      sp = new URL(window.location.href).searchParams;
+    } catch {
+      sp = null;
+    }
+    const dVivo = sp?.get("d");
+    const r = dVivo ? decodeWatchDesign(dVivo) : null;
+    // ¿La URL trae otro diseño que el de las props?
+    const otro = !!r && (!desdeEnlace || canonicalJson(r.config) !== canonicalJson(normalize(initial.config)));
+    if (!desdeEnlace && !otro) return;
+    const cfg = otro && r ? r.config : normalize(initial.config);
+    const pasoVivo = sp?.get("paso");
+    const paso: StepId = otro ? (isStepId(pasoVivo) ? pasoVivo : "resumen") : (initial.paso ?? "resumen");
+    if (otro && r) {
+      rawDispatch({ type: "cargar", config: r.config });
+      setDescontinuado(r.descontinuado);
+      setPolicy(false);
+      setPedido(false);
+      setHoverPreset(null);
+      setScreen("editor");
+    }
     const d = parseDraft(store.get(DRAFT_KEY));
-    if (d && canonicalJson(d.config) === canonicalJson(normalize(initial.config))) {
+    if (d && canonicalJson(d.config) === canonicalJson(cfg)) {
+      // El mismo diseño que el borrador: es una recarga (o una vuelta). Se
+      // sigue en el paso, la sub-pestaña y el avance guardados.
       setStep(d.step);
-      if (d.sub) setSubMem({ [d.step]: d.sub });
+      setSubMem(d.sub ? { [d.step]: d.sub } : {});
       setMax(d.max);
       setCompartido(false);
       setView({ v: STEP_VIEW[d.step], seq: 1 });
     } else {
-      setView({ v: STEP_VIEW[initial.paso ?? "resumen"], seq: 1 });
+      // Un enlace ajeno: se abre en "Listo" (o en su ?paso=), todo real.
+      if (otro) {
+        setStep(paso);
+        setSubMem({});
+        setMax(STEPS.length - 1);
+        setCompartido(true);
+      }
+      setView({ v: STEP_VIEW[paso], seq: 1 });
     }
     setListo(true);
     // Solo al montar.
@@ -276,6 +344,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         pushed.current = false;
         setDraft({ v: 2, config: now.final, step: now.step, sub: now.sub, max: now.max, at: Date.now() });
         setHoverPreset(null);
+        focusTitle.current = true;
         setScreen("entrada");
         setView((s) => ({ v: "tres4", seq: s.seq + 1 }));
         return;
@@ -290,6 +359,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         setDescontinuado([]);
       } else return;
       pushed.current = true;
+      focusTitle.current = true;
       setScreen("editor");
     };
     window.addEventListener("popstate", onPop);
@@ -339,9 +409,12 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     headingRef.current?.focus({ preventScroll: true });
   }, [step, screen, listo, announce, requestView]);
 
-  useEffect(() => {
-    animStep.current = screen === "entrada" ? "entrada" : step;
-  });
+  // El foco pedido por focusTitle, ya con la pantalla nueva en el DOM.
+  useLayoutEffect(() => {
+    if (!focusTitle.current) return;
+    focusTitle.current = false;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [screen, listo]);
 
   // — Piezas que pasan a reales: se anuncian ("Pieza colocada: correa").
   const prevMask = useRef<PartMask>(mask);
@@ -439,7 +512,9 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     setSubMem({});
     setMax(0);
     setVerCompleto(false);
+    // Sin golpe de cámara (moved = false), pero el foco sí va al título.
     moved.current = false;
+    focusTitle.current = true;
     prevStep.current = "caja";
     setStep("caja");
     setFotoVista("frente");
@@ -458,6 +533,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     setSubMem(draft.sub ? { [draft.step]: draft.sub } : {});
     setMax(draft.max);
     moved.current = false;
+    focusTitle.current = true;
     prevStep.current = draft.step;
     setStep(draft.step);
     setScreen("editor");
@@ -467,6 +543,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   /** Volver a la entrada sin perder nada: el diseño queda como "Continuar". */
   function backToEntry() {
     setDraft({ v: 2, config: final, step, sub, max, at: Date.now() });
+    focusTitle.current = true;
     if (pushed.current) {
       window.history.back();
       return;
@@ -485,13 +562,15 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   }
 
   // — Pedir —————————————————————————————————————————————————————————————————
-  const bloqueos = order.validation.issues.filter((i) => i.nivel === "bloqueo");
+  // Con la validación de lo que el cliente ve (`validation`, arriba): una
+  // fecha imposible bloquea, pinta el punto del paso y sale en "Listo".
+  const bloqueos = useMemo(() => validation.issues.filter((i) => i.nivel === "bloqueo"), [validation]);
   const blockedSteps = useMemo(() => new Set(bloqueos.map((i) => stepOfField(i.campo).step)), [bloqueos]);
   const blockedSubs = useMemo(
     () => new Set(bloqueos.map((i) => stepOfField(i.campo)).filter((x) => x.step === step && x.sub).map((x) => x.sub as SubId)),
     [bloqueos, step],
   );
-  const listoParaPedir = order.validation.ok && (!order.canBuy || policy);
+  const listoParaPedir = validation.ok && (!order.canBuy || policy);
 
   function showBlocker() {
     const el = rootRef.current?.querySelector<HTMLElement>("[data-corregir]") ?? rootRef.current?.querySelector<HTMLElement>(".rl-policy input");
@@ -500,7 +579,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
 
   function addToCart() {
     const v = order.variant;
-    if (!product || !v || !order.canBuy || !order.validation.ok || !policy) return;
+    if (!product || !v || !order.canBuy || !validation.ok || !policy) return;
     const lineUid =
       typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${order.code}`;
     const preview = frontSvgDataUrl(final, { curvas: outlineIfReady() ?? undefined });
@@ -522,6 +601,8 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   }
 
   // — Compartir ——————————————————————————————————————————————————————————————
+  // Estable: el popover no debe re-ejecutar su efecto de foco en cada pintado.
+  const closeShare = useCallback(() => setShareAnchor(null), []);
   async function copyLink() {
     const r = await copyText(order.creatorUrl);
     if (r === "ok") toast("Enlace copiado ✓");
@@ -717,11 +798,10 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
             {!panel && compartido && <div className="rl-sharedrow">{listoEyebrow}</div>}
             <StepListo
               config={final}
-              goTo={(s, sb) => {
-                const f = order.validation.issues.find((x) => stepOfField(x.campo).step === s)?.campo;
-                fix(s, sb, f);
-              }}
-              order={order}
+              // "Corregir" pasa SU campo (el foco va a ese, no al primer
+              // problema del paso); los lápices "Editar" no pasan ninguno.
+              goTo={fix}
+              order={orderView}
               descontinuado={descontinuado}
               snapshot={snapshot && snapshot.code === order.code ? snapshot : null}
               onDownload={tres && status === "listo" ? downloadStudio : undefined}
@@ -847,7 +927,9 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
           >
             ¿No se abrió? Copiar mensaje
           </button>
-          <a className="rl-link" href={`tel:${SITE.contact.phoneTel}`}>
+          {/* "Escríbenos" = un canal escrito: el chat de WhatsApp de la tienda
+              (sin el texto prellenado, que es lo que pudo fallar), no tel:. */}
+          <a className="rl-link" href={SITE.contact.whatsapp} target="_blank" rel="noopener noreferrer">
             Escríbenos al {SITE.contact.phone}
           </a>
         </p>
@@ -855,8 +937,17 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       </div>
     ) : null;
 
-  // — Cabeza del panel: el título del paso (o de la entrada). —
-  const stepHead = enEditor ? (
+  // — Cabeza del panel: el título del paso (o de la entrada). Con ?d=, antes
+  //   de saber en qué paso se abre (hasta hidratar), una cabeza NEUTRA del
+  //   mismo alto: no "Empieza con tu Orisha" sobre un reloj ya diseñado. —
+  const stepHead = !enEditor && screen === "editor" ? (
+    <div className="rl-stephead" aria-busy="true">
+      <span className="rl-eyebrow">&nbsp;</span>
+      <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-title">
+        &nbsp;
+      </h2>
+    </div>
+  ) : enEditor ? (
     <div className="rl-stephead">
       {step === "resumen" ? (
         listoEyebrow
@@ -899,8 +990,6 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       />
     ) : null;
 
-  const bodyKey = screen === "entrada" ? "entrada" : step;
-  const animKind = animStep.current === bodyKey ? "sub" : "step";
   const options = (
     <div className="rl-opts_wrap">
       <div
@@ -911,11 +1000,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         aria-labelledby={tabs && sub ? `${uid}-tab-${sub}` : `${uid}-title`}
         tabIndex={-1}
       >
-        <div
-          key={screen === "entrada" ? "entrada" : `${step}-${sub ?? ""}`}
-          className="rl-body"
-          data-anim={animKind}
-        >
+        <div key={bodyKey} className="rl-body" data-anim={animKind}>
           {screen === "entrada" ? (
             <WatchEntry
               onPick={pickPreset}
@@ -923,7 +1008,12 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
                 panel && !coarse
                   ? (id) => {
                       setHoverPreset(id);
-                      if (id) preload3D();
+                      // El 3D se adelanta solo si este equipo lo va a montar:
+                      // con 'no' (sin WebGL2) nunca se usa, y con 'ligero'
+                      // (ahorro de datos, red lenta, equipo modesto) se monta
+                      // al pedirlo (§4.10). Mientras se mide (null, ≤ 1.5 s)
+                      // sí se adelanta: casi siempre sale 'completo'.
+                      if (id && support !== "no" && support !== "ligero") preload3D();
                     }
                   : undefined
               }
@@ -1004,9 +1094,14 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
               onSnap={setSnap}
               keyboard={teclado}
               onVisibleHeight={onSheetHeight}
-              label={enEditor ? def.titulo : "Empieza con tu Orisha"}
+              label={screen === "editor" ? def.titulo : "Empieza con tu Orisha"}
               head={
-                enEditor ? (
+                !enEditor && screen === "editor" ? (
+                  // ?d= aún sin decidir el paso (antes de hidratar): neutra.
+                  <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-sr" aria-busy="true">
+                    {def.titulo}
+                  </h2>
+                ) : enEditor ? (
                   <>
                     <Stepper step={step} max={max} blocked={blockedSteps} onGo={(s) => goTo(s)} compact />
                     <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-sr">
@@ -1026,13 +1121,17 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
               footer={
                 <>
                   {postCta}
-                  {footer ?? (
-                    <div className="rl-foot rl-foot--entrada">
-                      <a className="rl-link" href={GUIA_HREF}>
-                        ¿Cómo funciona? Precio, plazo y prueba →
-                      </a>
-                    </div>
-                  )}
+                  {footer ??
+                    (screen === "entrada" ? (
+                      <div className="rl-foot rl-foot--entrada">
+                        <a className="rl-link" href={GUIA_HREF}>
+                          ¿Cómo funciona? Precio, plazo y prueba →
+                        </a>
+                      </div>
+                    ) : (
+                      // ?d= antes de hidratar: el pie guarda su alto, vacío.
+                      <div className="rl-foot" aria-hidden="true" />
+                    ))}
                 </>
               }
             >
@@ -1046,10 +1145,13 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         <SharePopover
           order={order}
           file={snapshot && snapshot.code === order.code ? snapshot.file : null}
-          onClose={() => setShareAnchor(null)}
+          onClose={closeShare}
           returnFocus={shareAnchor}
         />
       )}
+      {/* El aviso ("Enlace copiado ✓") dentro del armazón: tokens, cristal y
+          capa propios (announce.tsx). */}
+      <AnnouncerToast />
     </div>
   );
 }

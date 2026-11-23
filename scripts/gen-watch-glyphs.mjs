@@ -237,7 +237,22 @@ export const FINA_ADV: Readonly<Record<string, number>> = ${JSON.stringify(adv)}
       `${head}import type { GlyphFont } from "./watch-glyphs-clasica";\n\nexport const GLYPH_PY_DIAL_FINA: GlyphFont = ${tableOf(f)};\n`,
     ) + ` · ${f.label} · interletraje ${Object.keys(f.kern).length} parejas (sin contar ${f.skipped.ligadura} ligaduras y ${f.skipped.alternativa} alternativas)`,
   );
-  report.push(write("watch-glyph-metrics.ts", metrics));
+  // El bloque "AÑADIDO A MANO" del final (avances de la clásica e interletrajes
+  // que separan, para el grabado de la tapa: ver ese archivo) no sale de aquí:
+  // se copia tal cual del archivo anterior (el de --salida o, si no hay, el de
+  // lib/) para no perderlo al regenerar. check-watch-data comprueba después
+  // que sus valores sigan siendo los de las tablas de contornos.
+  const manoDe = (file) => {
+    if (!fs.existsSync(file)) return "";
+    const prev = fs.readFileSync(file, "utf8");
+    const at = prev.indexOf("// AÑADIDO A MANO");
+    if (at < 0) return "";
+    const from = prev.lastIndexOf(RULE, at);
+    return `\n${prev.slice(from >= 0 ? from : at).trimEnd()}\n`;
+  };
+  const mano =
+    manoDe(path.join(outDir, "watch-glyph-metrics.ts")) || manoDe(path.join(here, "..", "lib", "watch-glyph-metrics.ts"));
+  report.push(write("watch-glyph-metrics.ts", metrics + mano));
 }
 
 if (doClasica) {

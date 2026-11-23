@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import ComposedInput from "../ComposedInput";
 import OptionGroup from "../OptionGroup";
 import OduPicker from "../OduPicker";
-import { useOutline } from "../front/curvas";
+import { boundsIfReady, useOutline } from "../front/curvas";
 import type { SubId } from "../creator-state";
 import { lostChars, type StepProps } from "./types";
 import { CASEBACK_MAX, cleanCasebackLine, signName, validate, type Tapa } from "@/lib/watch";
@@ -109,14 +109,16 @@ function TapaGrabado({ config, dispatch }: StepProps) {
           <label htmlFor={`${uid}-fecha`} className="rl-group_label">
             Fecha
           </label>
-          {t.fecha ? (
+          {/* La ayuda (o el error) va SIEMPRE: el error solo existe con una
+              fecha escrita, y si "Quitar fecha" la sustituyera el cliente no
+              vería que esa fecha no vale (y no iría en el pedido). */}
+          <span id={`${uid}-fecha-ayuda`} className={`rl-field_help${errFecha ? " is-error" : ""}`}>
+            {errFecha ?? (t.fecha ? "Opcional" : "Opcional · tu Itá o la que elijas")}
+          </span>
+          {t.fecha && (
             <button type="button" className="rl-link" onClick={() => dispatch({ type: "tapaFecha", fecha: "" })}>
               Quitar fecha
             </button>
-          ) : (
-            <span id={`${uid}-fecha-ayuda`} className={`rl-field_help${errFecha ? " is-error" : ""}`}>
-              {errFecha ?? "Opcional · tu Itá o la que elijas"}
-            </span>
           )}
         </div>
         <input
@@ -125,7 +127,7 @@ function TapaGrabado({ config, dispatch }: StepProps) {
           type="date"
           min="1900-01-01"
           max="2100-12-31"
-          aria-describedby={t.fecha ? undefined : `${uid}-fecha-ayuda`}
+          aria-describedby={`${uid}-fecha-ayuda`}
           aria-invalid={!!errFecha}
           value={t.fecha ?? ""}
           onChange={(e) => dispatch({ type: "tapaFecha", fecha: e.target.value })}
@@ -154,7 +156,6 @@ function TapaGrabado({ config, dispatch }: StepProps) {
 function LetraMuestra({ text, font }: { text: string; font: DialFont }) {
   const outline = useOutline();
   const size = 10;
-  const w = Math.max(24, estimateTextWidth(text, font, size) * 1.08 + 4);
   const run: TextRun = {
     kind: "text",
     capa: "grabado",
@@ -169,10 +170,24 @@ function LetraMuestra({ text, font }: { text: string; font: DialFont }) {
     fill: "currentColor",
   };
   const path = outline?.([run]).find((p) => p.kind === "path");
+  // La caja se mide con la tinta REAL del contorno (centrada en 0): la
+  // estimación no cuenta bien las minúsculas de la clásica (Cinzel las dibuja
+  // hasta ~22 % más anchas) y cortaba la primera y la última letra. Hasta que
+  // llegan las curvas, la estimación con el espaciado y más margen.
+  const tinta = path && path.kind === "path" ? boundsIfReady()?.(path.d) : null;
+  const holgura = font === "py-dial" && text.toLocaleUpperCase("es") !== text ? 1.25 : 1.08;
+  const mitad = tinta
+    ? Math.max(-tinta[0], tinta[2]) + 1
+    : (estimateTextWidth(text, font, size, run.letterSpacing) * holgura + 4) / 2;
+  const w = Math.max(24, 2 * mitad);
+  // Alto fijo (todas las muestras a la misma escala) salvo que la tinta se
+  // salga (tildes en mayúscula, rabos de la cursiva): entonces se amplía.
+  const y0 = tinta ? Math.min(-size * 0.92, tinta[1] - 0.5) : -size * 0.92;
+  const y1 = tinta ? Math.max(size * 0.4, tinta[3] + 0.5) : size * 0.4;
   return (
     <svg
       className="rl-letra"
-      viewBox={`${-w / 2} ${-size * 0.92} ${w} ${size * 1.32}`}
+      viewBox={`${-w / 2} ${y0} ${w} ${y1 - y0}`}
       preserveAspectRatio="xMidYMid meet"
       focusable="false"
       aria-hidden="true"

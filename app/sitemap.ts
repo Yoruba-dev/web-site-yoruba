@@ -14,9 +14,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // El creador de relojes es noindex hasta el lanzamiento: una URL noindex en
     // el sitemap es una señal contradictoria para Google, así que solo entra
     // cuando SECCION_RELOJES.lanzado (lib/site.ts) pasa a true — el mismo día
-    // en que la página quita su noindex.
+    // en que la página quita su noindex. Su guía (/como-funciona) lee el mismo
+    // interruptor para su noindex, así que entra con él.
     ...(SECCION_RELOJES.activo && SECCION_RELOJES.lanzado
-      ? [{ path: SECCION_RELOJES.ruta, priority: 0.8 }]
+      ? [
+          { path: SECCION_RELOJES.ruta, priority: 0.8 },
+          { path: `${SECCION_RELOJES.ruta}/como-funciona`, priority: 0.6 },
+        ]
       : []),
     { path: "/medidor-de-anillos", priority: 0.8 },
     { path: "/ninos", priority: 0.8 },

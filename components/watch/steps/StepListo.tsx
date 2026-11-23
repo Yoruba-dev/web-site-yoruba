@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { layerUrl, stepOfField, strapLayerName, type StepId, type SubId } from "../creator-state";
 import type { OrderInfo } from "../order";
 import { GradientDial, LayerThumb, SolSwatch, swatchHex } from "../Swatches";
@@ -46,7 +46,8 @@ export default function StepListo({
   onDetalle,
 }: {
   config: WatchConfig;
-  goTo: (s: StepId, sub?: SubId | null) => void;
+  /** Ir a un paso; con `field` ("Corregir"), además se enfoca ESE campo. */
+  goTo: (s: StepId, sub?: SubId | null, field?: string) => void;
   order: OrderInfo;
   descontinuado: readonly Descontinuado[];
   /** La foto de estudio pequeña (3D) para la tarjeta; null sin 3D. */
@@ -62,6 +63,7 @@ export default function StepListo({
   onDetalle?: () => void;
 }) {
   const uid = useId();
+  const [nota, setNota] = useState(false);
   const bloqueos = order.validation.issues.filter((i) => i.nivel === "bloqueo");
   const avisos = order.validation.issues.filter((i) => i.nivel === "aviso");
   const filas = summaryRows(config);
@@ -76,7 +78,7 @@ export default function StepListo({
               <li key={`${i.regla}-${i.campo}`} className={`rl-issue rl-issue--${i.nivel}`}>
                 <span className="rl-issue_dot" aria-hidden="true" />
                 <span className="rl-issue_txt">{i.motivo}</span>
-                <button type="button" className="rl-link" onClick={() => goTo(to.step, to.sub)} data-corregir={i.campo}>
+                <button type="button" className="rl-link" onClick={() => goTo(to.step, to.sub, i.campo)} data-corregir={i.campo}>
                   Corregir
                 </button>
               </li>
@@ -163,15 +165,24 @@ export default function StepListo({
           {order.priceLabel} · ✦ Prueba para tu OK antes de producir
         </p>
         <div className="rl-notes_row">
-          Plazo de taller: {watchLeadTimeLabel()}{" "}
-          <span
+          {/* El origen va A LA VISTA (spec §3.6.5); en el ⓘ solo la nota de la
+              vista previa, como un botón que la despliega en la línea (un
+              `title` no se ve en el móvil). */}
+          Plazo de taller: {watchLeadTimeLabel()} · {WATCH_ORIGIN}{" "}
+          <button
+            type="button"
             className="rl-tip"
-            tabIndex={0}
-            role="note"
-            aria-label={`${WATCH_ORIGIN}. ${WATCH_RENDER_NOTE}`}
-            title={`${WATCH_ORIGIN}. ${WATCH_RENDER_NOTE}`}
+            aria-expanded={nota}
+            aria-controls={`${uid}-nota`}
+            aria-label="Sobre la vista previa"
+            title={WATCH_RENDER_NOTE}
+            onClick={() => setNota((x) => !x)}
           >
             <Icon name="info" size={14} />
+          </button>
+          <span id={`${uid}-nota`} hidden={!nota}>
+            {" "}
+            {WATCH_RENDER_NOTE}
           </span>
           {!order.canBuy && (
             <>

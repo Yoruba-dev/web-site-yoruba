@@ -195,10 +195,12 @@ function WatchModel({ config, noche, asm, pose, coarse, reduced, tapaView, onRea
     () => (di ? dialTextures(di.config, { photo: di.imgs[0], logo: di.imgs[1] }, texSize, maxAniso) : null),
     [di, texSize, maxAniso],
   );
-  // La tapa: se repinta 300 ms después de la última tecla.
+  // La tapa: se repinta 300 ms después de la última tecla. SIN useDisposable:
+  // con el láser, el grabado anterior sigue pintándose 500 ms más; lo libera
+  // CaseMeshes (dueño de su vida) cuando ya no se ve.
   const tapa = useDebounced(config.tapa, 300);
   const backKey = JSON.stringify([tapa, fin]);
-  const back = useDisposable(
+  const back = useMemo(
     () => casebackTextures({ ...config, tapa }, fin, texSize, maxAniso),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [backKey, texSize, maxAniso],
@@ -254,6 +256,15 @@ export default memo(WatchModel);
 // ===========================================================================
 // Caja, tapa y cristal
 // ===========================================================================
+type Back = ReturnType<typeof casebackTextures>;
+
+/** Pone un juego de texturas de la tapa en un material del campo. */
+function setMaps(m: THREE.MeshPhysicalMaterial, b: Back) {
+  m.map = b.map;
+  m.roughnessMap = b.orm;
+  m.bumpMap = b.orm;
+}
+
 function CaseMeshes({
   geo,
   mats,
@@ -264,7 +275,7 @@ function CaseMeshes({
 }: {
   geo: CaseGeometries;
   mats: FinishMaterials;
-  back: ReturnType<typeof casebackTextures> | null;
+  back: Back | null;
   asm: Assembly;
   tapaView: boolean;
   reduced: boolean;
@@ -280,56 +291,73 @@ function CaseMeshes({
     [tp],
   );
   // El grabado anterior (solo durante el láser). Lleva mapas desde el
-  // principio (el mismo programa siempre: se compila al calentar).
+  // principio (el mismo programa siempre: se compila al calentar); en reposo,
+  // los del grabado que se ve, nunca los de un juego ya liberado.
   const fieldOld = useDisposable(() => {
     const m = new THREE.MeshPhysicalMaterial({ color: "#ffffff", metalness: 1, roughness: 1, bumpScale: 0.35 });
     m.clippingPlanes = [laserPlane];
     return m;
   }, [laserPlane]);
-  useLayoutEffect(() => {
-    if (back && !fieldOld.map) {
-      fieldOld.map = back.map;
-      fieldOld.roughnessMap = back.orm;
-      fieldOld.bumpMap = back.orm;
-      fieldOld.needsUpdate = true;
-    }
-  }, [back, fieldOld]);
   const [oldOn, setOldOn] = useState(false);
-  const shown = useRef<typeof back>(null);
-  const laser = useRef<{ t0: number } | null>(null);
+  // Las texturas de la tapa son de CaseMeshes: `shown` es la que lleva el
+  // campo; `old`, la que queda debajo mientras dura el láser. Cada juego se
+  // libera cuando deja de pintarse (al cambiar sin láser, al acabar el láser
+  // o al desmontar): uno liberado y aún pintado, three lo volvería a subir.
+  const shown = useRef<Back | null>(null);
+  const old = useRef<Back | null>(null);
   useLayoutEffect(() => {
     if (!back) return;
     const prev = shown.current;
     if (prev === back) return;
     const firstMap = !field.map;
-    field.map = back.map;
-    field.roughnessMap = back.orm;
-    field.bumpMap = back.orm;
+    setMaps(field, back);
     if (firstMap) field.needsUpdate = true;
     shown.current = back;
-    if (prev && tapaView && !reduced && asm.parts.tapa.target) {
+    // El láser solo si la Assembly lo empieza (no con la tapa en cristal, aún
+    // barriendo o con movimiento reducido): si no, cambio al instante.
+    if (prev && tapaView && !reduced && asm.laser("tapa", performance.now())) {
       // El grabado anterior debajo (sin recortar) y el nuevo entra barriendo.
-      fieldOld.map = prev.map;
-      fieldOld.roughnessMap = prev.orm;
-      fieldOld.bumpMap = prev.orm;
+      // Si otro láser seguía en marcha, el que tenía debajo ya no se ve.
+      setMaps(fieldOld, prev);
+      if (old.current && old.current !== prev) old.current.dispose();
+      old.current = prev;
       setOldOn(true);
-      laser.current = { t0: performance.now() };
-      asm.laser("tapa", performance.now());
+    } else {
+      // Con un láser aún en marcha fieldOld conserva su grabado; si no, pasa
+      // al nuevo antes de liberar el anterior.
+      if (!old.current) {
+        const firstOld = !fieldOld.map;
+        setMaps(fieldOld, back);
+        if (firstOld) fieldOld.needsUpdate = true;
+      }
+      prev?.dispose();
     }
     invalidate();
   }, [back, field, fieldOld, tapaView, reduced, asm, invalidate]);
   useFrame(() => {
-    const l = laser.current;
-    if (!l) return;
+    const o = old.current;
+    if (!o) return;
     // El grabado anterior se quita cuando el láser de la Assembly termina (no
     // con un reloj propio: si el barrido se retrasa, nunca se ve un hueco).
-    const a = asm.parts.tapa.anim;
-    if (!a && performance.now() - l.t0 > 50) {
-      laser.current = null;
-      setOldOn(false);
-      invalidate();
-    }
+    if (asm.parts.tapa.anim) return;
+    old.current = null;
+    // fieldOld aún se pinta en este fotograma (oldOn cambia en el próximo
+    // render): pasa al grabado que se ve ANTES de liberar el viejo.
+    if (shown.current) setMaps(fieldOld, shown.current);
+    o.dispose();
+    setOldOn(false);
+    invalidate();
   });
+  // Al desmontar, los dos juegos.
+  useEffect(
+    () => () => {
+      shown.current?.dispose();
+      old.current?.dispose();
+      shown.current = null;
+      old.current = null;
+    },
+    [],
+  );
 
   const crystal = useDisposable(
     () =>

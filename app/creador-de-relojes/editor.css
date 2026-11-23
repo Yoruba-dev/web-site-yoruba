@@ -84,6 +84,10 @@
   inset: 0;
   z-index: 900; /* bajo el minicarrito (10000) */
   display: grid;
+  /* Una columna que NUNCA pasa del ancho: sin esto la pista es `auto` y el
+     título (nowrap) la ensancha a ~383 px en un teléfono de 360 (cierre, dock
+     y Pedir quedaban cortados por el overflow:hidden). */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   height: var(--rl-vvh, 100dvh);
   transform: translateY(var(--rl-vvtop, 0px));
@@ -108,6 +112,13 @@ body:has(.pyj-reloj-app) .pyj-annbar,
 body:has(.pyj-reloj-app) .header-main_area-2 > .header-bottom_area-2,
 body:has(.pyj-reloj-app) .hiraola-footer_area,
 body:has(.pyj-reloj-app) #scrollUp {
+  display: none !important;
+}
+/* Los paneles laterales CERRADOS de la cabecera (búsqueda, menú móvil) son
+   enfocables con Tab aunque no se vean: con el armazón delante eran 3 paradas
+   invisibles antes del logo. El minicarrito no se toca (el editor lo abre). */
+body:has(.pyj-reloj-app) .offcanvas-search_wrapper:not(.open),
+body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: none !important;
 }
 
@@ -721,6 +732,10 @@ body:has(.pyj-reloj-app) #scrollUp {
   right: 12px;
   z-index: var(--rl-z-overlay);
 }
+/* Con el menú [⋯] abierto, la columna pasa por encima de la hoja y su pie. */
+.rl-vdockwrap:has(.rl-vdock_more) {
+  z-index: calc(var(--rl-z-sheet) + 2);
+}
 .rl-vdock {
   position: relative;
   display: flex;
@@ -772,10 +787,13 @@ body:has(.pyj-reloj-app) #scrollUp {
   line-height: 1;
   letter-spacing: 0.02em;
 }
+/* [⋯] se abre AL LADO de la columna, con su pie alineado al del botón: hacia
+   abajo caía bajo la hoja (z 20) en vertical y fuera de la pantalla en
+   apaisado. Si crece (la nota), crece hacia arriba, dentro del escenario. */
 .rl-vdock_more {
   position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  right: calc(100% + 8px);
+  bottom: 0;
   display: grid;
   width: 220px;
   padding: 6px;
@@ -1652,6 +1670,16 @@ body:has(.pyj-reloj-app) #scrollUp {
 }
 .rl-field_head > .rl-field_help {
   display: block;
+  /* Con un enlace detrás (Fecha: ayuda + "Quitar fecha"), los dos a la derecha. */
+  margin-left: auto;
+}
+.rl-field_head > .rl-field_help ~ .rl-link {
+  flex: none;
+}
+/* Un error no se corta con "…": baja de línea entero. */
+.rl-field_head > .rl-field_help.is-error {
+  white-space: normal;
+  text-align: right;
 }
 .rl-field_help .is-error,
 .rl-field_help.is-error {

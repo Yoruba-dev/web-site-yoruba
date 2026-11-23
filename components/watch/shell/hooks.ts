@@ -48,9 +48,30 @@ export function useShareOrigin(): string {
   );
 }
 
+/** Tipos de <input> que NO abren el teclado del móvil. */
+const SIN_TECLADO = new Set(["checkbox", "radio", "button", "submit", "reset", "range", "color", "file", "image", "hidden"]);
+
+/** ¿El foco está en un campo que abre el teclado (texto, textarea…)? */
+function escribiendo(): boolean {
+  const a = document.activeElement;
+  if (!(a instanceof HTMLElement)) return false;
+  if (a.isContentEditable || a instanceof HTMLTextAreaElement) return true;
+  return a instanceof HTMLInputElement && !SIN_TECLADO.has(a.type);
+}
+
 /** El teclado del móvil: con visualViewport, la raíz recibe --rl-vvh (alto
  *  visible) y --rl-vvtop (desplazamiento); devuelve true mientras el teclado
- *  tapa más de un cuarto de la pantalla. */
+ *  tapa más de un cuarto de la pantalla.
+ *
+ *  Dos casos:
+ *  • iOS: el teclado va ENCIMA; innerHeight no cambia y visualViewport sí →
+ *    alto visible < 75 % de innerHeight.
+ *  • Chrome Android con interactive-widget=resizes-content (page.tsx): el
+ *    teclado achica innerHeight Y visualViewport a la vez, así que esa
+ *    proporción nunca baja. Se compara con una BASE sin teclado: el mayor alto
+ *    visto mientras no se escribe (se rehace al cambiar el ancho: giro de
+ *    pantalla o ventana). Solo cuenta con un campo de texto enfocado, para que
+ *    encoger la ventana del escritorio no parezca un teclado. */
 export function useKeyboardViewport(root: RefObject<HTMLElement | null>): boolean {
   const [teclado, setTeclado] = useState(false);
   useEffect(() => {
@@ -58,21 +79,37 @@ export function useKeyboardViewport(root: RefObject<HTMLElement | null>): boolea
     const el = root.current;
     if (!vv || !el) return;
     let raf = 0;
+    let base = 0;
+    let ancho = window.innerWidth;
     const set = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         el.style.setProperty("--rl-vvh", `${Math.round(vv.height)}px`);
         el.style.setProperty("--rl-vvtop", `${Math.round(vv.offsetTop)}px`);
-        setTeclado(vv.height < window.innerHeight * 0.75);
+        const alto = Math.max(window.innerHeight, vv.height);
+        const texto = escribiendo();
+        if (window.innerWidth !== ancho) {
+          ancho = window.innerWidth;
+          base = 0;
+        }
+        // Sin campo de texto enfocado no hay teclado: el alto actual es la base.
+        if (!texto || !base) base = texto ? Math.max(base, alto) : alto;
+        setTeclado(vv.height < window.innerHeight * 0.75 || (texto && vv.height < base * 0.75));
       });
     };
     set();
     vv.addEventListener("resize", set);
     vv.addEventListener("scroll", set);
+    // Al enfocar o soltar un campo (el teclado puede tardar en mover el
+    // visualViewport, y al soltarlo hay que rehacer la base).
+    document.addEventListener("focusin", set);
+    document.addEventListener("focusout", set);
     return () => {
       cancelAnimationFrame(raf);
       vv.removeEventListener("resize", set);
       vv.removeEventListener("scroll", set);
+      document.removeEventListener("focusin", set);
+      document.removeEventListener("focusout", set);
     };
   }, [root]);
   return teclado;

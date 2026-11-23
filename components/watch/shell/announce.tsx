@@ -16,14 +16,38 @@ interface Announcer {
 
 const Ctx = createContext<Announcer>({ announce: () => undefined, toast: () => undefined });
 
+interface ToastState {
+  msg: string;
+  seq: number;
+  out: boolean;
+}
+
+/** El aviso visible va en su propio contexto: así solo <AnnouncerToast/> se
+ *  vuelve a pintar al mostrarlo (el editor entero no). */
+const ToastCtx = createContext<ToastState | null>(null);
+
 export const useAnnouncer = () => useContext(Ctx);
+
+/** El aviso en pantalla. Va DENTRO de .pyj-reloj-app (lo pinta el editor):
+ *  ahí viven los tokens --rl-*, el cristal (.pyj-reloj-app .rl-glass) y su
+ *  capa (--rl-z-toast) por encima de la cabecera y la hoja. Fuera del armazón
+ *  quedaba sin estilo y debajo de él (z-index 900). */
+export function AnnouncerToast() {
+  const toast = useContext(ToastCtx);
+  if (!toast) return null;
+  return (
+    <div key={toast.seq} className={`rl-toast rl-glass${toast.out ? " is-out" : ""}`} aria-hidden="true">
+      {toast.msg}
+    </div>
+  );
+}
 
 const HOLD_MS = 2400;
 const OUT_MS = 160;
 
 export function AnnouncerProvider({ children }: { children: ReactNode }) {
   const [live, setLive] = useState("");
-  const [toast, setToast] = useState<{ msg: string; seq: number; out: boolean } | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const seq = useRef(0);
 
   const announce = useCallback((msg: string) => {
@@ -56,15 +80,10 @@ export function AnnouncerProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={value}>
-      {children}
+      <ToastCtx.Provider value={toast}>{children}</ToastCtx.Provider>
       <p className="rl-sr" role="status" aria-live="polite" aria-atomic="true">
         {live}
       </p>
-      {toast && (
-        <div key={toast.seq} className={`rl-toast rl-glass${toast.out ? " is-out" : ""}`} aria-hidden="true">
-          {toast.msg}
-        </div>
-      )}
     </Ctx.Provider>
   );
 }

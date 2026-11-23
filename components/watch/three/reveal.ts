@@ -296,10 +296,16 @@ export class Assembly {
     return true;
   }
 
-  /** El láser del grabado (la pieza ya real; sin cristal): 500 ms. */
+  /** El láser del grabado (la pieza ya real; sin cristal): 500 ms. Devuelve
+   *  false si NO empezó: quien lo pide cambia la textura al instante. */
   laser(p: WatchPart, now: number): boolean {
     const rig = this.parts[p];
     if (!rig.target || this.reduced || !this.inited) return false;
+    // Un barrido, re-barrido o fundido en marcha ya enseña la textura nueva
+    // (el campo cambió sus mapas antes de pedir el láser). Pisarlo dejaría la
+    // pieza sin encender (aún en su retraso) o el cristal montado para siempre.
+    if (rig.anim && rig.anim.k !== "laser") return false;
+    if (!rig.solidOn) return false;
     this.start(rig, { k: "laser", t0: now, dur: DUR.laser, sweep: sweepOf(p, this.abierta), glint: true });
     return true;
   }
@@ -400,6 +406,9 @@ export class Assembly {
         rig.anim = null;
         if (a.k === "laser") {
           this.park(rig);
+          // Si el láser entró en los 100 ms de desmontaje de un barrido (start
+          // pone unmountAt a 0), el cristal se desmonta ahora.
+          if (rig.target && rig.ghostOn) rig.unmountAt = now + DUR.unmount;
         } else if (rig.target) {
           this.park(rig);
           rig.unmountAt = now + DUR.unmount;

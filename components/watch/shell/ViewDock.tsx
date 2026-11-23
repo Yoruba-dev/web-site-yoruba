@@ -8,7 +8,17 @@
 //   • Móvil: columna a la derecha, 40 × 40, y [⋯] con el resto.
 // role=toolbar con tabindex itinerante (flechas, Inicio, Fin) y aria-pressed.
 // ---------------------------------------------------------------------------
-import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { WATCH_RENDER_NOTE } from "@/lib/watch";
 import type { View3D } from "../stage3d-contract";
 import { Icon, type IconName } from "./icons";
@@ -56,7 +66,20 @@ function useRoving() {
   const [active, setActive] = useState(0);
   const items = () => [...(ref.current?.querySelectorAll<HTMLButtonElement>("[data-dock]") ?? [])];
   useEffect(() => {
-    items().forEach((b, i) => (b.tabIndex = i === active ? 0 : -1));
+    const list = items();
+    if (!list.length) return;
+    // La barra puede perder botones ("Ver completo" al pasar a la tapa, 4 vistas
+    // → 2 con la foto real). Si el índice activo ya no existe, ninguno quedaría
+    // en tabindex 0 y Tab se saltaría la barra entera. Manda el botón que tiene
+    // el foco; si no, el índice activo; si ya no existe, la vista pulsada o,
+    // si no hay, el último botón.
+    const foco = list.indexOf(document.activeElement as HTMLButtonElement);
+    let a = foco >= 0 ? foco : active;
+    if (a >= list.length) {
+      const pulsado = list.findIndex((b) => b.getAttribute("aria-pressed") === "true");
+      a = pulsado >= 0 ? pulsado : list.length - 1;
+    }
+    list.forEach((b, i) => (b.tabIndex = i === a ? 0 : -1));
   });
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const list = items();
@@ -85,10 +108,15 @@ function useRoving() {
   return { ref, onKeyDown, onFocus };
 }
 
+/** Un botón de la barra. `pressed` = interruptor (aria-pressed); `expanded` =
+ *  botón que abre algo (ⓘ, ⋯): aria-expanded + aria-controls, no "pulsado". */
 function DockBtn({
   icon,
   label,
   pressed,
+  expanded,
+  controls,
+  btnRef,
   onClick,
   className,
   children,
@@ -96,16 +124,22 @@ function DockBtn({
   icon: IconName;
   label: string;
   pressed?: boolean;
+  expanded?: boolean;
+  controls?: string;
+  btnRef?: Ref<HTMLButtonElement>;
   onClick: () => void;
   className?: string;
   children?: ReactNode;
 }) {
   return (
     <button
+      ref={btnRef}
       type="button"
       data-dock=""
-      className={`rl-dock_btn${pressed ? " is-on" : ""}${className ? ` ${className}` : ""}`}
+      className={`rl-dock_btn${pressed || expanded ? " is-on" : ""}${className ? ` ${className}` : ""}`}
       aria-pressed={pressed}
+      aria-expanded={expanded}
+      aria-controls={expanded ? controls : undefined}
       aria-label={label}
       title={label}
       onClick={onClick}
@@ -116,14 +150,14 @@ function DockBtn({
   );
 }
 
-function Note({ onClose }: { onClose: () => void }) {
+function Note({ id, onClose }: { id: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <p className="rl-dock_note rl-glass" role="note">
+    <p id={id} className="rl-dock_note rl-glass" role="note">
       {WATCH_RENDER_NOTE}
     </p>
   );
@@ -131,6 +165,7 @@ function Note({ onClose }: { onClose: () => void }) {
 
 function DockHorizontal(p: ViewDockProps) {
   const { ref, onKeyDown, onFocus } = useRoving();
+  const notaId = `${useId()}-nota`;
   const [nota, setNota] = useState(false);
   const segs = p.tres ? VIEWS : FOTO_VISTAS;
   const i = p.tres ? VIEWS.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
@@ -177,8 +212,14 @@ function DockHorizontal(p: ViewDockProps) {
         </DockBtn>
       )}
       <span className="rl-dock_info">
-        <DockBtn icon="info" label="Sobre esta vista previa" pressed={nota} onClick={() => setNota((x) => !x)} />
-        {nota && <Note onClose={() => setNota(false)} />}
+        <DockBtn
+          icon="info"
+          label="Sobre esta vista previa"
+          expanded={nota}
+          controls={notaId}
+          onClick={() => setNota((x) => !x)}
+        />
+        {nota && <Note id={notaId} onClose={() => setNota(false)} />}
       </span>
     </div>
   );
@@ -186,13 +227,24 @@ function DockHorizontal(p: ViewDockProps) {
 
 function DockVertical(p: ViewDockProps) {
   const { ref, onKeyDown, onFocus } = useRoving();
+  const uid = useId();
+  const masId = `${uid}-mas`;
+  const notaId = `${uid}-nota`;
+  const masRef = useRef<HTMLButtonElement>(null);
   const [mas, setMas] = useState(false);
   const [nota, setNota] = useState(false);
   const segs = p.tres ? VIEWS : FOTO_VISTAS;
   const i = p.tres ? VIEWS.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
   useEffect(() => {
     if (!mas) return;
-    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && setMas(false);
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Si el foco estaba en el menú, vuelve a [⋯] (el menú se desmonta y el
+      // foco caería en <body>).
+      const dentro = ref.current?.contains(document.activeElement);
+      setMas(false);
+      if (dentro) masRef.current?.focus();
+    };
     const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setMas(false);
     window.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
@@ -229,9 +281,17 @@ function DockVertical(p: ViewDockProps) {
               </DockBtn>
             ))}
       </div>
-      <DockBtn icon="more" label="Más opciones de vista" pressed={mas} onClick={() => setMas((x) => !x)} className="rl-glass rl-glass--over" />
+      <DockBtn
+        icon="more"
+        label="Más opciones de vista"
+        expanded={mas}
+        controls={masId}
+        btnRef={masRef}
+        onClick={() => setMas((x) => !x)}
+        className="rl-glass rl-glass--over"
+      />
       {mas && (
-        <div className="rl-vdock_more rl-glass rl-glass--over" role="group" aria-label="Más opciones de vista">
+        <div id={masId} className="rl-vdock_more rl-glass rl-glass--over" role="group" aria-label="Más opciones de vista">
           <button type="button" className={`rl-vdock_item${p.noche ? " is-on" : ""}`} aria-pressed={p.noche} onClick={p.onNoche}>
             <Icon name="moon" /> Modo noche
           </button>
@@ -242,6 +302,8 @@ function DockVertical(p: ViewDockProps) {
               onClick={() => {
                 p.onToggleFoto?.();
                 setMas(false);
+                // El menú se cierra con el foco dentro: que vuelva a [⋯].
+                masRef.current?.focus();
               }}
             >
               <Icon name={p.tres ? "photo" : "cube"} /> {p.tres ? "Foto real" : "Ver en 3D"}
@@ -257,10 +319,20 @@ function DockVertical(p: ViewDockProps) {
               <Icon name="eye" /> Ver completo
             </button>
           )}
-          <button type="button" className="rl-vdock_item" aria-expanded={nota} onClick={() => setNota((x) => !x)}>
+          <button
+            type="button"
+            className="rl-vdock_item"
+            aria-expanded={nota}
+            aria-controls={nota ? notaId : undefined}
+            onClick={() => setNota((x) => !x)}
+          >
             <Icon name="info" /> Sobre esta vista
           </button>
-          {nota && <p className="rl-vdock_note">{WATCH_RENDER_NOTE}</p>}
+          {nota && (
+            <p id={notaId} className="rl-vdock_note">
+              {WATCH_RENDER_NOTE}
+            </p>
+          )}
         </div>
       )}
     </div>
