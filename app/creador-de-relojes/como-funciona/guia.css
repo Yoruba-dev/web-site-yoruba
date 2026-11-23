@@ -42,10 +42,12 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+/* El código en Lato: en Cinzel el 1 se lee I y el 0, O. */
 .pyj-guia_resume strong {
-  font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
   color: var(--pyj-gold-light, #f2d896);
 }
 .pyj-guia_resume:hover {
@@ -88,15 +90,28 @@
   width: 30px;
   height: 30px;
   border: 1px solid var(--pyj-gold, #e3b23c);
-  font-family: var(--font-display);
+  /* Cifras en Lato, como las guías de la web: el 1 de Cinzel es una I. */
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--pyj-gold, #e3b23c);
 }
 .pyj-reloj_guidesteps h3 {
   margin: 10px 0 6px;
   font-family: var(--font-display);
   font-size: 15px;
+  line-height: 1.35;
   letter-spacing: 0.04em;
+  text-wrap: balance;
   color: var(--dk-head, #f1e7d2);
+}
+/* Cuatro en fila: en Cinzel el título del paso 4 ocupa dos líneas. Las cuatro
+   reservan dos, así los textos empiezan a la misma altura. */
+@media (min-width: 1024px) {
+  .pyj-reloj_guidesteps h3 {
+    min-height: calc(2 * 1.35em);
+  }
 }
 .pyj-reloj_guidesteps p {
   margin: 0;

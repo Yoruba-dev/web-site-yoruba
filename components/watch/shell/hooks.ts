@@ -68,10 +68,13 @@ function escribiendo(): boolean {
  *    alto visible < 75 % de innerHeight.
  *  • Chrome Android con interactive-widget=resizes-content (page.tsx): el
  *    teclado achica innerHeight Y visualViewport a la vez, así que esa
- *    proporción nunca baja. Se compara con una BASE sin teclado: el mayor alto
- *    visto mientras no se escribe (se rehace al cambiar el ancho: giro de
- *    pantalla o ventana). Solo cuenta con un campo de texto enfocado, para que
- *    encoger la ventana del escritorio no parezca un teclado. */
+ *    proporción nunca baja. Se compara con una BASE sin teclado: el alto visto
+ *    la última vez que no se escribía CON ESE MISMO ANCHO (una por ancho:
+ *    vertical y apaisado tienen la suya). Al girar con el teclado abierto se
+ *    usa la base guardada de ese ancho; nunca se mide una con el teclado
+ *    abierto. Si ese ancho aún no tiene base, queda solo la prueba de iOS.
+ *    Solo cuenta con un campo de texto enfocado, para que encoger la ventana
+ *    del escritorio no parezca un teclado. */
 export function useKeyboardViewport(root: RefObject<HTMLElement | null>): boolean {
   const [teclado, setTeclado] = useState(false);
   useEffect(() => {
@@ -79,22 +82,28 @@ export function useKeyboardViewport(root: RefObject<HTMLElement | null>): boolea
     const el = root.current;
     if (!vv || !el) return;
     let raf = 0;
-    let base = 0;
-    let ancho = window.innerWidth;
+    // Alto sin teclado por ancho de ventana (pocas entradas: al arrastrar la
+    // ventana del escritorio se guardan solo las últimas).
+    const bases = new Map<number, number>();
     const set = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         el.style.setProperty("--rl-vvh", `${Math.round(vv.height)}px`);
         el.style.setProperty("--rl-vvtop", `${Math.round(vv.offsetTop)}px`);
-        const alto = Math.max(window.innerHeight, vv.height);
+        const ancho = window.innerWidth;
         const texto = escribiendo();
-        if (window.innerWidth !== ancho) {
-          ancho = window.innerWidth;
-          base = 0;
+        // Sin campo de texto enfocado no hay teclado: el alto actual es la base
+        // de este ancho. Con uno enfocado la base no se toca.
+        if (!texto) {
+          bases.delete(ancho);
+          bases.set(ancho, Math.max(window.innerHeight, vv.height));
+          if (bases.size > 8) {
+            const viejo = bases.keys().next();
+            if (!viejo.done) bases.delete(viejo.value);
+          }
         }
-        // Sin campo de texto enfocado no hay teclado: el alto actual es la base.
-        if (!texto || !base) base = texto ? Math.max(base, alto) : alto;
-        setTeclado(vv.height < window.innerHeight * 0.75 || (texto && vv.height < base * 0.75));
+        const base = bases.get(ancho);
+        setTeclado(vv.height < window.innerHeight * 0.75 || (texto && base !== undefined && vv.height < base * 0.75));
       });
     };
     set();

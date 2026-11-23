@@ -25,6 +25,9 @@
     var(--rc-bg);
   /* sin filete abajo: Novedades, que va justo después, ya trae el suyo arriba */
   color: var(--rc-text);
+  /* Cifras de caja alta en toda la franja: las de Cormorant son elzevirianas
+     ("01" se leía "oı" y "16 Meyis" bajaba de la línea). Se hereda. */
+  font-variant-numeric: lining-nums;
 }
 
 /* ---- 1. La entrada: texto + la foto grande ------------------------------- */
@@ -445,6 +448,14 @@
   }
   .pyj-rc_feats {
     gap: 16px;
+  }
+}
+/* Tableta con las tres funciones en fila: en Cinzel "Tu signo al dorso" se
+   partía en dos líneas y bajaba su texto 17 px respecto a las vecinas. */
+@media (min-width: 768px) and (max-width: 991px) {
+  .pyj-rc_feattxt h3 {
+    font-size: 15px;
+    letter-spacing: 0.04em;
   }
 }
 

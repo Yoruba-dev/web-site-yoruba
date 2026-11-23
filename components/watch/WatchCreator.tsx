@@ -684,6 +684,13 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     for (const el of [stageRef.current, chipsRef.current, dockRef.current]) if (el) ro.observe(el);
     return () => ro.disconnect();
   }, [measure, screen, tres, panel, hayCristal]);
+  // Cada cuerpo nuevo (paso o sub-pestaña) empieza arriba. La zona de opciones
+  // es la misma caja para todos y conservaba el desplazamiento del anterior:
+  // al "Terminar" con la lista de Meyis bajada, Listo abría a mitad y sin el
+  // resumen. ("Corregir" enfoca su campo después, y ese sí desplaza.)
+  useLayoutEffect(() => {
+    document.getElementById(`${uid}-opts`)?.scrollTo(0, 0);
+  }, [bodyKey, uid]);
   const onSheetHeight = useCallback(
     (px: number) => {
       sheetH.current = px;

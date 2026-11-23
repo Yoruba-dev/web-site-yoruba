@@ -5646,6 +5646,14 @@ button[type="submit"],
   margin: 26px 0 0;
   width: 100%;
 }
+/* Teléfono estrecho: 19 puntos de 10 px con huecos de 10 px (370 px) no cabían
+   en 320 y la portada se desplazaba 6 px de lado a 360 px. */
+@media (max-width: 400px) {
+  .pyj-catcircles_slider .slick-dots {
+    flex-wrap: wrap;
+    gap: 8px 6px;
+  }
+}
 .pyj-catcircles_slider .slick-dots li {
   display: inline-flex !important;
   width: auto !important;

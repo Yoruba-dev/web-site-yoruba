@@ -51,9 +51,12 @@
   font-size: 15px;
   color: var(--dk-text, #d6cbb2);
 }
+/* El código en Lato: en Cinzel el 1 se lee I y el 0, O (el taller lo copia). */
 .pyj-reloj_sheetcode strong {
-  font-family: var(--font-display);
-  letter-spacing: 0.12em;
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
   color: var(--pyj-gold-light, #f2d896);
 }
 .pyj-reloj_sheetalert {
