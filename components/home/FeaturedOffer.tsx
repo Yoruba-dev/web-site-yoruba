@@ -94,7 +94,9 @@ export default async function FeaturedOffer() {
 
               <div className="pyj-offer_body">
                 <span className="pyj-eyebrow">{t.eyebrow}</span>
-                <h2 className="pyj-offer_title">{t.title}</h2>
+                {/* Espacio duro antes del guion: la raya nunca empieza una línea
+                    ("— PLATA 925" suelto). */}
+                <h2 className="pyj-offer_title">{t.title.replace(/ ([—–]) /g, " $1 ")}</h2>
                 <p className="pyj-offer_sub">{t.sub}</p>
                 <div className="pyj-offer_prices">
                   <span className="pyj-offer_was">{t.was}</span>

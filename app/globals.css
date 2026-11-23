@@ -1,4 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Lato:ital,wght@0,400;0,700;1,400&display=swap");
+/* Las fuentes de marca (Cinzel, Cormorant Garamond) se cargan en app/layout.tsx
+ * desde @fontsource (nuestro dominio). Un @import remoto aquí se pierde al
+ * empaquetar: no volver a ponerlo. */
 
 /* ===========================================================================
  * Pedro Yoruba Jewelry — BRAND LAYER (palette + typography)
@@ -3063,9 +3065,12 @@ body.template-color-1 {
 .pyj-offer_title {
   font-family: "Cinzel", serif;
   font-size: 30px;
+  line-height: 1.15;
   letter-spacing: 1.5px;
   color: var(--dk-head, #ece2cd);
   margin: 4px 0 10px;
+  /* Cinzel es ancha: líneas parejas, sin "— PLATA 925" suelto abajo. */
+  text-wrap: balance;
 }
 .pyj-offer_sub {
   font-size: 15px;
@@ -3543,6 +3548,9 @@ body.template-color-1 {
   font-family: "Cinzel", serif;
   font-size: 15px;
   line-height: 1.35;
+  /* Tres líneas reservadas: las filas de las tarjetas quedan alineadas aunque
+     un nombre sea más largo (Cinzel ocupa más que la letra de reserva). */
+  min-height: calc(3 * 1.35em);
 }
 .pyj-compare-name a {
   color: var(--dk-head, #ece2cd) !important;
@@ -4768,6 +4776,25 @@ body.template-color-1 {
   flex-wrap: wrap;
   margin-top: 34px;
 }
+/* Móvil: el botón dorado de WhatsApp centrado y en líneas parejas (con Cinzel
+   "PIDE TU CATÁLOGO POR / WHATSAPP" quedaba cojo y alineado a la izquierda). */
+@media (max-width: 575px) {
+  .pyj-may_cta .pyj-btn-gold,
+  .pyj-serv_cta .pyj-btn-gold {
+    padding: 13px 20px;
+    text-align: center;
+    text-wrap: balance;
+    line-height: 1.5;
+  }
+}
+/* Plantilla: la franja de hover (::after) mide top 50% / bottom 50% en reposo
+   y, según la posición fraccionaria del banner, se pintaba como una raya
+   dorada de 1 px. Altura negativa en reposo = nada (como su ::before).
+   :not(:hover) gana a la regla de la plantilla sea cual sea el orden de carga
+   y deja intacto el destello del hover. */
+.img-hover_effect:not(:hover) a::after {
+  bottom: 51%;
+}
 
 /* Navegación entre servicios (anterior · todos · siguiente). */
 .pyj-serv_nav {
@@ -5037,7 +5064,8 @@ body.template-color-1 {
     padding: 30px 0;
   }
   .pyj-may_hero-text h1 {
-    font-size: 32px;
+    /* Cinzel: 2 líneas también a 360–414 px (el <br> del JSX parte la frase). */
+    font-size: clamp(22px, calc(7.3vw - 3px), 32px);
   }
   .pyj-may_hero-media {
     aspect-ratio: 16 / 11;
@@ -6645,7 +6673,9 @@ button[type="submit"],
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-family: var(--font-display, "Cinzel", serif);
+  /* Cifras en Lato: el "1" de Cinzel se lee como una "I" (I, 2, 3…). */
+  font-family: var(--font-body, "Lato", sans-serif);
+  font-weight: 700;
   font-size: 14px;
   color: var(--dk-base, #14100a);
   background: linear-gradient(150deg, #f0d79b, #cda557 55%, #8f5f28);

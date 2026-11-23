@@ -1,4 +1,20 @@
 import type { Metadata } from "next";
+// Las dos familias de marca, servidas desde nuestro propio dominio (paquetes
+// @fontsource, licencia OFL 1.1): Cinzel = títulos y botones; Cormorant
+// Garamond = subtítulos en cursiva. Lato ya llega con las hojas de la plantilla.
+// Antes iban por un @import a Google Fonts en globals.css que el empaquetador
+// descartaba, y todo salía en Georgia (descubierto 2026-11-22).
+// Pesos = los que pide el CSS (medido en las páginas): Cinzel 400/500/600/700,
+// Cormorant 400–600 en cursiva (y 500/600 rectas).
+import "@fontsource/cinzel/400.css";
+import "@fontsource/cinzel/500.css";
+import "@fontsource/cinzel/600.css";
+import "@fontsource/cinzel/700.css";
+import "@fontsource/cormorant-garamond/500.css";
+import "@fontsource/cormorant-garamond/600.css";
+import "@fontsource/cormorant-garamond/400-italic.css";
+import "@fontsource/cormorant-garamond/500-italic.css";
+import "@fontsource/cormorant-garamond/600-italic.css";
 import "./globals.css";
 import Stylesheets from "@/components/layout/Stylesheets";
 import AnnouncementBar from "@/components/layout/AnnouncementBar";
