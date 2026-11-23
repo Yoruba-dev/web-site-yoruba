@@ -82,7 +82,9 @@ export default function AboutUsPage() {
                   religión. Gracias por confiar en nosotros para llevar tu fe en oro.
                 </p>
                 <div className="hiraola-about-us_btn-area">
-                  <Link className="about-us_btn" href="/shop-left-sidebar">
+                  {/* El botón dorado común de la web: el .about-us_btn de la
+                      plantilla tenía tamaño fijo (145x50) y el texto se salía. */}
+                  <Link className="pyj-btn-gold" href="/shop-left-sidebar">
                     Ver la colección
                   </Link>
                 </div>
@@ -162,7 +164,8 @@ export default function AboutUsPage() {
                   href={SITE.contact.whatsapp}
                   target="_blank"
                   rel="noreferrer"
-                  className="about-us_btn"
+                  className="pyj-btn-gold"
+                  style={{ marginBottom: 22 }}
                 >
                   Escríbenos por WhatsApp
                 </a>

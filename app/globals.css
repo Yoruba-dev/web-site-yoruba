@@ -263,6 +263,13 @@ body.template-color-1 {
 .main-menu_area > nav > ul > li > ul li a {
   color: var(--dk-text) !important;
 }
+/* The template flanks the hovered menu item with 2px bars (a::before/::after).
+   On the dark header they read as stray "| PÁGINAS |" marks; the gold hover
+   colour already marks the item. */
+.header-bottom_area .main-menu_area > nav > ul > li > a::before,
+.header-bottom_area .main-menu_area > nav > ul > li > a::after {
+  content: none !important;
+}
 
 /* ---- Mega menu ("Páginas"): smooth open + airy, balanced layout ----
    The template snaps the panel open (transform: scaleY(0→1), no transition).
@@ -494,6 +501,13 @@ body.template-color-1 {
 .breadcrumb-content ul li a {
   color: var(--pyj-gold-light) !important;
 }
+/* Phones: the template makes the centred breadcrumb width:100% with no padding,
+   so long titles (blog articles) ran edge to edge. Give it the page gutter. */
+@media (max-width: 575px) {
+  .breadcrumb-area .breadcrumb-content {
+    padding: 0 20px;
+  }
+}
 
 /* Shop sidebar widgets */
 .hiraola-sidebar_categories,
@@ -672,6 +686,27 @@ body.template-color-1 {
   color: var(--pyj-black) !important;
 }
 
+/* Plain text links in page copy. The template's base `a {color:#595959}` was never
+   re-themed for the dark site, so phone numbers, e-mails, inline links and product
+   tags read at 2.6:1 (/contact, /about-us, /servicios/como-trabajamos, /garantía…,
+   /privacidad, /joyeria-en-miami, PDP tags). Light gold + a soft underline so they
+   read AND look like links. Links with a class (buttons, cards, nav) and the
+   header / footer / breadcrumb keep their own styling; hover stays the template's
+   gold. */
+.main-wrapper
+  :is(p, span, address, .pyj-policy_list > li)
+  > a:not([class]):not(:is(header, .hiraola-footer_area, .breadcrumb-area) a) {
+  color: var(--pyj-gold-light);
+  text-decoration: underline;
+  text-decoration-color: rgba(227, 178, 60, 0.5);
+  text-underline-offset: 3px;
+}
+/* Social icons outside the footer / product page (/about-us, /contact) had the
+   same grey. */
+.main-wrapper .hiraola-social_link > ul > li > a {
+  color: var(--pyj-gold);
+}
+
 /* Tables: cart, wishlist, compare, order */
 .table-content table th,
 .your-order-table table th,
@@ -716,9 +751,28 @@ body.template-color-1 {
 
 /* FAQ accordion */
 .frequently-content .card,
+.frequently-accordion .card,
 .card-header {
   background-color: var(--dk-surface) !important;
   border-color: var(--dk-border) !important;
+}
+/* The accordion sits OUTSIDE .frequently-content, so the rule above never reached
+   its cards: the open answer was cream text on Bootstrap's white card (1.6:1). The
+   questions were the template's #595959 on dark (2.4:1), and `capitalize` turned
+   "¿Cuál es el horario…?" into "¿Cuál Es El Horario…?" — Spanish keeps its casing. */
+.frequently-accordion .card-body {
+  color: var(--dk-text);
+  line-height: 1.7;
+}
+.frequently-accordion .card-header a {
+  color: var(--dk-head) !important;
+  text-transform: none !important;
+}
+.frequently-accordion .card.actives .card-header a {
+  color: var(--pyj-gold-light) !important;
+}
+.frequently-area .frequently-content .frequently-desc h3 {
+  text-transform: none !important; /* template style.css loads after this file */
 }
 
 /* Newsletter popup */
@@ -975,6 +1029,14 @@ textarea:focus-visible,
 .template-color-1 .footer-links ul li a:hover {
   color: var(--pyj-gold) !important;
 }
+/* Footer link row: the template's "/" separators sat flush against the words
+   ("Tienda/Servicios/…") and one trailed after the last link. */
+.footer-bottom_area .footer-bottom_nav .footer-links > ul > li::after {
+  margin: 0 9px;
+}
+.footer-bottom_area .footer-bottom_nav .footer-links > ul > li:last-child::after {
+  content: none;
+}
 /* rating stars */
 .template-color-1 .rating-box > ul > li > i {
   color: var(--pyj-gold) !important;
@@ -1018,6 +1080,20 @@ textarea:focus-visible,
      → looked "desfasado"). */
   display: flex;
   align-items: center;
+}
+/* The template pads each row only BELOW (30px, 0 on the last), so with our
+   dividers every row hugged the line above it and the last one sat on its own
+   divider, doubled by the subtotal's top border. Even padding both sides; the
+   last row drops its divider and lets the subtotal's border close the list. */
+.offcanvas-minicart_wrapper .offcanvas-menu-inner .minicart-content .minicart-list > li.minicart-product {
+  padding: 14px 0;
+}
+.offcanvas-minicart_wrapper .offcanvas-menu-inner .minicart-content .minicart-list > li.minicart-product:first-child {
+  padding-top: 0;
+}
+.offcanvas-minicart_wrapper .offcanvas-menu-inner .minicart-content .minicart-list > li.minicart-product:last-child {
+  padding-bottom: 14px; /* the template's li:last-child zeroes it */
+  border-bottom: 0;
 }
 .minicart-product .product-item_title,
 .minicart-heading h4,
@@ -1341,9 +1417,18 @@ textarea:focus-visible,
 .sp-img_area .sp-img_slider::-webkit-scrollbar {
   display: none;
 }
-/* Leave room for the arrows when the strip overflows. */
-.pyj-thumb-strip.has-nav .sp-img_slider {
-  padding: 2px 34px;
+/* scroll-padding must always equal the strip's side padding. With mandatory
+   snapping and none, the browser parked the strip at scrollLeft 30 on load (the
+   template's `.sp-area .sp-nav .sp-img_slider {padding: 0 30px}`), so the first
+   thumbnail sat flush left — right under the left arrow once it appeared. */
+.sp-area .sp-nav .sp-img_slider {
+  scroll-padding-inline: 30px;
+}
+/* Leave room for the 32px arrows when the strip overflows (beats the template's
+   30px padding above). */
+.sp-area .sp-nav .pyj-thumb-strip.has-nav .sp-img_slider {
+  padding: 2px 40px;
+  scroll-padding-inline: 40px;
 }
 .sp-img_area .sp-img_slider > a {
   flex: 0 0 auto !important;
@@ -3647,6 +3732,14 @@ body.template-color-1 {
     position: static;
   }
 }
+/* Phones: the template's 80px top padding (under an already tall page header)
+   pushed the first line's quantity/price row under the floating tab bar on first
+   load at 360x740. */
+@media (max-width: 767px) {
+  .hiraola-cart-area {
+    padding-top: 24px !important; /* template style.css loads after this file */
+  }
+}
 @media (max-width: 575px) {
   .pyj-cart-line {
     grid-template-columns: 70px 1fr auto;
@@ -5106,6 +5199,22 @@ button[type="submit"],
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
+/* The template sizes .hiraola-btn for short English labels (195x45 desktop,
+   140x50 phone, line-height = height). In tracked Cinzel caps "ESCRÍBENOS POR
+   WHATSAPP" needs two lines on /contact, and the second line fell outside the gold
+   box. Let the box grow with its label instead. (/about-us now uses .pyj-btn-gold.) */
+.contact-page-side-content a.hiraola-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  max-width: 100%;
+  height: auto !important;
+  min-height: 50px;
+  padding: 12px 26px;
+  line-height: 1.35 !important;
+  text-align: center;
+}
 
 /* ===========================================================================
    HERO — the designed banners already carry their own baked-in copy, so the hero
@@ -5589,6 +5698,17 @@ button[type="submit"],
   text-align: center;
   outline: none;
 }
+/* The template's product-card gutter (.slick-list margin-left:-30px + .slick-slide
+   margin-left:30px) assumes jQuery slick, which subtracts the margin from each
+   slide. react-slick doesn't, so every slide drifted ~5px and at 360px the right
+   circle ended up 10px past the clip. The circles carry their own padding, so this
+   carousel runs without that gutter. */
+.pyj-catcircles_slider .slick-list {
+  margin: 0 !important;
+}
+.pyj-catcircles_slider .slick-slide {
+  margin: 0 !important;
+}
 .pyj-catcircle_link {
   display: flex;
   flex-direction: column;
@@ -5670,6 +5790,23 @@ button[type="submit"],
 .pyj-catcircles_slider .slick-dots li.slick-active button {
   background: var(--pyj-gold, #cda557);
   transform: scale(1.25);
+}
+/* One dot per collection (19 today): 10px dots + 10px gaps need 370px, wider than
+   a 360px phone. Tighter dots on phones, and wrap rather than overflow if the
+   catalogue grows. */
+.pyj-catcircles_slider .slick-dots {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+@media (max-width: 575px) {
+  .pyj-catcircles_slider .slick-dots {
+    gap: 7px;
+    row-gap: 10px;
+  }
+  .pyj-catcircles_slider .slick-dots li button {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -7020,8 +7157,11 @@ button[type="submit"],
   gap: 24px;
 }
 
-/* --- Step tabs / progress --- */
-.pyj-steps {
+/* --- Step tabs / progress ---
+   Scoped to .pyj-cfg2: /mayoreo's "Cómo pedir" cards share the .pyj-steps /
+   .pyj-step names, and these unscoped rules (flex:0 0 auto, centring, no
+   background) used to collapse those cards and push them 40px off a phone. */
+.pyj-cfg2 .pyj-steps {
   display: flex !important;
   flex-flow: row wrap;
   width: 100%;
@@ -7031,7 +7171,7 @@ button[type="submit"],
   padding: 0;
   justify-content: center;
 }
-.pyj-step {
+.pyj-cfg2 .pyj-step {
   flex: 0 0 auto;
   list-style: none;
   margin: 0;
@@ -7101,8 +7241,11 @@ button[type="submit"],
   top: 92px;
 }
 @media (max-width: 860px) {
+  /* minmax(0, …) — a bare 1fr has an `auto` minimum, so the stage, palette and
+     order panel stretched the column to their min-content width (385px on a
+     390px phone) and the whole page scrolled sideways. */
   .pyj-cfg2_main {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .pyj-cfg2_side {
     position: static;
@@ -7142,7 +7285,8 @@ button[type="submit"],
    the central field where the Odù is engraved. */
 .pyj-face--round .pyj-face_wrap {
   display: block;
-  width: min(430px, 86vw);
+  /* 100% of the stage, not 86vw: on a phone 86vw is wider than the padded stage. */
+  width: min(430px, 100%);
   aspect-ratio: 1;
 }
 .pyj-face_medallion {
@@ -7210,7 +7354,7 @@ button[type="submit"],
    engravable field (lib/coin.ts → COIN_FACES[].field). */
 .pyj-face--coin .pyj-face_wrap {
   display: block;
-  width: min(430px, 86vw);
+  width: min(430px, 100%); /* see .pyj-face--round above */
   aspect-ratio: 1;
 }
 .pyj-coin {
