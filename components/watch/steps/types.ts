@@ -8,7 +8,7 @@ export interface StepProps {
   dispatch: (a: CreatorAction) => void;
   /** Ir a un paso (y a una sub-pestaña suya). */
   goTo: (s: StepId, sub?: SubId | null) => void;
-  /** Pedir un encuadre de la cámara (tipo de correa → "lado", cierre → "cierre"). */
+  /** Pedir un encuadre de la cámara (correa elegida → "correa", cierre → "cierre"). */
   requestView: (v: View3D) => void;
 }
 

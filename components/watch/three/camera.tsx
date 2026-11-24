@@ -20,7 +20,8 @@
 //   • El primer fotograma usa el encuadre de la esfera a R 30 (casa con el
 //     poster de frente) y de ahí va a la vista pedida.
 //   • Tocar (< 5 px, < 300 ms) una pieza la elige (real o en cristal); en
-//     escritorio, el cursor es una mano sobre una pieza.
+//     escritorio, el cursor es una mano sobre una pieza (y el editor enseña
+//     su nombre: onPartHover).
 // ---------------------------------------------------------------------------
 import { useEffect, useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
@@ -47,6 +48,9 @@ export const VIEWS: Readonly<Record<View3D, ViewDef>> = {
   // R 22 como máximo; ver viewRadius (el grabado legible, R1.3).
   tapa: { az: Math.PI, pol: 1.55, target: [0, 0, -7.2], R: 22 },
   cierre: { az: 2.55, pol: 2.05, target: [0, -6, -54], R: 22 },
+  // La cara de la correa (PLAN-REALISMO-V3 2.5). R 34 corta la caja por abajo
+  // a 1000 × 800; 38 es un punto de partida.
+  correa: { az: 0.45, pol: 0.95, target: [0, 8, -12], R: 38 },
 };
 
 const W_MUELLE = 7.5;
@@ -134,6 +138,7 @@ export interface CameraRigProps {
   model: React.RefObject<THREE.Object3D | null>;
   onInteract?: () => void;
   onPartPick?: (p: WatchPart) => void;
+  onPartHover?: (p: WatchPart | null, x: number, y: number) => void;
   /** Hay movimiento seguido (para medir el rendimiento). */
   onActive?: (on: boolean) => void;
 }
@@ -151,6 +156,7 @@ export function CameraRig({
   model,
   onInteract,
   onPartPick,
+  onPartHover,
   onActive,
 }: CameraRigProps) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
@@ -432,8 +438,16 @@ export function CameraRig({
       return null;
     };
     let down: { x: number; y: number; t: number } | null = null;
+    // La última pieza avisada: "ninguna" se avisa una sola vez.
+    let sobre: WatchPart | null = null;
+    const avisar = (p: WatchPart | null, x = 0, y = 0) => {
+      if (!p && !sobre) return;
+      sobre = p;
+      onPartHover?.(p, x, y);
+    };
     const onDown = (e: PointerEvent) => {
       down = { x: e.clientX, y: e.clientY, t: performance.now() };
+      avisar(null);
     };
     const onUp = (e: PointerEvent) => {
       const d = down;
@@ -449,10 +463,13 @@ export function CameraRig({
       const now = performance.now();
       if (now - last < 100) return;
       last = now;
-      el.style.cursor = pick(e.clientX, e.clientY) ? "pointer" : "";
+      const p = pick(e.clientX, e.clientY);
+      el.style.cursor = p ? "pointer" : "";
+      avisar(p, e.clientX, e.clientY);
     };
     const onLeave = () => {
       el.style.cursor = "";
+      avisar(null);
     };
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointerup", onUp);
@@ -463,8 +480,9 @@ export function CameraRig({
       el.removeEventListener("pointerup", onUp);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
+      avisar(null);
     };
-  }, [gl, camera, model, coarse, onPartPick]);
+  }, [gl, camera, model, coarse, onPartPick, onPartHover]);
 
   // — El bucle ————————————————————————————————————————————————————————
   useFrame((_, delta) => {

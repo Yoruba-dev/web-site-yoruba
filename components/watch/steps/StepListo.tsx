@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { layerUrl, stepOfField, strapLayerName, type StepId, type SubId } from "../creator-state";
+import { layerUrl, stepOfField, vitrinaCorrea, type StepId, type SubId } from "../creator-state";
 import type { OrderInfo } from "../order";
-import { GradientDial, LayerThumb, SolSwatch, swatchHex } from "../Swatches";
+import { GradientDial, LayerThumb, SolSwatch, VitrinaPiece, strapHex } from "../Swatches";
 import ShareButtons from "../shell/ShareButtons";
 import { Icon } from "../shell/icons";
 import {
@@ -257,13 +257,12 @@ function summaryRows(c: WatchConfig): SumRow[] {
       k: "Correa",
       v: correa,
       step: "correa",
-      sub: null,
+      sub: "correa",
       thumb: (
-        <LayerThumb
-          crop="correa"
-          layers={[layerUrl(strapLayerName(c.correa, c.acabado))]}
-          fallbackHex={swatchHex(strap?.swatch ?? "negro")}
-        />
+        // La misma punta de correa de la vitrina (antes, un recorte de la capa).
+        <span className="rl-sum_vit">
+          <VitrinaPiece src={vitrinaCorrea(c.correa, c.acabado)} hex={strapHex(c.correa, strap?.swatch ?? "negro")} />
+        </span>
       ),
     },
     {

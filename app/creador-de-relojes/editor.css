@@ -579,6 +579,32 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   justify-content: center;
 }
 
+/* [Deshacer]: solo cuando hay algo que deshacer. */
+.rl-undobtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--rl-h-chip);
+  height: var(--rl-h-chip);
+  padding: 0;
+  border-radius: var(--rl-r-pill) !important;
+  color: var(--rl-text);
+  animation: rl-fade 160ms var(--rl-out) both;
+  transition: transform 120ms var(--rl-out), border-color 160ms var(--rl-out), color 160ms var(--rl-out);
+}
+.rl-undobtn:hover {
+  border-color: var(--rl-glass-line-strong);
+  color: var(--rl-head);
+}
+.rl-undobtn:active {
+  transform: scale(0.94);
+}
+
+/* UNA sola pista al empezar (PLAN-REALISMO-V3 6.10): en el editor la da el chip
+   de abajo, que además dice que las piezas se tocan; la del visor se calla. */
+.pyj-reloj-app[data-pantalla="editor"] .pyj-r3d_pill--hint {
+  display: none;
+}
 /* La pista de una vez (arriba a la derecha). */
 .rl-hint {
   position: absolute;
@@ -588,7 +614,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 300px;
+  max-width: 400px;
   margin: 0;
   padding: 8px 14px;
   border-radius: var(--rl-r-pill) !important;
@@ -596,6 +622,27 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   color: var(--rl-text);
   pointer-events: none;
   animation: rl-pop-in 200ms var(--rl-out) both;
+}
+/* El nombre de la pieza bajo el ratón (escritorio). */
+.rl-parttip {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  z-index: var(--rl-z-overlay);
+  padding: 4px 10px;
+  border: 1px solid var(--rl-glass-line);
+  border-radius: var(--rl-r-pill) !important;
+  background: var(--rl-glass-bg-solid, rgba(24, 19, 12, 0.9));
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--rl-head);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms var(--rl-out);
+}
+.rl-parttip.is-on {
+  opacity: 1;
 }
 .rl-hint_dot {
   flex: none;
@@ -706,10 +753,18 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   color: var(--rl-text);
   animation: rl-pop-in 160ms var(--rl-out) both;
 }
-/* Con la 3D el dock lleva 4 vistas + Noche + Foto real + Ver completo + ⓘ
-   (≈ 870 px con etiquetas): entre 860 y 959 px de escenario se aprieta; por
-   debajo, solo iconos (cada botón conserva su aria-label y su title). */
-@container rl-stage (min-width: 860px) and (max-width: 959px) {
+/* Con la 3D el dock lleva hasta 5 vistas + Acercar + Noche + Foto real + Ver
+   completo + ⓘ. Las vistas conservan su nombre (se aprenden); las herramientas
+   lo pierden antes. Cada botón conserva siempre su aria-label y su title. */
+@container rl-stage (max-width: 1239px) {
+  .rl-dock_tool .rl-dock_label {
+    display: none;
+  }
+  .rl-dock_tool {
+    padding: 0 10px;
+  }
+}
+@container rl-stage (max-width: 959px) {
   .rl-dock_btn {
     gap: 5px;
     padding: 0 8px;
@@ -718,7 +773,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
     margin: 0 4px;
   }
 }
-@container rl-stage (max-width: 859px) {
+@container rl-stage (max-width: 819px) {
   .rl-dock_label {
     display: none;
   }
@@ -783,6 +838,16 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 .rl-vdock .rl-dock_btn .rl-icon {
   width: 18px;
   height: 18px;
+}
+/* Teléfono bajo (Safari con sus barras): con "Cierre" son cinco vistas y la
+   columna llegaba a la media hoja. */
+@media (max-height: 720px) and (orientation: portrait) {
+  .rl-vdock_seg {
+    grid-auto-rows: 37px;
+  }
+  .rl-vdock .rl-dock_btn {
+    height: 37px;
+  }
 }
 .rl-vdock_short {
   font-size: 9px;
@@ -883,17 +948,54 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 5px;
   width: 100%;
   height: 100%;
   padding: 0;
   text-align: left;
   border-radius: var(--rl-r-sm) !important;
 }
-.rl-stepper_bar {
+/* La pieza del paso. Hecho = ✓; pendiente = al 60 %: no depende del color. */
+.rl-stepper_ico {
   position: relative;
   display: block;
-  height: 4px;
+  width: 18px;
+  height: 18px;
+  color: var(--rl-text);
+  transition: color 160ms var(--rl-out), opacity 160ms var(--rl-out);
+}
+.rl-stepper_btn.is-todo .rl-stepper_ico {
+  opacity: 0.6;
+}
+.rl-stepper_btn.is-now .rl-stepper_ico {
+  color: var(--rl-gold-hi);
+}
+.rl-stepper_btn:hover .rl-stepper_ico {
+  color: var(--rl-head);
+  opacity: 1;
+}
+.rl-stepper_ok {
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+}
+.rl-stepper_ok circle {
+  fill: var(--rl-gold);
+}
+.rl-stepper_ok path {
+  fill: none;
+  stroke: #1a1208;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rl-stepper_bar {
+  position: relative;
+  order: 3;
+  display: block;
+  height: 3px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.12);
   border-radius: var(--rl-r-pill) !important;
@@ -929,7 +1031,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   font-size: 11px;
   font-weight: 700;
   line-height: 14px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -977,6 +1079,9 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--rl-gold-hi);
+}
+.rl-eyebrow_falta {
+  color: var(--rl-error);
 }
 .rl-eyebrow_code {
   padding: 0;
@@ -1083,6 +1188,14 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   width: 6px;
   height: 6px;
   background: var(--rl-error);
+  border-radius: 50% !important;
+}
+/* Aún sin ver: un aro hueco de 6 px. */
+.rl-seg_aro {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--rl-gold-hi);
   border-radius: 50% !important;
 }
 
@@ -1402,46 +1515,117 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 .rl-rail--tiles .rl-opt_txt {
   width: 100%;
 }
+/* Los cierres: la ilustración (ClaspArt) llena la tarjeta y el nombre va debajo. */
 .rl-group--clasps .rl-rail--tiles > .rl-opt {
-  flex-direction: row;
-  gap: 10px;
-  min-height: 64px;
-  padding: 8px 12px;
-  text-align: left;
   justify-content: flex-start;
+  gap: 8px;
+  min-height: 0;
+  padding: 0 0 10px;
+  overflow: hidden;
 }
 .rl-group--clasps .rl-opt_vis {
-  color: var(--rl-gold-hi);
+  width: 100%;
+  background: radial-gradient(70% 80% at 50% 45%, rgba(120, 100, 78, 0.34), rgba(0, 0, 0, 0.28));
 }
-.rl-group--clasps .rl-clasp {
-  width: 48px;
-  height: 30px;
+.rl-group--clasps .rl-opt_txt {
+  padding: 0 8px;
+}
+/* El aro de elegida, por encima de la ilustración (que llega al borde). */
+.rl-group--clasps .rl-opt.is-on::after,
+.rl-rail--cards > .rl-opt.is-on::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--rl-gold);
+  border-radius: var(--rl-r-md) !important;
+  pointer-events: none;
+}
+.rl-claspart {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 320 / 200;
+}
+/* El del brazalete no se elige: la misma tarjeta, quieta. */
+.rl-claspcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 12px;
+  overflow: hidden;
+  background: radial-gradient(60% 70% at 50% 40%, rgba(120, 100, 78, 0.34), rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--rl-glass-line);
+  border-radius: var(--rl-r-md) !important;
+}
+.rl-claspcard .rl-claspart {
+  max-width: 256px;
+}
+.rl-claspcard_txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
 }
 
-/* cards: tarjetas de tipo de correa, foto a sangre */
+/* cards: tipo de correa. El macro del material llena la tarjeta (los tres con el
+   mismo encuadre) y el nombre va encima, sobre un velo. */
 .rl-rail--cards > .rl-opt {
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 0;
-  min-height: 104px;
+  min-height: 84px;
   padding: 0;
   overflow: hidden;
 }
-.rl-rail--cards .rl-opt_vis {
-  width: 100%;
-  height: 56px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.25);
+.rl-rail--cards .rl-opt_vis,
+.rl-tipo {
+  position: absolute;
+  inset: 0;
+}
+.rl-tipo {
+  background-position: 50% 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: transform 320ms var(--rl-out);
+}
+.rl-rail--cards .rl-opt_vis::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0) 28%, rgba(10, 8, 5, 0.8) 62%, rgba(10, 8, 5, 0.92) 100%);
+}
+@media (hover: hover) {
+  .rl-rail--cards > .rl-opt:hover .rl-tipo {
+    transform: scale(1.04);
+  }
 }
 .rl-rail--cards .rl-opt_txt {
+  position: relative;
+  gap: 0;
   width: 100%;
-  padding: 7px 8px 8px;
+  padding: 0 8px 7px;
 }
 .rl-rail--cards .rl-opt_label {
   font-family: "Cinzel", serif;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.06em;
+  color: var(--rl-head);
   -webkit-line-clamp: 1;
+}
+.rl-rail--cards .rl-opt_det {
+  color: var(--rl-text);
+}
+/* Con alto de sobra, la tarjeta de siempre (R6: 104 px). */
+@media (min-width: 1024px) and (min-height: 861px) {
+  .rl-rail--cards > .rl-opt {
+    min-height: 104px;
+  }
+  .rl-rail--cards .rl-opt_vis::after {
+    background: linear-gradient(180deg, rgba(10, 8, 5, 0) 40%, rgba(10, 8, 5, 0.8) 68%, rgba(10, 8, 5, 0.92) 100%);
+  }
 }
 
 /* rows: filas de 48 px (cuentas por Orisha; piernas del signo) */
@@ -1529,6 +1713,290 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   right: 0;
 }
 
+/* vitrina: la pieza real de pie en una balda de cristal, con su nombre. Las
+   filas miden todas lo mismo (--row), así que la balda se pinta una vez, como
+   fondo del carril, y se repite sola en cada fila. La elegida: aro, ✓ y luz; el
+   foco, un contorno a rayas (distinto de elegida). */
+.rl-group--vitrina {
+  container: rl-vit / inline-size;
+}
+.rl-rail--vitrina {
+  --vt: 10px; /* aire sobre la pieza */
+  --pw: calc(100cqw / var(--cols) - 10px); /* ancho de la pieza */
+  --ph: calc(var(--pw) * 0.864); /* su alto (152/176) */
+  --vb: 28px; /* bajo la balda: reflejo y nombre */
+  --pie: calc(var(--vt) + var(--ph));
+  --row: calc(var(--pie) + var(--vb));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0;
+  background-image: linear-gradient(
+      180deg,
+      transparent var(--pie),
+      rgba(255, 255, 255, 0.36) var(--pie),
+      rgba(255, 255, 255, 0.36) calc(var(--pie) + 1px),
+      rgba(190, 210, 205, 0.13) calc(var(--pie) + 1px),
+      rgba(190, 210, 205, 0.05) calc(var(--pie) + 4px),
+      rgba(0, 0, 0, 0.35) calc(var(--pie) + 4px),
+      rgba(0, 0, 0, 0) calc(var(--pie) + 8px)
+    ),
+    radial-gradient(60% var(--pie) at 50% 0, rgba(255, 236, 200, 0.1), rgba(255, 236, 200, 0));
+  background-size: 100% var(--row);
+  background-repeat: repeat-y;
+}
+.rl-rail--vitrina > .rl-opt {
+  flex: 0 0 calc(100% / var(--cols));
+  justify-content: flex-start;
+  gap: 0;
+  height: var(--row);
+  padding: var(--vt) 2px 0;
+  background: none;
+  border-color: transparent !important;
+}
+.rl-rail--vitrina > .rl-opt:hover {
+  transform: none;
+}
+.rl-rail--vitrina > .rl-opt.is-on {
+  background: linear-gradient(180deg, rgba(242, 216, 150, 0), rgba(242, 216, 150, 0.14) 60%, rgba(242, 216, 150, 0.06));
+}
+.rl-rail--vitrina > .rl-opt.is-off {
+  border-color: var(--rl-glass-line) !important;
+}
+.pyj-reloj-app .rl-rail--vitrina > .rl-opt:focus-visible {
+  outline: 2px dashed var(--rl-gold-hi) !important;
+  outline-offset: -3px;
+}
+.rl-rail--vitrina .rl-opt_vis {
+  align-items: flex-end;
+  width: 100%;
+  height: var(--ph);
+}
+.rl-rail--vitrina .rl-opt_txt {
+  width: 100%;
+  margin-top: auto;
+  padding-bottom: 5px;
+}
+.rl-rail--vitrina .rl-opt_label {
+  display: block;
+  font-size: 11.5px;
+  line-height: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--rl-muted);
+  transition: color 160ms var(--rl-out);
+}
+.rl-rail--vitrina > .rl-opt:hover .rl-opt_label {
+  color: var(--rl-text);
+}
+.rl-rail--vitrina > .rl-opt.is-on .rl-opt_label {
+  color: var(--rl-head);
+}
+.rl-rail--vitrina .rl-opt_badge {
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+}
+.rl-rail--vitrina .rl-opt_badge svg {
+  width: 16px;
+  height: 16px;
+}
+/* La pieza y su reflejo en el cristal (la misma imagen, volteada). */
+.rl-vitp {
+  position: relative;
+  display: block;
+  width: var(--pw);
+  height: var(--ph);
+  background: var(--img) center bottom / contain no-repeat;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
+  transition: transform 320ms var(--rl-back);
+}
+.rl-vitp::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 5px);
+  height: 100%;
+  background: inherit;
+  opacity: 0.32;
+  transform: scaleY(-1);
+  -webkit-mask-image: linear-gradient(to top, #000, transparent 14%);
+  mask-image: linear-gradient(to top, #000, transparent 14%);
+  pointer-events: none;
+}
+.rl-mini {
+  display: block;
+  width: var(--ph);
+  height: var(--ph);
+  background-position: 50% 50%;
+  background-size: 100% 100%, 100% 100%, 67.6% 67.6%;
+  background-repeat: no-repeat;
+  transition: transform 320ms var(--rl-back);
+}
+/* Paso Caja: las capas de 600 × 800 del escenario, encuadradas a los mismos
+   740/1200 px que el mini reloj (600 / 370 = 162.2 %). De arriba abajo: el
+   aplique PY (6 mm de los 45.1 del encuadre, 5.6 sobre el centro), los
+   índices, la caja y la esfera. */
+.rl-cajam {
+  display: block;
+  width: var(--ph);
+  height: var(--ph);
+  background-position: 50% 35.7%, 50% 50%, 50% 50%, 50% 50%;
+  background-size: auto 13.3%, 100% 100%, 162.2% auto, 162.2% auto;
+  background-repeat: no-repeat;
+  transition: transform 320ms var(--rl-back);
+}
+.rl-vit--caja .rl-rail--vitrina {
+  --ph: min(calc(100cqw / var(--cols) - 20px), 112px);
+}
+@media (hover: hover) {
+  .rl-rail--vitrina > .rl-opt:not(.is-off):hover .rl-vitp,
+  .rl-rail--vitrina > .rl-opt:not(.is-off):hover .rl-cajam,
+  .rl-rail--vitrina > .rl-opt:not(.is-off):hover .rl-mini {
+    transform: translateY(-3px);
+  }
+}
+.rl-rail--vitrina > .rl-opt.is-on .rl-vitp,
+.rl-rail--vitrina > .rl-opt.is-on .rl-cajam,
+.rl-rail--vitrina > .rl-opt.is-on .rl-mini {
+  transform: translateY(-3px);
+}
+/* Piel: tres piezas, más altas (229/200). */
+.rl-vit--piel .rl-rail--vitrina {
+  --pw: min(calc(100cqw / var(--cols) - 24px), 96px);
+  --ph: calc(var(--pw) * 1.145);
+}
+/* Brazalete: una sola pieza, la del acabado (no se elige). */
+.rl-group--brazalete {
+  container: rl-vit / inline-size;
+}
+.rl-vitsola {
+  --pw: 112px;
+  --ph: calc(var(--pw) * 0.924);
+  display: flex;
+  justify-content: center;
+  margin: 0 0 12px;
+  padding: 12px 0 18px;
+  background-image: linear-gradient(
+      180deg,
+      transparent calc(12px + var(--ph)),
+      rgba(255, 255, 255, 0.36) calc(12px + var(--ph)),
+      rgba(255, 255, 255, 0.36) calc(13px + var(--ph)),
+      rgba(190, 210, 205, 0.13) calc(13px + var(--ph)),
+      rgba(190, 210, 205, 0.05) calc(16px + var(--ph)),
+      transparent calc(16px + var(--ph))
+    ),
+    radial-gradient(50% 100% at 50% 0, rgba(255, 236, 200, 0.1), rgba(255, 236, 200, 0));
+}
+/* Esfera: mini relojes con la caja del paso 1. */
+.rl-vit--mini {
+  margin-bottom: 12px;
+}
+.rl-vit--mini .rl-rail--vitrina {
+  --vt: 6px;
+  --ph: min(calc(100cqw / var(--cols) - 2px), 58px);
+  --vb: 24px;
+}
+.rl-vit--mini .rl-rail--vitrina .rl-opt_label {
+  font-size: 11px;
+}
+.rl-vit--mini .rl-opt_badge {
+  top: 0;
+  right: 0;
+}
+/* El ajuste del degradado va sin nombres (el suyo está en la etiqueta). */
+.rl-vit--ajuste .rl-rail--vitrina {
+  --vb: 8px;
+}
+.rl-vit--ajuste .rl-opt_txt {
+  display: none;
+}
+/* Poco alto (1366 × 768, 1280 × 720, teléfonos): los mini relojes en filas de 7 y
+   sin nombre (PLAN-REALISMO-V3 6.1: el repuesto previsto). El nombre de la
+   elegida va en la etiqueta, y el de cada una es su nombre accesible. */
+@media (max-height: 860px) {
+  .rl-vit--mini .rl-rail--vitrina {
+    --cols: 7 !important;
+    --vt: 4px;
+    --vb: 6px;
+  }
+  .rl-vit--mini .rl-opt_txt {
+    display: none;
+  }
+  .rl-vit--mini {
+    margin-bottom: 10px;
+  }
+  .rl-vit--mini > .rl-group_head {
+    margin-bottom: 5px;
+  }
+  .rl-group--modelo > .rl-group_head {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .rl-group--modelo {
+    position: relative;
+    margin-bottom: 10px;
+  }
+}
+/* Con alto de sobra (1440 × 900 y más), las baldas de la correa respiran. */
+@media (min-width: 1024px) and (min-height: 861px) {
+  .rl-vit--caucho .rl-rail--vitrina,
+  .rl-vit--piel .rl-rail--vitrina {
+    --vt: 18px;
+    --vb: 34px;
+  }
+  .rl-vit--piel .rl-rail--vitrina {
+    --pw: min(calc(100cqw / var(--cols) - 16px), 120px);
+  }
+}
+/* Hoja ancha (tableta): los nueve cauchos en una sola balda. */
+@container rl-vit (min-width: 560px) {
+  .rl-vit--caucho .rl-rail--vitrina {
+    --cols: 9 !important;
+  }
+  .rl-vit--mini .rl-rail--vitrina {
+    --cols: 8 !important;
+  }
+}
+/* Teléfono apaisado (panel de 320 px): nada se corta. */
+@container rl-vit (max-width: 326px) {
+  .rl-rail--vitrina .rl-opt_label {
+    font-size: 10.5px;
+    letter-spacing: -0.02em;
+  }
+  .rl-group_label {
+    letter-spacing: 0.06em;
+  }
+}
+/* El aro de espera, solo si la foto tarda (> 300 ms). */
+.rl-opt_wait {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  pointer-events: none;
+  animation: rl-spin 900ms linear infinite;
+}
+.rl-opt_wait circle {
+  fill: none;
+  stroke: var(--rl-gold-hi);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 60 34;
+}
+@keyframes rl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* segmented y chips */
 .rl-rail.rl-seg {
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
@@ -1597,11 +2065,6 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   font-size: 13px;
   color: var(--rl-text);
 }
-.rl-group--static .rl-row-note .rl-clasp {
-  width: 48px;
-  height: 30px;
-  color: var(--rl-gold-hi);
-}
 
 /* — Muestras ——————————————————————————————————————————————————————————— */
 .rl-thumb {
@@ -1618,30 +2081,17 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   background-size: 240% auto;
   background-position: 50% 50%;
 }
-.rl-thumb--correa {
-  background-size: 460% auto;
-  background-position: 50% 100%;
-}
 .rl-thumb--cabeza {
   width: 56px;
   height: 56px;
   background-size: 210% auto;
   background-position: 50% 50%;
 }
-.rl-thumb--tipo {
-  width: 100%;
-  height: 100%;
-  background-size: 190% auto;
-  background-position: 50% 96%;
-}
 .rl-logo {
   display: block;
   width: 40px;
   height: 40px;
   object-fit: contain;
-}
-.rl-clasp {
-  display: block;
 }
 
 /* — Campos ————————————————————————————————————————————————————————————— */
@@ -2264,6 +2714,14 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   width: 32px;
   height: 32px;
 }
+.rl-sum_vit {
+  --pw: 32px;
+  --ph: 28px;
+  display: block;
+}
+.rl-sum_vit .rl-vitp::after {
+  display: none;
+}
 .rl-sum_txt {
   display: flex;
   flex-direction: column;
@@ -2638,6 +3096,48 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   font-size: 13px;
   color: var(--rl-text);
 }
+/* La ayuda: a la derecha, bajo "Cómo funciona". */
+.rl-pop--ayuda {
+  top: calc(var(--rl-header-h) + 8px);
+  left: auto;
+  right: 16px;
+  width: 380px;
+}
+.rl-pop_h {
+  font-family: "Cinzel", serif !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 22px !important;
+  letter-spacing: 0.05em;
+  color: var(--rl-head) !important;
+}
+.rl-ayuda {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px !important;
+}
+.rl-ayuda > li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--rl-text);
+}
+.rl-ayuda .rl-icon {
+  color: var(--rl-gold-hi);
+}
+.rl-ayuda strong {
+  display: block;
+  font-weight: 700;
+  color: var(--rl-head);
+}
+.rl-ayuda_teclas {
+  margin: 0 0 8px !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  color: var(--rl-muted) !important;
+}
 @keyframes rl-pop-in {
   from {
     opacity: 0;
@@ -2719,7 +3219,13 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
     padding-top: 12px;
   }
   .rl-stepper_btn {
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 3px;
+  }
+  .rl-stepper_ico,
+  .rl-stepper_ico .rl-icon {
+    width: 16px;
+    height: 16px;
   }
   .rl-group,
   .rl-field {
@@ -2787,7 +3293,18 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   top: 12px;
   left: 12px;
   right: 12px;
-  justify-content: space-between;
+}
+/* El código a la izquierda; Deshacer y Compartir, juntos a la derecha (Compartir
+   no se mueve al aparecer Deshacer). */
+.pyj-reloj-app.is-sheet .rl-codechip {
+  margin-right: auto;
+}
+.pyj-reloj-app.is-sheet .rl-sharebtn {
+  order: 2;
+}
+.pyj-reloj-app.is-sheet .rl-undobtn {
+  width: 40px;
+  height: 40px;
 }
 .pyj-reloj-app.is-sheet .rl-hint {
   top: 60px;
@@ -2957,17 +3474,29 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: none;
 }
 
-/* Opciones del móvil: carriles que se deslizan (margen de 16 px). */
+/* Opciones del móvil: carriles que se deslizan (margen de 16 px). El velo de
+   24 px de la derecha dice que hay más; los 24 px de relleno dejan limpia la
+   última ficha al llegar al final. */
 .pyj-reloj-app.is-sheet .rl-rail--tiles,
 .pyj-reloj-app.is-sheet .rl-rail--swatches {
   display: flex;
   gap: 8px;
   margin: 0 -16px;
-  padding: 2px 16px 4px;
+  padding: 2px 24px 4px 16px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  scroll-padding: 0 16px;
+  scroll-padding: 0 24px 0 16px;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+}
+/* Los que siempre caben (dos fichas a medias, los 16 Meyis) no son carril. */
+.pyj-reloj-app.is-sheet .rl-group--clasps .rl-rail--tiles,
+.pyj-reloj-app.is-sheet .rl-group--letra .rl-rail--tiles,
+.pyj-reloj-app.is-sheet .rl-meyis .rl-rail--tiles {
+  padding-right: 16px;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 .pyj-reloj-app.is-sheet .rl-rail--tiles::-webkit-scrollbar,
 .pyj-reloj-app.is-sheet .rl-rail--swatches::-webkit-scrollbar {
@@ -2984,20 +3513,81 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   max-width: none;
   scroll-snap-align: start;
 }
-.pyj-reloj-app.is-sheet .rl-rail--swatches {
-  gap: 10px;
-}
 .pyj-reloj-app.is-sheet .rl-group--clasps .rl-rail--tiles > .rl-opt,
 .pyj-reloj-app.is-sheet .rl-group--letra .rl-rail--tiles > .rl-opt {
   flex: 1 1 0;
   min-height: 64px;
 }
-.pyj-reloj-app.is-sheet .rl-group--clasps .rl-rail--tiles > .rl-opt {
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  min-height: 84px;
-  text-align: center;
+/* Las cuentas, más pequeñas: los colores ("Amarillo y ámbar") caben enteros. */
+.pyj-reloj-app.is-sheet .rl-rail--rows .rl-beads {
+  width: 36px;
+  height: auto;
+}
+/* Correa en media hoja: las tres tarjetas bajas (el nombre; el detalle queda en
+   el nombre accesible) y los 9 cauchos a la vista, sin desplazar. */
+.pyj-reloj-app.is-sheet .rl-group--tipo {
+  margin-bottom: 10px;
+}
+.pyj-reloj-app.is-sheet .rl-group--tipo > .rl-group_head {
+  display: none;
+}
+.pyj-reloj-app.is-sheet .rl-rail--cards > .rl-opt {
+  min-height: 52px;
+}
+.pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_vis::after {
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0.1), rgba(10, 8, 5, 0.8) 70%, rgba(10, 8, 5, 0.9));
+}
+.pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_txt {
+  padding: 0 4px 5px;
+}
+.pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_label {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_det {
+  display: none;
+}
+.pyj-reloj-app.is-sheet .rl-rail--vitrina {
+  --vt: 4px;
+  --vb: 20px;
+  --pw: min(calc(100cqw / var(--cols) - 14px), 52px);
+}
+.pyj-reloj-app.is-sheet .rl-rail--vitrina .rl-opt_txt {
+  padding-bottom: 3px;
+}
+.pyj-reloj-app.is-sheet .rl-rail--vitrina .rl-opt_label {
+  font-size: 11px;
+  letter-spacing: -0.01em;
+}
+.pyj-reloj-app.is-sheet .rl-vit--piel .rl-rail--vitrina {
+  --pw: 76px;
+}
+.pyj-reloj-app.is-sheet .rl-vit--caja .rl-rail--vitrina {
+  --ph: min(calc(100cqw / var(--cols) - 20px), 92px);
+  --vb: 24px;
+}
+.pyj-reloj-app.is-sheet .rl-vit--mini .rl-rail--vitrina {
+  --cols: 8 !important;
+  --vt: 3px;
+  --vb: 6px;
+  --ph: min(calc(100cqw / var(--cols)), 60px);
+}
+.pyj-reloj-app.is-sheet .rl-vit--mini .rl-opt_txt {
+  display: none;
+}
+.pyj-reloj-app.is-sheet .rl-group--vitrina {
+  margin-bottom: 8px;
+}
+.pyj-reloj-app.is-sheet .rl-group--vitrina > .rl-group_head {
+  margin-bottom: 4px;
+}
+.pyj-reloj-app.is-sheet .rl-vitsola {
+  --pw: 84px;
+  margin-bottom: 8px;
+}
+/* El cierre del brazalete, entero en media hoja. */
+.pyj-reloj-app.is-sheet .rl-claspcard .rl-claspart {
+  max-width: 176px;
 }
 .pyj-reloj-app.is-sheet .rl-meyis .rl-rail--tiles {
   display: grid;
@@ -3091,13 +3681,18 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   height: 44px;
 }
 .rl-stepper--compact .rl-stepper_btn {
+  align-items: center;
   justify-content: center;
-  width: 30px;
+  gap: 4px;
+  width: 32px;
   height: 44px;
-  padding: 0 3px;
+  padding: 0 4px;
+}
+.rl-stepper--compact .rl-stepper_bar {
+  width: 100%;
 }
 .rl-stepper--compact .rl-stepper_dot {
-  top: 10px;
+  top: 6px;
   right: 1px;
 }
 .rl-stepper_now {
@@ -3166,11 +3761,21 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   .pyj-reloj-app.is-panel .rl-foot_nextname {
     display: none;
   }
-  .pyj-reloj-app.is-panel .rl-group--clasps .rl-rail--tiles > .rl-opt {
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    text-align: center;
+  .pyj-reloj-app.is-panel .rl-rail--rows .rl-opt_det,
+  .pyj-reloj-app.is-panel .rl-rail--cards .rl-opt_det,
+  .pyj-reloj-app.is-panel .rl-group--tipo > .rl-group_head {
+    display: none;
+  }
+  /* Solo hay 123 px de opciones: tarjetas bajas, y la primera balda asoma. */
+  .pyj-reloj-app.is-panel .rl-group--tipo {
+    margin-bottom: 8px;
+  }
+  .pyj-reloj-app.is-panel .rl-rail--cards > .rl-opt {
+    min-height: 48px;
+  }
+  .pyj-reloj-app.is-panel .rl-rail--cards .rl-opt_label {
+    font-size: 12px;
+    letter-spacing: 0.02em;
   }
   .pyj-reloj-app.is-panel .rl-dockwrap {
     bottom: 8px;
@@ -3221,7 +3826,11 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   .rl-entry_draft:hover,
   .rl-opt:active,
   .rl-btn:active,
-  .rl-card:active {
+  .rl-card:active,
+  .rl-rail--vitrina .rl-vitp,
+  .rl-rail--vitrina .rl-cajam,
+  .rl-rail--vitrina .rl-mini,
+  .rl-rail--cards .rl-tipo {
     transform: none !important;
   }
   .rl-opt_badge {

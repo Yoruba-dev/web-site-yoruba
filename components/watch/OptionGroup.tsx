@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // Grupo de opciones del creador = un radiogroup accesible (patrón WAI-ARIA):
@@ -15,18 +15,26 @@ import { useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode }
 //   • rows      — filas de 48 px (las cuentas de cada Orisha);
 //   • swatches  — círculos de 44 px (SVG: la web anula los border-radius); el
 //                 nombre de la elegida va en la etiqueta del grupo;
+//   • vitrina   — la pieza real de pie en una balda de cristal, con su nombre
+//                 (decisión 19 del dueño): correas y esferas;
 //   • segmented — pista de pastilla con el "pulgar" que se desliza;
 //   • chips     — pastillas de texto.
-// En la hoja del móvil, tiles / cards / swatches son carriles que se deslizan.
+// En la hoja del móvil, tiles y swatches son carriles que se deslizan; la
+// elegida se deja siempre a la vista (solo se mueve el carril, nunca la página).
 // ---------------------------------------------------------------------------
 
 export type OptionEstado = "disponible" | "aviso" | "agotado" | "bloqueado";
 
-export type OptionVariant = "tiles" | "cards" | "rows" | "swatches" | "segmented" | "chips";
+export type OptionVariant = "tiles" | "cards" | "rows" | "swatches" | "vitrina" | "segmented" | "chips";
+
+/** Aire entre la elegida y el borde del carril: asoma la siguiente (≥ 8 px). */
+const CARRIL_AIRE = 36;
 
 export interface OptionItem<T extends string> {
   id: T;
   label: string;
+  /** Nombre corto a la vista (vitrina); el completo (`label`) es el accesible. */
+  nombre?: string;
   /** Muestra (SVG, foto recortada…). */
   visual?: ReactNode;
   /** Línea pequeña bajo el nombre ("Incluido", "9 colores"…). */
@@ -49,6 +57,7 @@ export default function OptionGroup<T extends string>({
   columns,
   field,
   className,
+  espera,
 }: {
   label: string;
   /** Lo elegido, a la vista en la etiqueta ("2 · Color — Caucho rojo"). */
@@ -66,13 +75,31 @@ export default function OptionGroup<T extends string>({
   /** data-field: "Corregir" lleva el foco aquí. */
   field?: string;
   className?: string;
+  /** La opción cuya foto aún se está bajando (aro de espera sobre su muestra). */
+  espera?: T | null;
 }) {
   const uid = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const railRef = useRef<HTMLDivElement>(null);
   const usable = (o: OptionItem<T>) => o.estado !== "agotado" && o.estado !== "bloqueado";
   const selectedIndex = options.findIndex((o) => o.id === value);
   // La parada de tabulador: la elegida; si no hay, la primera que se puede usar.
   const tabIndexOf = selectedIndex >= 0 ? selectedIndex : options.findIndex(usable);
+
+  // Carril del móvil: la elegida entera a la vista al abrir y tras cambiar, y
+  // que asome la siguiente. Solo rail.scrollLeft: scrollIntoView movería
+  // también la hoja o la página.
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    const el = refs.current[selectedIndex];
+    if (!rail || !el || rail.scrollWidth <= rail.clientWidth + 1) return;
+    const r = rail.getBoundingClientRect();
+    const e = el.getBoundingClientRect();
+    const izq = e.left - CARRIL_AIRE - r.left;
+    const der = e.right + CARRIL_AIRE - r.right;
+    if (izq < 0) rail.scrollLeft += izq;
+    else if (der > 0) rail.scrollLeft += der;
+  }, [selectedIndex, options.length]);
 
   function move(from: number, dir: 1 | -1 | "first" | "last") {
     const n = options.length;
@@ -106,6 +133,7 @@ export default function OptionGroup<T extends string>({
   const labelId = `${uid}-l`;
   const hintId = hint ? `${uid}-h` : undefined;
   const swatch = variant === "swatches";
+  const vitrina = variant === "vitrina";
   const segmented = variant === "segmented";
   const style = {
     ...(columns ? { "--cols": columns } : {}),
@@ -126,6 +154,7 @@ export default function OptionGroup<T extends string>({
         )}
       </div>
       <div
+        ref={railRef}
         role="radiogroup"
         aria-labelledby={labelId}
         aria-describedby={hintId}
@@ -148,12 +177,13 @@ export default function OptionGroup<T extends string>({
               aria-checked={checked}
               aria-disabled={off || undefined}
               aria-describedby={motivoId}
-              aria-label={swatch ? `${o.label}${o.detalle ? `, ${o.detalle}` : ""}` : undefined}
-              title={swatch ? o.motivo ?? o.label : off ? o.motivo : undefined}
+              aria-label={swatch || vitrina ? `${o.label}${o.detalle ? `, ${o.detalle}` : ""}` : undefined}
+              title={swatch || vitrina ? o.motivo ?? o.label : off ? o.motivo : undefined}
               tabIndex={i === tabIndexOf ? 0 : -1}
               className={`rl-opt${segmented ? " rl-seg_btn" : ""}${checked ? " is-on" : ""}${off ? " is-off" : ""}${
                 o.estado === "aviso" ? " is-warn" : ""
               }`}
+              aria-busy={espera === o.id || undefined}
               onClick={() => {
                 if (!off && !checked) onChange(o.id);
               }}
@@ -169,12 +199,17 @@ export default function OptionGroup<T extends string>({
                       <circle cx="26" cy="26" r="24.5" />
                     </svg>
                   )}
+                  {espera === o.id && (
+                    <svg className="rl-opt_wait" viewBox="0 0 36 36" focusable="false">
+                      <circle cx="18" cy="18" r="15" />
+                    </svg>
+                  )}
                 </span>
               )}
               {!swatch && (
                 <span className="rl-opt_txt">
-                  <span className="rl-opt_label">{o.label}</span>
-                  {o.detalle && <span className="rl-opt_det">{o.detalle}</span>}
+                  <span className="rl-opt_label">{(vitrina && o.nombre) || o.label}</span>
+                  {o.detalle && !vitrina && <span className="rl-opt_det">{o.detalle}</span>}
                   {o.motivo && (variant === "tiles" || variant === "cards" || variant === "rows") && (
                     <span id={motivoId} className="rl-opt_why">
                       {o.motivo}
@@ -187,7 +222,7 @@ export default function OptionGroup<T extends string>({
                   {o.motivo}
                 </span>
               )}
-              {(variant === "tiles" || variant === "cards") && checked && (
+              {(variant === "tiles" || variant === "cards" || vitrina) && checked && (
                 <span className="rl-opt_badge" aria-hidden="true">
                   <svg viewBox="0 0 18 18" focusable="false">
                     <circle cx="9" cy="9" r="9" />

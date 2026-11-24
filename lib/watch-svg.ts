@@ -29,12 +29,16 @@ import {
   escapeXml,
   fmt,
   handAngles,
+  handLume,
   handMetalHex,
+  handOutline,
   handPose,
+  polyPath,
   primitivesToSvg,
   toSvg,
   type Primitive,
   type RectPrim,
+  type SwordHand,
 } from "./watch-art";
 import {
   WATCH_COLORS,
@@ -285,14 +289,13 @@ function hands(c: WatchConfig): string {
   const ang = handAngles(handPose(c));
   const S = HANDS.seconds;
   const neck = S.tip - S.head.len;
-  const blade = (h: { tail: number; tip: number; shoulder: number; halfW: number }) =>
-    `M${-h.halfW} ${h.tail}L${-h.halfW} ${-h.shoulder}L0 ${-h.tip}L${h.halfW} ${-h.shoulder}L${h.halfW} ${h.tail}Z`;
-  const hour =
-    `<path d="${blade(HANDS.hour)}" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
-    `<path d="M-0.44 -1.7L-0.44 -6.35L0 -7.3L0.44 -6.35L0.44 -1.7Z" fill="${lume}"/>`;
-  const minute =
-    `<path d="${blade(HANDS.minute)}" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
-    `<path d="M-0.32 -2L-0.32 -11.15L0 -11.95L0.32 -11.15L0.32 -2Z" fill="${lume}"/>`;
+  // Hoja con su cuello, lume y buje redondo (sin cola).
+  const sword = (h: SwordHand) =>
+    `<path d="${polyPath(handOutline(h), 2)}" fill="${metal}" stroke="${edge}" stroke-width="0.09"/>` +
+    `<path d="${polyPath(handLume(h), 2)}" fill="${lume}"/>` +
+    `<circle cx="0" cy="0" r="${h.hubR}" fill="${metal}" stroke="${edge}" stroke-width="0.08"/>`;
+  const hour = sword(HANDS.hour);
+  const minute = sword(HANDS.minute);
   const second =
     `<path d="M${-S.halfW} ${S.tail}L${-S.halfW} ${f(-neck)}L${-S.head.halfW} ${f(-neck)}L0 ${-S.tip}` +
     `L${S.head.halfW} ${f(-neck)}L${S.halfW} ${f(-neck)}L${S.halfW} ${S.tail}Z" fill="${secHex}" stroke="${secEdge}" stroke-width="0.04"/>` +
@@ -305,7 +308,6 @@ function hands(c: WatchConfig): string {
   return (
     `<g transform="translate(0.28 0.4)" opacity="0.28">${shadow}</g>` +
     set +
-    `<circle cx="0" cy="0" r="1.15" fill="${metal}" stroke="${edge}" stroke-width="0.08"/>` +
     `<circle cx="0" cy="0" r="0.62" fill="${secHex}"/>` +
     `<circle cx="0" cy="0" r="0.2" fill="${metal}"/>`
   );
@@ -465,7 +467,7 @@ export function laserSvg(c: WatchConfig, opts: ProductionSvgOptions = {}): strin
 /** Archivo de impresión de la esfera, 1:1 en mm (Ø30.5, centro = centro de la
  *  esfera, 12 arriba): pista + texto + signo. Las piezas aplicadas (índices,
  *  marco de fecha, aplique) NO van. Las guías (contorno del disco, agujero
- *  central, hueco de la fecha, zona del aplique) van en un grupo aparte
+ *  central, hueco y marco de la fecha, zona del aplique) van en un grupo aparte
  *  "guias-no-imprimir", en cian y de 0.05 mm. */
 export function dialPrintSvg(c: WatchConfig, opts: ProductionSvgOptions = {}): string {
   const L = DIAL_LAYOUT;
@@ -474,11 +476,22 @@ export function dialPrintSvg(c: WatchConfig, opts: ProductionSvgOptions = {}): s
   const print = opts.curvas ? opts.curvas(impresion) : impresion;
   const win = all.find((q): q is RectPrim => q.kind === "rect" && q.id === "ventana-fecha");
   const app = all.find((q): q is RectPrim => q.kind === "rect" && q.id === "aplique");
+  // El contorno de fuera del marco de la fecha: nada impreso puede quedar debajo.
+  const D = L.date;
+  const marco: RectPrim = {
+    kind: "rect",
+    capa: "guia",
+    x: D.cx - D.w / 2 - D.rim,
+    y: -D.h / 2 - D.rim,
+    w: D.w + 2 * D.rim,
+    h: D.h + 2 * D.rim,
+    rx: D.r,
+  };
   const guide = (q: Primitive): Primitive => ({ ...q, capa: "guia", fill: "none", stroke: "#00a0e0", strokeWidth: 0.05 });
   const guides: Primitive[] = [
     { kind: "circle", id: "esfera", capa: "guia", cx: 0, cy: 0, r: L.r, fill: "none", stroke: "#00a0e0", strokeWidth: 0.05 },
     { kind: "circle", capa: "guia", cx: 0, cy: 0, r: 1.025, fill: "none", stroke: "#00a0e0", strokeWidth: 0.05 },
-    ...(win ? [guide({ ...win, id: undefined })] : []),
+    ...(win ? [guide({ ...win, id: undefined }), guide(marco)] : []),
     ...(app ? [guide({ ...app, id: undefined })] : []),
   ];
   const [x, y, w] = [-L.r, -L.r, 2 * L.r];

@@ -11,8 +11,8 @@
 //   casebackTextures  tapa: el grabado láser escarchado (color + una textura
 //                     con relieve en R y rugosidad en G), derecho y sin
 //                     espejo mirando por detrás.
-//   radialAniso       dirección del cepillado radial (cara del bisel).
-//   brushStreaks      vetas del cepillado lineal (rugosidad).
+//   radialAniso       dirección del cepillado radial (anillo de la tapa).
+//   brushStreaks      veta del cepillado lineal (tinte y rugosidad).
 //   dateWheel         el disco de fecha con su "8".
 //   crocoMaps         grabado cocodrilo + pespunte de la piel.
 //
@@ -26,9 +26,12 @@ import {
   dialPrimitives,
   casebackPrimitives,
   handAngles,
+  handOutline,
   handPose,
+  polyPath,
   type Primitive,
   type RectPrim,
+  type SwordHand,
 } from "@/lib/watch-art";
 import {
   DIAL_BASES,
@@ -41,7 +44,7 @@ import {
   type WatchConfig,
 } from "@/lib/watch";
 import { PLANTILLA } from "@/lib/watch-capas";
-import { FINISH_TONE } from "../materials";
+import { FINISH_TONE, type BrushVeta } from "../materials";
 import { castShadow, mmCanvas, paintPrimitives, rng, type MmCanvas, type Paint } from "./paint";
 
 /** Lado (mm) del canvas de la esfera: el disco de Ø30.5. */
@@ -106,56 +109,97 @@ export function radialAniso(maxAniso: number, size = 512): THREE.CanvasTexture {
   return t;
 }
 
-/** Vetas del cepillado lineal: rugosidad (canal G). dir "u": vetas a lo
- *  largo de u (la cara del bisel, paralelas a 3–9); dir "v": a lo largo de v
- *  (flancos verticales, eslabones y hojas a lo largo). UV en mm. */
-export function brushStreaks(maxAniso: number, dir: "u" | "v" = "u"): THREE.CanvasTexture {
-  const t = streaksU(maxAniso);
-  if (dir === "u") return t;
-  // Las mismas vetas giradas: se cambia el orden de los ejes en la textura.
-  const src = t.image as HTMLCanvasElement;
-  const c = document.createElement("canvas");
-  c.width = src.height;
-  c.height = src.width;
-  const ctx = c.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D no disponible");
-  ctx.translate(c.width, 0);
-  ctx.rotate(Math.PI / 2);
-  ctx.drawImage(src, 0, 0);
-  t.dispose();
-  const out = canvasTexture(c, false, maxAniso);
-  out.wrapS = out.wrapT = THREE.RepeatWrapping;
-  out.repeat.set(1 / 4, 1 / 20);
-  return out;
+/** La veta del cepillado lineal (PLAN-REALISMO-V3 1.5). Con la de antes
+ *  (rugosidad ±11 %, 0.04 mm de ancho) el contraste era de 0.02–0.08 %: no se
+ *  veía. La real mide 2–7 % (refs 2, 8, 16, 19 y c03, c12). */
+export const VETA = {
+  /** mm que cubre el lienzo a través y a lo largo, y sus píxeles. */
+  across: 16,
+  along: 24,
+  w: 1024,
+  h: 256,
+  /** Octavas: ancho y largo (mm) de la veta, y su peso (suman 1). */
+  octavas: [
+    [0.05, 4, 0.45],
+    [0.15, 7, 0.35],
+    [0.35, 12, 0.2],
+  ],
+  /** Tinte = 1 − A + A·v (v de −1 a 1). Más suave en correa y cierre: con 0.20
+   *  el plegable oro rosa parecía madera. */
+  tinte: { caja: 0.2, banda: 0.1 },
+  /** Rugosidad media (en la caja, 0.88 + 0.22·v). */
+  rug: 0.88,
+} as const;
+
+export interface Vetas {
+  caja: BrushVeta;
+  banda: BrushVeta;
+  dispose(): void;
 }
 
-function streaksU(maxAniso: number): THREE.CanvasTexture {
-  const W = 256;
-  const H = 512;
-  const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D no disponible");
-  const img = ctx.createImageData(W, H);
+/** Vetas a lo largo de v (UV en mm): ruido de valor periódico en tres octavas.
+ *  UNA textura por juego, para el tinte y la rugosidad: 0.88 + 0.22·v es
+ *  1.1 × (0.8 + 0.2·v), o sea el tinte de la caja con la rugosidad del
+ *  material × 1.1 (en la banda, × 0.978: su rugosidad varía la mitad, porque
+ *  en el plegable la veta salía al 7–11 %; así, 4–7 %, como c03).
+ *  El color del material sube 1/(1 − A): la media del tinte es 1 − A y la de
+ *  la pieza tiene que seguir siendo FINISH_TONE. */
+export function brushStreaks(maxAniso: number): Vetas {
+  const { w: W, h: H } = VETA;
   const r = rng(11);
-  const rows = Array.from({ length: H }, () => 0.78 + 0.22 * r());
-  for (let y = 0; y < H; y++) {
-    const a = (rows[y] + rows[(y + 1) % H] + rows[(y + H - 1) % H]) / 3;
-    for (let x = 0; x < W; x++) {
-      const v = Math.max(0, Math.min(1, a + (r() - 0.5) * 0.05));
-      const i = (y * W + x) * 4;
-      img.data[i] = 255;
-      img.data[i + 1] = Math.round(v * 255);
-      img.data[i + 2] = 255;
-      img.data[i + 3] = 255;
+  const f = new Float32Array(W * H);
+  for (const [ancho, largo, peso] of VETA.octavas) {
+    const cx = Math.round(VETA.across / ancho);
+    const ca = Math.max(2, Math.round(VETA.along / largo));
+    const g = Float32Array.from({ length: cx * ca }, () => r() * 2 - 1);
+    // Cada veta arranca en un punto distinto: las puntas no se alinean.
+    const desfase = Float32Array.from({ length: cx }, () => r() * ca);
+    const col = new Float32Array(cx);
+    for (let y = 0; y < H; y++) {
+      for (let i = 0; i < cx; i++) {
+        const q = (y / H) * ca + desfase[i];
+        const q0 = Math.floor(q);
+        const t = q - q0;
+        const u = t * t * (3 - 2 * t);
+        col[i] = g[(q0 % ca) * cx + i] * (1 - u) + g[((q0 + 1) % ca) * cx + i] * u;
+      }
+      for (let x = 0; x < W; x++) {
+        const fx = (x / W) * cx;
+        const x0 = Math.floor(fx);
+        const tx = fx - x0;
+        f[y * W + x] += peso * (col[x0] * (1 - tx) + col[(x0 + 1) % cx] * tx);
+      }
     }
   }
-  ctx.putImageData(img, 0, 0);
-  const t = canvasTexture(canvas, false, maxAniso);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(1 / 20, 1 / 4);
-  return t;
+  const tinte = (A: number): THREE.CanvasTexture => {
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D no disponible");
+    const img = ctx.createImageData(W, H);
+    for (let i = 0; i < f.length; i++) {
+      const v = Math.round(255 * Math.max(0, Math.min(1, 1 - A + A * f[i])));
+      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+      img.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const t = canvasTexture(canvas, false, maxAniso);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1 / VETA.across, 1 / VETA.along);
+    return t;
+  };
+  const veta = (A: number): BrushVeta => ({ map: tinte(A), colorGain: 1 / (1 - A), roughGain: VETA.rug / (1 - A) });
+  const caja = veta(VETA.tinte.caja);
+  const banda = veta(VETA.tinte.banda);
+  return {
+    caja,
+    banda,
+    dispose() {
+      caja.map.dispose();
+      banda.map.dispose();
+    },
+  };
 }
 
 // ===========================================================================
@@ -181,7 +225,7 @@ const INK_ROUGH = 0.78;
 const INK_METAL = 0;
 
 /** Altura (mm) sobre la esfera de lo que proyecta sombra, para hornearla. */
-const SHADOW_H = { aplicado: 0.3, aplique: 0.35, hora: 0.95, minuto: 1.2, segundo: 1.45 } as const;
+const SHADOW_H = { aplicado: 0.45, marco: 0.3, aplique: 0.35, hora: 0.95, minuto: 1.2, segundo: 1.45 } as const;
 /** Hacia dónde cae la sombra (luz arriba a la izquierda). */
 const SHADOW_DIR = [0.55, 0.84] as const;
 
@@ -189,14 +233,13 @@ function shadowOf(h: number, alpha: number) {
   return { blur: 0.06 + h * 0.22, dx: SHADOW_DIR[0] * h * 0.4, dy: SHADOW_DIR[1] * h * 0.4, alpha };
 }
 
-/** Contorno (mm, y abajo) de una aguja de espada apuntando a las 12. */
-function bladePath(b: { tail: number; tip: number; shoulder: number; halfW: number }): Path2D {
-  const p = new Path2D();
-  p.moveTo(-b.halfW, b.tail);
-  p.lineTo(-b.halfW, -b.shoulder);
-  p.lineTo(0, -b.tip);
-  p.lineTo(b.halfW, -b.shoulder);
-  p.lineTo(b.halfW, b.tail);
+/** Silueta (mm, y abajo) de una aguja de espada apuntando a las 12: hoja,
+ *  cuello y buje, en una sola figura (la sombra no se suma donde se cruzan). */
+function handShape(b: SwordHand): Path2D {
+  const p = new Path2D(polyPath(handOutline(b)));
+  p.moveTo(b.hubR, 0);
+  // Antihorario, como el contorno: con "nonzero" el cruce no deja un hueco.
+  p.arc(0, 0, b.hubR, 0, Math.PI * 2, true);
   p.closePath();
   return p;
 }
@@ -274,8 +317,9 @@ export function dialTextures(
   const lumeAlpha = dark ? 0.5 : 0.3;
   const handAlpha = dark ? 0.42 : 0.24;
   for (const p of prims) {
-    if (p.capa !== "aplicado" || p.id === "aplique") continue;
-    castShadow(m, shadowOf(SHADOW_H.aplicado, lumeAlpha), (cx) => shadowShape(cx, p));
+    // El embudo de la fecha queda dentro de su banda: no proyecta.
+    if (p.capa !== "aplicado" || p.id === "aplique" || p.id === "embudo-fecha") continue;
+    castShadow(m, shadowOf(p.id === "marco-fecha" ? SHADOW_H.marco : SHADOW_H.aplicado, lumeAlpha), (cx) => shadowShape(cx, p));
   }
   const box = appliqueBox(c);
   const logo = imgs.logo;
@@ -292,8 +336,8 @@ export function dialTextures(
     draw(cx);
     cx.restore();
   };
-  castShadow(m, shadowOf(SHADOW_H.hora, handAlpha), rot(ang.hour, (cx) => cx.fill(bladePath(HANDS.hour))));
-  castShadow(m, shadowOf(SHADOW_H.minuto, handAlpha * 0.95), rot(ang.minute, (cx) => cx.fill(bladePath(HANDS.minute))));
+  castShadow(m, shadowOf(SHADOW_H.hora, handAlpha), rot(ang.hour, (cx) => cx.fill(handShape(HANDS.hour))));
+  castShadow(m, shadowOf(SHADOW_H.minuto, handAlpha * 0.95), rot(ang.minute, (cx) => cx.fill(handShape(HANDS.minute))));
   const Sx = HANDS.seconds;
   castShadow(
     m,

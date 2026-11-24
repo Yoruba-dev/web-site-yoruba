@@ -4,13 +4,13 @@ import { useId, useState } from "react";
 import ComposedInput from "../ComposedInput";
 import OptionGroup from "../OptionGroup";
 import OduPicker from "../OduPicker";
-import { BeadRow, GradientDial, HandSwatch, SolSwatch } from "../Swatches";
-import { layerUrl, type SubId } from "../creator-state";
+import { BeadRow, HandSwatch, MiniWatch } from "../Swatches";
+import { layerUrl, vitrinaMini, type SubId } from "../creator-state";
 import { preloadWatchLayers } from "../WatchFront";
 import { preloadImage } from "../front/preload";
 import { PanelOverlay } from "../shell/overlay";
 import { lostChars, tileState, type StepProps } from "./types";
-import { previewPart } from "./preview";
+import { previewPart, useEspera } from "./preview";
 import {
   APPLIQUES,
   DIAL_BASES,
@@ -73,8 +73,15 @@ export default function StepEsfera(props: StepProps & { sub: SubId }) {
   return <EsferaColor {...props} />;
 }
 
+/** El nombre corto de un degradado en la balda: su Orisha; si un Orisha tiene
+ *  dos, se distinguen por el color de abajo ("Changó rojo" / "Changó vino"). */
+function nombreDegradado(g: DialGradient, todos: readonly DialGradient[]): string {
+  return todos.filter((x) => x.orisha === g.orisha).length > 1 ? `${g.orisha} ${g.nombres[1]}` : g.orisha;
+}
+
 // — Color: modelo, sol, degradado de Orisha y su ajuste ——————————————————
 function EsferaColor({ config, dispatch }: StepProps) {
+  const [espera, avisar] = useEspera<string>();
   const e = config.esfera;
   const bases = visibleParts(DIAL_BASES);
   const lisas = bases.filter((b) => !b.degradado);
@@ -86,12 +93,22 @@ function EsferaColor({ config, dispatch }: StepProps) {
     id: b.id,
     ...tileState(optionState(config, "esfera", b.id)),
   });
+  /** El mini reloj de una base, en la caja del paso 1 (y la Esfera Ifá). */
+  const mini = (base: DialBaseId, n?: DialGradientStep) => (
+    <MiniWatch capas={vitrinaMini(base, config.acabado, { ifa: e.modelo === "ifa", paso: n })} hex={dialBaseHex(base)} />
+  );
+  const elegir = (id: DialBaseId) => {
+    if (!isPartId("esfera", id)) return;
+    avisar(id, previewPart(config, "esfera", id));
+    dispatch({ type: "pieza", cat: "esfera", id });
+  };
 
   return (
     <>
       <OptionGroup<DialModelId>
         label="Modelo"
         variant="segmented"
+        className="rl-group--modelo"
         field="esfera.modelo"
         value={e.modelo}
         onChange={(modelo) => dispatch({ type: "modelo", modelo })}
@@ -104,16 +121,19 @@ function EsferaColor({ config, dispatch }: StepProps) {
       <OptionGroup<DialBaseId>
         label="Sol"
         labelValue={!grad ? actual?.label : undefined}
-        variant="swatches"
-        columns={7}
+        variant="vitrina"
+        columns={6}
+        className="rl-vit--mini"
         field="esfera.base"
         value={grad ? null : e.base}
-        onChange={(id) => isPartId("esfera", id) && dispatch({ type: "pieza", cat: "esfera", id })}
-        onPreview={(id) => previewPart(config, "esfera", id)}
+        espera={espera as DialBaseId | null}
+        onChange={elegir}
+        onPreview={(id) => void previewPart(config, "esfera", id)}
         options={lisas.map((b) => ({
           ...baseTile(b),
           label: b.label,
-          visual: <SolSwatch hex={dialBaseHex(b.id)} />,
+          nombre: b.label.replace(/\s+sol$/, ""),
+          visual: mini(b.id),
         }))}
       />
 
@@ -121,17 +141,20 @@ function EsferaColor({ config, dispatch }: StepProps) {
         <OptionGroup<DialBaseId>
           label="Degradado de Orisha"
           labelValue={grad ? `${grad.orisha} (${grad.nombres[0]} → ${grad.nombres[1]})` : undefined}
-          variant="swatches"
-          columns={7}
+          variant="vitrina"
+          columns={6}
+          className="rl-vit--mini"
           value={grad ? e.base : null}
-          onChange={(id) => isPartId("esfera", id) && dispatch({ type: "pieza", cat: "esfera", id })}
-          onPreview={(id) => previewPart(config, "esfera", id)}
+          espera={espera as DialBaseId | null}
+          onChange={elegir}
+          onPreview={(id) => void previewPart(config, "esfera", id)}
           options={degradados.map((b) => {
             const g = b.degradado!;
             return {
               ...baseTile(b),
               label: `${g.orisha}: ${g.nombres[0]} → ${g.nombres[1]}`,
-              visual: <GradientDial esfera={{ base: b.id, degradado: b.id === e.base && paso ? paso : 3 }} size={44} />,
+              nombre: nombreDegradado(g, degradados.map((x) => x.degradado!)),
+              visual: mini(b.id, b.id === e.base && paso ? paso : 3),
             };
           })}
         />
@@ -142,12 +165,16 @@ function EsferaColor({ config, dispatch }: StepProps) {
           <OptionGroup<string>
             label="Ajusta el degradado"
             labelValue={pasoLabel(paso, grad)}
-            variant="swatches"
-            columns={7}
+            variant="vitrina"
+            columns={6}
+            className="rl-vit--mini rl-vit--ajuste"
             value={String(paso)}
+            espera={espera}
             onChange={(id) => {
               const n = Number(id);
-              if (isGradientStep(n)) dispatch({ type: "degradado", paso: n });
+              if (!isGradientStep(n)) return;
+              avisar(id, preloadWatchLayers(withGradientStep(config, n)));
+              dispatch({ type: "degradado", paso: n });
             }}
             onPreview={(id) => {
               const n = Number(id);
@@ -159,7 +186,7 @@ function EsferaColor({ config, dispatch }: StepProps) {
             options={DIAL_GRADIENT_STEPS.map((n) => ({
               id: String(n),
               label: pasoLabel(n, grad),
-              visual: <GradientDial esfera={{ base: e.base, degradado: n }} size={44} />,
+              visual: mini(e.base, n),
             }))}
           />
         </div>
@@ -196,13 +223,14 @@ function EsferaPista({ config, dispatch }: StepProps) {
           ...WATCH_ORISHAS.map((o) => ({
             id: o,
             label: orishaName(o),
-            detalle: TRACK_SEQUENCES[o].nota.replace(/\.$/, ""),
+            // En la ficha, los colores ("Rojo y negro"); la frase entera, debajo.
+            detalle: TRACK_SEQUENCES[o].nota.split(",")[0].replace(/( alternos)?\.?$/, ""),
             visual: <BeadRow orisha={o} count={6} />,
           })),
           {
             id: "lisa" as const,
             label: "Lisa",
-            detalle: "Rayas sin color",
+            detalle: "Sin color",
             visual: <span className="rl-beads rl-beads--lisa" />,
             ...(e.pista.estilo === "cuentas"
               ? { estado: "bloqueado" as const, motivo: "Las cuentas llevan los colores de un Orisha." }
@@ -210,6 +238,7 @@ function EsferaPista({ config, dispatch }: StepProps) {
           },
         ]}
       />
+      {e.pista.orisha && <p className="rl-note">{TRACK_SEQUENCES[e.pista.orisha].nota}</p>}
     </>
   );
 }
@@ -355,7 +384,7 @@ function EsferaDetalles({ config, dispatch }: StepProps) {
         field="aplique"
         value={config.aplique}
         onChange={(id) => isPartId("aplique", id) && dispatch({ type: "pieza", cat: "aplique", id })}
-        onPreview={(id) => previewPart(config, "aplique", id)}
+        onPreview={(id) => void previewPart(config, "aplique", id)}
         options={visibleParts(APPLIQUES).map((a) => ({
           id: a.id,
           label: a.label,

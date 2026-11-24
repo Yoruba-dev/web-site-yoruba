@@ -1,13 +1,14 @@
 // Muestras pequeñas de las fichas del creador. Todo lo redondo es SVG (la web
 // tiene un reset global `* { border-radius: 0 !important }`), y las fotos son
 // las MISMAS capas del escenario, recortadas con CSS (.rl-thumb--*).
-import { useId } from "react";
+import { useId, type CSSProperties } from "react";
 import {
   TRACK_SEQUENCES,
   WATCH_COLORS,
   WATCH_MATERIALS,
   WATCH_SPECS,
   beadAt,
+  contrastRatio,
   dialColorAt,
   type Esfera,
   type OrishaId,
@@ -38,7 +39,7 @@ export function LayerThumb({
   fallbackHex,
 }: {
   layers: (string | undefined)[];
-  crop: "caja" | "esfera" | "correa" | "cabeza" | "tipo";
+  crop: "caja" | "esfera" | "cabeza";
   fallbackHex?: string;
 }) {
   const urls = layers.filter((u): u is string => !!u);
@@ -79,10 +80,28 @@ export function BeadRow({ orisha, count = 8 }: { orisha: OrishaId; count?: numbe
   );
 }
 
+/** Contraste mínimo de un segundero con su esfera para dibujarlo sin perfil. */
+const HAND_MIN = 1.6;
+
+/** El perfil que separa el segundero de la esfera cuando los dos se parecen
+ *  (un segundero rojo sobre una esfera roja): claro u oscuro, el que MÁS se
+ *  aparte de los dos colores de la esfera. undefined = no hace falta. */
+export function handOutline(hex: string, dialHex: string, dialAbajo = dialHex): string | undefined {
+  // En un degradado, si su luz cae ENTRE las de los dos extremos, en algún punto
+  // son iguales (1:1) aunque los extremos se aparten.
+  const [ca, cz, ch] = [dialHex, dialAbajo, hex].map((c) => contrastRatio(c, "#ffffff"));
+  const cruza = ch >= Math.min(ca, cz) && ch <= Math.max(ca, cz);
+  const peor = (c: string) => Math.min(contrastRatio(c, dialHex), contrastRatio(c, dialAbajo));
+  if (!cruza && peor(hex) >= HAND_MIN) return undefined;
+  return peor("#ffffff") >= peor("#000000") ? "#ffffff" : "#000000";
+}
+
 /** El segundero de un color sobre la esfera elegida. */
 export function HandSwatch({ hex, dialHex, dialAbajo }: { hex: string; dialHex: string; dialAbajo?: string }) {
   const id = `pyjh${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const grad = dialAbajo && dialAbajo !== dialHex;
+  const perfil = handOutline(hex, dialHex, dialAbajo);
+  const borde = perfil ? { stroke: perfil, strokeWidth: 0.8, strokeOpacity: 0.9 } : undefined;
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" className="rl-handsw" focusable="false" aria-hidden="true">
       {grad && (
@@ -94,9 +113,9 @@ export function HandSwatch({ hex, dialHex, dialAbajo }: { hex: string; dialHex: 
         </defs>
       )}
       <circle cx="22" cy="22" r="20" fill={grad ? `url(#${id})` : dialHex} stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
-      <rect x="21.2" y="5" width="1.6" height="24" fill={hex} />
-      <circle cx="22" cy="22" r="2.6" fill={hex} />
-      <circle cx="22" cy="33" r="1.6" fill={hex} />
+      <rect x="20.9" y="5" width="2.2" height="25" fill={hex} {...borde} />
+      <circle cx="22" cy="33" r="1.9" fill={hex} {...borde} />
+      <circle cx="22" cy="22" r="2.9" fill={hex} {...borde} />
     </svg>
   );
 }
@@ -149,28 +168,62 @@ export function SolSwatch({ hex, size = 44 }: { hex: string; size?: number }) {
   );
 }
 
-/** Pictogramas de los cierres (64 px de alto en su tarjeta): hebilla de púa y
- *  desplegable (mariposa). Trazo fino en el color del texto. */
-export function ClaspPictogram({ kind }: { kind: "puas" | "desplegable" }) {
+// ---------------------------------------------------------------------------
+// VITRINA (decisión 19 del dueño): la pieza real, de pie en una balda de cristal
+// con su nombre. Las imágenes salen de nuestras capas (scripts/gen-vitrina.py).
+// ---------------------------------------------------------------------------
+
+/** Tono de cada correa con foto: la mediana de su capa, la MISMA cifra que usa
+ *  el 3D (three/materials.ts, STRAP_PHOTO_TONE, que no puede entrar en la
+ *  primera carga). Para las ilustraciones de los cierres. */
+const STRAP_TONO: Readonly<Record<string, string>> = {
+  "caucho-negro": "#3c3c3d",
+  "caucho-gris": "#767677",
+  "caucho-blanco": "#ececea",
+  "caucho-azul-marino": "#2f3c52",
+  "caucho-azul": "#38598c",
+  "caucho-naranja": "#ec7c3c",
+  "caucho-verde": "#58624a",
+  "caucho-rojo": "#9a3735",
+  "caucho-tan": "#b48e66",
+  "piel-verde": "#42564c",
+  "piel-rojo": "#83302d",
+  "piel-azul-marino": "#28374f",
+};
+
+/** Color de una correa tal como se ve en la foto y en el 3D (el del catálogo si
+ *  aún no tiene foto). */
+export function strapHex(id: string, swatch: string): string {
+  return STRAP_TONO[id] ?? swatchHex(swatch);
+}
+
+/** La punta de una correa (o un tramo de brazalete), de pie, con su reflejo. */
+export function VitrinaPiece({ src, hex }: { src?: string; hex: string }) {
+  if (!src) return <ColorDot hex={hex} size={44} />;
+  return <span className="rl-vitp" style={{ "--img": `url("${src}")` } as CSSProperties} />;
+}
+
+/** La caja en un acabado, con la esfera elegida dentro (paso Caja): las capas de
+ *  600 px del escenario, encuadradas como el mini reloj. `capas`, de arriba
+ *  abajo: aplique PY, índices, caja y esfera. */
+export function CajaMuestra({ capas, hex }: { capas: readonly [string, string, string | undefined, string | undefined]; hex: string }) {
+  const [aplique, indices, caja, esfera] = capas;
+  if (!caja || !esfera) return <ColorDot hex={hex} size={44} />;
   return (
-    <svg viewBox="0 0 64 40" width="64" height="40" className="rl-clasp" focusable="false" aria-hidden="true">
-      {kind === "puas" ? (
-        <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
-          <path d="M4 14h22M4 26h22" />
-          <path d="M26 9h10c6 0 10 4.6 10 11s-4 11-10 11H26Z" />
-          <path d="M26 20h17" strokeWidth="2.2" />
-          <path d="M46 14h14M46 26h14" opacity="0.55" />
-          <circle cx="54" cy="20" r="1.4" fill="currentColor" stroke="none" opacity="0.55" />
-        </g>
-      ) : (
-        <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
-          <path d="M4 14h12M4 26h12M48 14h12M48 26h12" />
-          <path d="M16 11h32v18H16Z" />
-          <path d="M22 11 32 20 42 11M22 29l10-9 10 9" opacity="0.7" />
-          <circle cx="16" cy="20" r="1.6" fill="currentColor" stroke="none" />
-          <circle cx="48" cy="20" r="1.6" fill="currentColor" stroke="none" />
-        </g>
-      )}
-    </svg>
+    <span
+      className="rl-cajam"
+      style={{ backgroundImage: [aplique, indices, caja, esfera].map((u) => `url("${u}")`).join(", ") }}
+    />
+  );
+}
+
+/** El mini reloj: la esfera dentro de la caja del paso 1, con sus índices. */
+export function MiniWatch({ capas, hex }: { capas?: { indices: string; caja: string; dial: string }; hex: string }) {
+  if (!capas) return <ColorDot hex={hex} size={44} />;
+  return (
+    <span
+      className="rl-mini"
+      style={{ backgroundImage: `url("${capas.indices}"), url("${capas.caja}"), url("${capas.dial}")` }}
+    />
   );
 }

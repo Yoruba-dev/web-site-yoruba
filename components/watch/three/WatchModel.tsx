@@ -23,13 +23,23 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type Depen
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { getClasp, getSecondsPart, getStrap, WATCH_COLORS, type WatchConfig } from "@/lib/watch";
-import { dialHasDate, handAngles, handMetalHex, handPose, DIAL_LAYOUT } from "@/lib/watch-art";
+import { dialHasDate, handAngles, handMetalHex, handPose, rimMetalHex, DIAL_LAYOUT } from "@/lib/watch-art";
 import { CAPA_MEDIA_600, apliqueUrl, capaUrl, nombresCapas } from "@/lib/watch-capas";
-import { lumeTones } from "../front/art";
+import { lumeTones, mix } from "../front/art";
 import type { WatchPart } from "../stage3d-contract";
 import { PartInstances, PartMesh } from "./assembly";
 import { caseGeometries, type CaseGeometries } from "./geo/case";
-import { Z, appliedGeometries, appliqueGeometry, dateWellGeometry, dialDiscGeometry, handRotation, secondsHand, swordHand } from "./geo/dialParts";
+import {
+  Z,
+  appliedGeometries,
+  appliqueGeometry,
+  dateWellGeometry,
+  dialBackGeometry,
+  dialDiscGeometry,
+  handRotation,
+  secondsHand,
+  swordHand,
+} from "./geo/dialParts";
 import { BUCKLE, buckleGeometries, deployantGeometries, sweptPlate } from "./geo/clasp";
 import {
   PIEL,
@@ -75,8 +85,11 @@ import {
 } from "./tex/maps";
 import { loadImage } from "./tex/paint";
 
-/** Parte de la foto de la esfera que se suma como luz propia (ver dialMat). */
-const DIAL_FILL = 0.6;
+/** Parte de la foto de la esfera que se suma como luz propia (ver dialMat).
+ *  Con 0.6 el blanco salía a 251 (ΔE 6.2 contra la capa) y los aros y el lume
+ *  se perdían; con 0.2, 240 (ΔE 3.3); más abajo el rojo empeora
+ *  (PLAN-REALISMO-V3 §2.3). */
+const DIAL_FILL = 0.2;
 
 /** useMemo + dispose del valor anterior y al desmontar. (Las mallas llevan
  *  dispose={null}: R3F liberaría al desmontarlas lo compartido.) */
@@ -152,16 +165,15 @@ function WatchModel({ config, noche, asm, pose, coarse, reduced, tapaView, onRea
   // — Texturas compartidas y metales por pieza (para toda la vida) ———————
   const shared = useDisposable(() => {
     const radial = radialAniso(maxAniso);
-    const streaksU = brushStreaks(maxAniso, "u");
-    const streaksV = brushStreaks(maxAniso, "v");
+    const vetas = brushStreaks(maxAniso);
     const date = dateWheel(maxAniso);
     const grain = rubberGrain(maxAniso);
-    return { radial, streaksU, streaksV, date, grain, dispose: () => [radial, streaksU, streaksV, date, grain].forEach((t) => t.dispose()) };
+    return { radial, vetas, date, grain, dispose: () => [radial, vetas, date, grain].forEach((t) => t.dispose()) };
   }, [maxAniso]);
   const fin0 = useRef(fin);
   const metals = useDisposable(() => {
     const mk = (p: WatchPart) =>
-      finishMaterials(fin0.current, { radial: shared.radial, streaksU: shared.streaksU, streaksV: shared.streaksV }, asm.parts[p]);
+      finishMaterials(fin0.current, { radial: shared.radial, veta: p === "caja" ? shared.vetas.caja : shared.vetas.banda }, asm.parts[p]);
     const caja = mk("caja");
     const correa = mk("correa");
     const cierre = mk("cierre");
@@ -390,7 +402,6 @@ function CaseMeshes({
   return (
     <group>
       <PartMesh part="caja" edges geometry={geo.brushed} material={mats.brushed} />
-      <PartMesh part="caja" edges geometry={geo.brushedX} material={mats.brushedX} />
       <PartMesh part="caja" edges geometry={geo.polished} material={mats.polished} />
       <PartMesh part="caja" geometry={geo.matte} material={mats.matte} />
       <PartMesh part="caja" edges geometry={geo.casebackRing} material={mats.brushedRadial} />
@@ -430,6 +441,7 @@ function DialParts({
   const ag = asm.parts.agujas;
   const fecha = dialHasDate(config);
   const disc = useDisposable(() => dialDiscGeometry(config), [fecha]);
+  const back = useDisposable(() => dialBackGeometry(), []);
   const well = useDisposable(() => (fecha ? dateWellGeometry() : null), [fecha]);
   const appliedKey = JSON.stringify([config.esfera.modelo, fecha]);
   const applied = useDisposable(() => {
@@ -449,31 +461,36 @@ function DialParts({
     const h = swordHand("hour");
     const m = swordHand("minute");
     const s = secondsHand();
-    const hub = new THREE.CylinderGeometry(1.15, 1.15, 0.22, 40);
-    hub.rotateX(Math.PI / 2);
     const cap = new THREE.CylinderGeometry(0.62, 0.62, 0.16, 32);
     cap.rotateX(Math.PI / 2);
     const pin = new THREE.SphereGeometry(0.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
     pin.rotateX(Math.PI / 2);
-    const list = [h.frame, h.lume, m.frame, m.lume, s.body, s.lume, hub, cap, pin];
-    return { h, m, s, hub, cap, pin, dispose: () => list.forEach((g) => g.dispose()) };
+    const list = [h.frame, h.lume, m.frame, m.lume, s.body, s.lume, cap, pin];
+    return { h, m, s, cap, pin, dispose: () => list.forEach((g) => g.dispose()) };
   }, []);
 
+  // Los aros de los índices y el marco de la fecha, en SU tono (el mismo de la
+  // capa 2D), no en el de las agujas: sobre blanco se perdían.
   const metalHex = handMetalHex(config);
-  const metalE = useDisposable(() => handMetal(metalHex, es), [es]);
+  const rimHex = rimMetalHex(config);
+  const metalE = useDisposable(() => handMetal(rimHex, es), [es]);
   const metalA = useDisposable(() => handMetal(metalHex, ag), [ag]);
   const tones = lumeTones(config);
-  const lumeE = useDisposable(() => lumeMaterial(tones.dia, tones.halo, es), [es]);
-  const lumeA = useDisposable(() => lumeMaterial(tones.dia, tones.halo, ag), [ag]);
+  // De día el lume aplicado es casi tan claro como una esfera blanca (foto 14:
+  // 0.94): el tono de la pintura, aclarado hacia el blanco.
+  const lumeDia = mix(tones.dia, "#ffffff", 0.38);
+  const lumeE = useDisposable(() => lumeMaterial(lumeDia, tones.halo, es), [es]);
+  const lumeA = useDisposable(() => lumeMaterial(lumeDia, tones.halo, ag), [ag]);
   useEffect(() => {
-    for (const m of [metalE, metalA]) m.color.set(metalHex);
+    metalE.color.set(rimHex);
+    metalA.color.set(metalHex);
     for (const l of [lumeE, lumeA]) {
       l.emissive.set(tones.halo);
       l.emissiveIntensity = noche ? 1.7 : 0;
-      l.color.set(noche ? "#1c2a20" : tones.dia);
+      l.color.set(noche ? "#1c2a20" : lumeDia);
     }
     invalidate();
-  }, [noche, metalHex, tones.dia, tones.halo, metalE, metalA, lumeE, lumeA, invalidate]);
+  }, [noche, metalHex, rimHex, lumeDia, tones.halo, metalE, metalA, lumeE, lumeA, invalidate]);
   const secHex = WATCH_COLORS[getSecondsPart(config.segundero)?.color ?? "negro"].hex;
   const secMat = useDisposable(
     () => partMat(new THREE.MeshPhysicalMaterial({ color: secHex, roughness: 0.32, metalness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.1 }), ag),
@@ -529,6 +546,8 @@ function DialParts({
     invalidate();
   }, [dialMat, dial, noche, invalidate]);
   const wellMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ color: "#2a2a2a", roughness: 0.9 }), es), [es]);
+  // El reverso: mate y oscuro, a la sombra dentro de la caja.
+  const backMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ color: "#4a4844", roughness: 0.75, metalness: 0.4 }), es), [es]);
   const dateMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ map: date, roughness: 0.6 }), es), [date, es]);
   const dateGeo = useDisposable(() => new THREE.PlaneGeometry(DATE_WHEEL.w, DATE_WHEEL.h), []);
 
@@ -578,6 +597,7 @@ function DialParts({
   return (
     <group>
       <PartMesh part="esfera" geometry={disc} material={dialMat} />
+      <PartMesh part="esfera" ghost={false} geometry={back} material={backMat} />
       {well && <PartMesh part="esfera" ghost={false} geometry={well} material={wellMat} />}
       {fecha && <PartMesh part="esfera" ghost={false} geometry={dateGeo} material={dateMat} position={[DIAL_LAYOUT.date.cx, 0, -0.4]} />}
       {applied.rims && <PartMesh part="esfera" geometry={applied.rims} material={metalE} />}
@@ -597,7 +617,6 @@ function DialParts({
         <PartMesh part="agujas" geometry={hands.s.body} material={secMat} />
         <PartMesh part="agujas" ghost={false} geometry={hands.s.lume} material={lumeA} />
       </group>
-      <PartMesh part="agujas" geometry={hands.hub} material={metalA} position={[0, 0, Z.hour + 0.11]} />
       <PartMesh part="agujas" ghost={false} geometry={hands.cap} material={secMat} position={[0, 0, Z.seconds + 0.1]} />
       <PartMesh part="agujas" ghost={false} geometry={hands.pin} material={metalA} position={[0, 0, Z.seconds + 0.17]} />
     </group>

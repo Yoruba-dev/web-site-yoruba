@@ -81,7 +81,7 @@ export interface CaptureDeps {
 
 /** Margen alrededor de la esfera de encuadre en la foto (algo más holgada que
  *  el visor: el reloj entero con su sombra). */
-const MARGIN: Readonly<Record<View3D, number>> = { tres4: 1.08, lado: 1.08, esfera: 1.12, tapa: 1.15, cierre: 1.1 };
+const MARGIN: Readonly<Record<View3D, number>> = { tres4: 1.08, lado: 1.08, esfera: 1.12, tapa: 1.15, cierre: 1.1, correa: 1.1 };
 
 export async function captureStudio(d: CaptureDeps, opts: CaptureOptions = {}): Promise<Blob | null> {
   const views = opts.views?.length ? opts.views : (["tres4", "tapa"] as const);

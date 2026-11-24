@@ -18,7 +18,8 @@
  *   • every SVG builder returns well-formed XML for every preset, no element is
  *     mirrored, and the dial print file is exactly 30.5 mm;
  *   • the seconds hand and the sign stay clear of the name, the PY applique
- *     and the date window.
+ *     and the date window;
+ *   • every triangle of the 3D case faces the way its normal points.
  *
  * Run: npx tsx scripts/check-watch-data.ts   (wired into `npm run prebuild`)
  */
@@ -84,6 +85,8 @@ import {
   dialPrimitives,
   estimateTextWidth,
   handAngles,
+  handLume,
+  handOutline,
   handPose,
   ifaSignSlots,
   polar,
@@ -143,6 +146,9 @@ import { GLYPH_FONTS, type GlyphFont } from "../lib/watch-glyphs";
 import { CLASICA_ADV, CLASICA_KERN_POS, FINA_ADV, FINA_KERN_POS } from "../lib/watch-glyph-metrics";
 import { FONT_STYLES } from "../lib/watch-art";
 import { getStrap, withStrapType, type WatchField } from "../lib/watch";
+import * as THREE from "three";
+import { caseGeometries } from "../components/watch/three/geo/case";
+import { Z as DIAL_Z, appliedGeometries, dateWellGeometry, dialBackGeometry, dialDiscGeometry, swordHand } from "../components/watch/three/geo/dialParts";
 
 let failures = 0;
 let checks = 0;
@@ -819,6 +825,11 @@ section("SVG builders: well-formed XML, 1:1 sizes, never mirrored", () => {
     const print = dialPrintSvg(c);
     ok(/^<svg [^>]*width="30\.5mm" height="30\.5mm" viewBox="-15\.25 -15\.25 30\.5 30\.5"/.test(print), `${name}: dial print file is not 30.5 mm 1:1`);
     ok(/<circle id="guia-esfera" cx="0" cy="0" r="15\.25"/.test(print), `${name}: dial print circle is not exactly Ø30.5 mm`);
+    // The date frame's footprint (4.1 × 3.2 mm) is a guide, on dials with a date.
+    ok(
+      /<rect x="8\.5" y="-1\.6" width="4\.1" height="3\.2" rx="0\.35" fill="none" stroke="#00a0e0"/.test(print.split('<g id="impresion">')[0]) === dialHasDate(c),
+      `${name}: the date frame guide does not match the dial (fecha ${dialHasDate(c)})`,
+    );
     ok(!/id="imp-aplique"|lume|#e4eee1/i.test(print.split('<g id="impresion">')[1] ?? ""), `${name}: applied parts leaked into the print layer`);
     const laser = laserSvg(c);
     ok(/^<svg [^>]*width="24mm" height="24mm" viewBox="-12 -12 24 24"/.test(laser), `${name}: laser file is not Ø24 mm 1:1`);
@@ -895,9 +906,12 @@ function secondsGap(deg: number, b: Box): number {
     pointGap(cw.x, cw.y, b) - S.counter.r,
   );
 }
-/** Hour / minute blade: full width up to the shoulder, then to a point. */
+/** Hour / minute blade: full width up to the shoulder, then to a point (the
+ *  neck is narrower: the full width is the safe side). */
 const bladeHalf = (h: { shoulder: number; tip: number; halfW: number }) => (t: number) =>
   t <= h.shoulder ? h.halfW : (h.halfW * (h.tip - t)) / (h.tip - h.shoulder);
+/** The hands' round hub at the pivot: the widest of the two (no tails). */
+const HUB_R = Math.max(HANDS.hour.hubR, HANDS.minute.hubR);
 
 /** The 16 ring signs of an Ifá dial as dialPrimitives() must draw them. */
 function ifaRing(c: WatchConfig, slots: IfaSlot[] = ifaSignSlots()): { slot: IfaSlot; sign: OduSign; marks: Primitive[]; box: Box }[] {
@@ -979,6 +993,42 @@ section("print area: everything printed or applied sits inside the case opening"
   ok(beadsIn - (L.triangle.outerR + L.triangle.rimW / 2) >= TRACK_AIR - EPS, "the 12 o'clock triangle clears the 12 o'clock bead");
   ok(ticksIn - (L.dots.r + L.dots.dotR + L.dots.rimW / 2) >= TRACK_AIR - EPS, "the hour dots clear the hour ticks");
   ok(ticksIn - (L.bar.r + L.bar.len / 2 + L.bar.rimW / 2) >= TRACK_AIR - EPS, "the 6 and 9 bars clear the ticks");
+  ok(beadsIn - (L.dots.r + L.dots.dotR + L.dots.rimW / 2) >= TRACK_AIR - EPS, "the hour dots clear the hour beads");
+  ok(beadsIn - (L.bar.r + L.bar.len / 2 + L.bar.rimW / 2) >= TRACK_AIR - EPS, "the 6 and 9 bars clear the beads");
+  // The date frame: the whole frame (band + funnel), at 3 o'clock and at its
+  // outer corners, and the 2 and 4 o'clock dots on either side of it.
+  const D = L.date;
+  const frame: Box = [D.cx - D.w / 2 - D.rim, -D.h / 2 - D.rim, D.cx + D.w / 2 + D.rim, D.h / 2 + D.rim];
+  ok(Math.min(ticksIn, beadsIn) - frame[2] >= TRACK_AIR - EPS, `the date frame comes within ${(Math.min(ticksIn, beadsIn) - frame[2]).toFixed(3)} mm of the 3 o'clock mark`);
+  const r2 = resolvePreset("eleggua", disp);
+  for (const estilo of ["rayas", "cuentas"] as const) {
+    const c: WatchConfig = { ...r2, esfera: { ...r2.esfera, pista: { ...r2.esfera.pista, estilo } } };
+    for (const p of dialPrimitives(c)) {
+      if (p.capa !== "impresion" || p.kind === "text" || p.kind === "arcText" || p.kind === "path") continue;
+      // Every printed mark, by its nearest point to the frame (marks are small).
+      const pts: [number, number][] =
+        p.kind === "circle"
+          ? Array.from({ length: 24 }, (_, i) => [p.cx + p.r * Math.cos((i * Math.PI) / 12), p.cy + p.r * Math.sin((i * Math.PI) / 12)])
+          : (() => {
+              const a = ((p.rotate ?? 0) * Math.PI) / 180;
+              const [cx, cy] = [p.x + p.w / 2, p.y + p.h / 2];
+              return [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 1], [0, -1]].map(([sx, sy]): [number, number] => {
+                const [x, y] = [(sx * p.w) / 2, (sy * p.h) / 2];
+                return [cx + x * Math.cos(a) - y * Math.sin(a), cy + x * Math.sin(a) + y * Math.cos(a)];
+              });
+            })();
+      const gap = Math.min(...pts.map(([x, y]) => pointGap(x, y, frame)));
+      ok(gap >= 0.1 - EPS, `date frame (${estilo}): a printed mark comes within ${gap.toFixed(3)} mm`);
+    }
+  }
+  for (const h of [2, 4]) {
+    const d = polar(L.dots.r, h * 30);
+    ok(pointGap(d.x, d.y, frame) - (L.dots.dotR + L.dots.rimW / 2) >= 0.3 - EPS, `the date frame touches the ${h} o'clock dot`);
+  }
+  // Neighbouring applied parts never touch.
+  ok(2 * L.dots.r * Math.sin(Math.PI / 12) - 2 * (L.dots.dotR + L.dots.rimW / 2) >= 0.3 - EPS, "two neighbouring hour dots touch");
+  ok(D.funnel > 0 && D.rim - D.funnel >= 0.25, "the date frame keeps a flat band around its funnel");
+  ok(DIAL_Z.applied < DIAL_Z.hour && DIAL_Z.applied <= WATCH_SPECS.hourHandClearanceMm, "the applied indices stay below the hour hand");
   ok(L.triangle.tipR + (L.applique.cy - L.applique.h / 2) >= 0.8 - EPS, "the triangle tip stays ≥ 0.8 mm above the PY applique");
 });
 
@@ -1024,11 +1074,15 @@ section("classic dial layout: seconds hand and Odù sign clear the name, the PY 
   }
 
   // The sign, at both positions, for all 16 Meyi + a combination.
+  // With their rims (the stroke is centred on the drawn box).
+  const rimmed = (b: Box, rimW: number): Box => [b[0] - rimW / 2, b[1] - rimW / 2, b[2] + rimW / 2, b[3] + rimW / 2];
   const applied: [string, Box][] = [
-    ["barra de las 6", [-L.bar.w / 2, L.bar.r - L.bar.len / 2, L.bar.w / 2, L.bar.r + L.bar.len / 2]],
-    ["barra de las 9", [-L.bar.r - L.bar.len / 2, -L.bar.w / 2, -L.bar.r + L.bar.len / 2, L.bar.w / 2]],
-    ["triángulo de las 12", [-L.triangle.halfW, -L.triangle.outerR, L.triangle.halfW, -L.triangle.tipR]],
+    ["barra de las 6", rimmed([-L.bar.w / 2, L.bar.r - L.bar.len / 2, L.bar.w / 2, L.bar.r + L.bar.len / 2], L.bar.rimW)],
+    ["barra de las 9", rimmed([-L.bar.r - L.bar.len / 2, -L.bar.w / 2, -L.bar.r + L.bar.len / 2, L.bar.w / 2], L.bar.rimW)],
+    ["triángulo de las 12", rimmed([-L.triangle.halfW, -L.triangle.outerR, L.triangle.halfW, -L.triangle.tipR], L.triangle.rimW)],
   ];
+  // The name never touches the 6 o'clock bar.
+  for (const [what, b] of names) ok(boxGap(b, applied[0][1]) >= SIGN_AIR - EPS, `${what} comes within ${boxGap(b, applied[0][1]).toFixed(2)} mm of the 6 o'clock bar`);
   for (const pos of ["nueve", "seis"] as DialSignPos[]) {
     const sb = signBox(pos);
     for (const [what, b] of [...names, ["aplique PY", rectBox(slot)] as [string, Box], ["ventana de fecha", rectBox(win, L.date.rim)] as [string, Box], ...applied]) {
@@ -1038,8 +1092,8 @@ section("classic dial layout: seconds hand and Odù sign clear the name, the PY 
       const d = polar(L.dots.r, h * 30);
       ok(pointGap(d.x, d.y, sb) - (L.dots.dotR + L.dots.rimW / 2) >= SIGN_AIR - EPS, `sign at '${pos}' touches the ${h} o'clock dot`);
     }
-    // Out from under the hand hub (the minute hand's tail reaches 1.9 mm).
-    ok(pointGap(0, 0, sb) >= HANDS.minute.tail - EPS, `sign at '${pos}' sits under the hand hub`);
+    // Out from under the hands' round hub (they have no tail), with its air.
+    ok(pointGap(0, 0, sb) >= HUB_R + SIGN_AIR - EPS, `sign at '${pos}' sits under the hand hub`);
     // Printable: a bar narrower than 0.2 mm is below what we ask the workshop to proof.
     const markW = (L.sign[pos].inkH / (ODU_GLYPH.inkBottom - ODU_GLYPH.inkTop)) * ODU_GLYPH.markW;
     ok(markW >= 0.2, `sign at '${pos}': bars ${markW.toFixed(3)} mm wide (< 0.2 mm)`);
@@ -1110,7 +1164,7 @@ section("Esfera Ifá: the 16 Meyis in order, upright, unmirrored and clear of ev
     const obstacles: [string, Box][] = [["aplique PY", rectBox(slot)], ...nameBoxes, ...(fecha ? [["ventana de fecha", dateBox] as [string, Box]] : [])];
     for (const { slot: s, box } of signs) {
       for (const [what, b] of obstacles) ok(boxGap(box, b) >= SIGN_AIR - EPS, `${tag}: ${s.oduId} comes within ${boxGap(box, b).toFixed(2)} mm of the ${what}`);
-      ok(pointGap(0, 0, box) >= HANDS.minute.tail + SIGN_AIR - EPS, `${tag}: ${s.oduId} sits under the hand pinion`);
+      ok(pointGap(0, 0, box) >= HUB_R + SIGN_AIR - EPS, `${tag}: ${s.oduId} sits under the hand hub`);
       ok(trackIn - boxR(box) >= SIGN_AIR - EPS, `${tag}: ${s.oduId} comes within ${(trackIn - boxR(box)).toFixed(2)} mm of the minute track`);
     }
     for (let i = 0; i < signs.length; i++) {
@@ -1136,9 +1190,9 @@ section("Esfera Ifá: the 16 Meyis in order, upright, unmirrored and clear of ev
     if (what === "aplique PY" || what.startsWith("texto")) continue; // the hands sit above the applique and the print
     // The wide hands only need to stay off the ink (they pass over every
     // sign in use); the thin seconds hand keeps the poster's 0.25 mm of air.
-    const mg = handGap(ang.minute, HANDS.minute.tail, HANDS.minute.tip, bladeHalf(HANDS.minute), b);
+    const mg = handGap(ang.minute, 0, HANDS.minute.tip, bladeHalf(HANDS.minute), b);
     ok(mg >= 0, `Ifá pose: the minute hand covers ${what} (${mg.toFixed(2)} mm)`);
-    const hg = handGap(ang.hour, HANDS.hour.tail, HANDS.hour.tip, bladeHalf(HANDS.hour), b);
+    const hg = handGap(ang.hour, 0, HANDS.hour.tip, bladeHalf(HANDS.hour), b);
     ok(hg >= 0, `Ifá pose: the hour hand covers ${what} (${hg.toFixed(2)} mm)`);
   }
 
@@ -1613,6 +1667,122 @@ section("caseback text: real widths, shrinks evenly (never squashed sideways), i
   const mama = casebackPrimitives(withPatch(base, { tapa: { signo: null, marcas: "barras", linea1: "Siempre contigo mamá", linea2: "", fuente: "clasica" } }))
     .find((p): p is TextRun => p.kind === "text" && p.text === "Siempre contigo mamá");
   ok(mama && mama.maxWidth && textWidthMm(mama.text, mama.font, mama.size, mama.letterSpacing) <= mama.maxWidth + EPS, "«Siempre contigo mamá» (clásica) still overflows its line");
+});
+
+section("hands: no tail, a round hub, a neck, and the lume inside the blade", () => {
+  for (const k of ["hour", "minute"] as const) {
+    const h = HANDS[k];
+    const pts = handOutline(h);
+    ok(pts.every(([, y]) => y <= 1e-9), `${k} hand: something sticks out behind the pivot (a tail)`);
+    ok(pts.every(([x, y]) => pts.some(([a, b]) => Math.abs(a + x) < 1e-9 && Math.abs(b - y) < 1e-9)), `${k} hand: the outline is not symmetric`);
+    ok(h.neck.halfW < h.halfW && h.neck.halfW < h.hubR && h.neck.to > h.hubR, `${k} hand: the neck does not show between the hub and the blade`);
+    // Half-width of the outline at distance t from the pivot (y up).
+    const halfAt = (t: number) => {
+      const right = pts.slice(0, (pts.length + 1) / 2).map(([x, y]): [number, number] => [-y, x]);
+      for (let i = 0; i + 1 < right.length; i++) {
+        const [t0, x0] = right[i];
+        const [t1, x1] = right[i + 1];
+        if (t >= t0 - 1e-9 && t <= t1 + 1e-9) return t1 === t0 ? Math.max(x0, x1) : x0 + ((x1 - x0) * (t - t0)) / (t1 - t0);
+      }
+      return 0;
+    };
+    for (const [x, y] of handLume(h)) ok(halfAt(-y) - Math.abs(x) >= 0.12 - EPS || Math.abs(x) < EPS, `${k} hand: the lume leaves less than 0.12 mm of metal at ${(-y).toFixed(2)}`);
+    ok(h.lume.from > h.neck.to && h.lume.tip < h.tip && h.lume.shoulder < h.shoulder, `${k} hand: the lume leaves the blade`);
+  }
+  ok(HANDS.hour.hubR > HANDS.minute.hubR, "the hour hub shows around the minute hub");
+});
+
+section("3D geometry: every face points where its normal does (no inside-out parts)", () => {
+  /** Triangles wound against their normals. With double-sided metal, three
+   *  flips the normal of a back-facing triangle: an inside-out part is lit the
+   *  wrong way round (the 6 o'clock hood came out white on PVD). */
+  const insideOut = (src: THREE.BufferGeometry): { bad: number; total: number } => {
+    const g = src.index ? src.toNonIndexed() : src;
+    const p = g.getAttribute("position");
+    const n = g.getAttribute("normal");
+    const [a, b, c, s] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+    let bad = 0;
+    let total = 0;
+    for (let i = 0; i + 2 < p.count; i += 3) {
+      a.fromBufferAttribute(p, i);
+      b.fromBufferAttribute(p, i + 1);
+      c.fromBufferAttribute(p, i + 2);
+      const face = b.clone().sub(a).cross(c.clone().sub(a));
+      if (face.length() < 1e-9) continue;
+      s.set(0, 0, 0);
+      for (let k = 0; k < 3; k++) s.add(new THREE.Vector3(n.getX(i + k), n.getY(i + k), n.getZ(i + k)));
+      total++;
+      if (face.dot(s) <= 0) bad++;
+    }
+    return { bad, total };
+  };
+  const check = (name: string, g: THREE.BufferGeometry | null) => {
+    if (!g) return;
+    const r = insideOut(g);
+    ok(r.total > 0 && r.bad === 0, `${name}: ${r.bad} of ${r.total} triangles face against their normal`);
+    for (const k of ["position", "normal"] as const) {
+      const at = g.getAttribute(k);
+      let nan = 0;
+      for (let i = 0; i < at.array.length; i++) if (!Number.isFinite(at.array[i])) nan++;
+      ok(nan === 0, `${name}: ${nan} non-finite ${k} values`);
+    }
+  };
+  // Self-test: a mirrored box must be caught.
+  const box = new THREE.BoxGeometry(1, 1, 1);
+  ok(insideOut(box).bad === 0, "winding self-test: a plain box passes");
+  box.scale(1, -1, 1);
+  ok(insideOut(box).bad > 0, "winding self-test: a mirrored box must be caught");
+
+  const { dispose, ...caseGeo } = caseGeometries();
+  for (const [k, g] of Object.entries(caseGeo)) check(`case.${k}`, g as THREE.BufferGeometry);
+  dispose();
+  const c = resolvePreset("eleggua", disp);
+  const applied = appliedGeometries(c);
+  check("applied rims", applied.rims);
+  check("applied lume", applied.lume);
+  // The parts stand ON the dial, their rims at the declared height and the
+  // domed lume below them; the outer wall of each rim looks outwards.
+  const zRange = (g: THREE.BufferGeometry) => {
+    g.computeBoundingBox();
+    return [g.boundingBox!.min.z, g.boundingBox!.max.z] as const;
+  };
+  const [r0, r1] = zRange(applied.rims!);
+  ok(Math.abs(r0) < 1e-6 && Math.abs(r1 - DIAL_Z.applied) < 1e-6, `applied rims: z ${r0.toFixed(3)}–${r1.toFixed(3)} (0–${DIAL_Z.applied})`);
+  const [, l1] = zRange(applied.lume!);
+  ok(l1 < DIAL_Z.applied && l1 > DIAL_Z.applied - 0.1, `applied lume: top at ${l1.toFixed(3)} (rim ${DIAL_Z.applied})`);
+  {
+    // The 4 o'clock dot: its outermost vertices have normals away from its centre.
+    const d = polar(DIAL_LAYOUT.dots.r, 120);
+    const P = applied.rims!.getAttribute("position");
+    const N = applied.rims!.getAttribute("normal");
+    const R = DIAL_LAYOUT.dots.dotR + (DIAL_LAYOUT.dots.rimW * 1.2) / 2;
+    let seen = 0;
+    let inward = 0;
+    for (let i = 0; i < P.count; i++) {
+      const [x, y] = [P.getX(i) - d.x, P.getY(i) + d.y];
+      if (P.getZ(i) > 1e-6 || Math.abs(Math.hypot(x, y) - R) > 1e-3) continue;
+      seen++;
+      if (N.getX(i) * x + N.getY(i) * y <= 0) inward++;
+    }
+    ok(seen > 50 && inward === 0, `4 o'clock dot: ${inward} of ${seen} wall normals look inwards`);
+  }
+  for (const kind of ["hour", "minute"] as const) {
+    const h = swordHand(kind);
+    check(`${kind} hand frame`, h.frame);
+    check(`${kind} hand lume`, h.lume);
+    h.frame.computeBoundingBox();
+    const bb = h.frame.boundingBox!;
+    ok(Math.abs(bb.min.y + HANDS[kind].hubR) < 0.01, `${kind} hand: behind the pivot there is only its hub (${bb.min.y.toFixed(2)})`);
+    ok(Math.abs(bb.max.y - HANDS[kind].tip) < 0.2, `${kind} hand: the tip is at ${bb.max.y.toFixed(2)}`);
+  }
+  // Each hub stays under the next hand.
+  ok(DIAL_Z.hour + 0.24 < DIAL_Z.minute && DIAL_Z.minute + 0.24 < DIAL_Z.seconds, "a hub reaches the next hand");
+  check("dial disc", dialDiscGeometry(c));
+  check("date well", dateWellGeometry());
+  const back = dialBackGeometry();
+  check("dial back", back);
+  const nb = back.getAttribute("normal");
+  ok(nb.getZ(0) < -0.99, "the back of the dial looks at the wrist (−z)");
 });
 
 console.log(`\n${checks - failures}/${checks} checks passed`);

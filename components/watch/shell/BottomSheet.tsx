@@ -221,6 +221,13 @@ export default function BottomSheet({
             "--rl-sheet-h": `${target}px`,
           } as CSSProperties
         }
+        // El alto final, cuando la transición acaba DE VERDAD: con el equipo
+        // cargado (el 3D arrancando) los 400 ms de seguimiento terminaban antes
+        // que ella y el visor se quedaba con un recuadro viejo (el reloj, bajo
+        // la hoja).
+        onTransitionEnd={(e) => {
+          if (e.target === e.currentTarget) report();
+        }}
       >
         <div
           className="rl-sheet_drag"

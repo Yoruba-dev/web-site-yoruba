@@ -7,15 +7,18 @@
 // ---------------------------------------------------------------------------
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives } from "@/lib/watch-art";
+import { DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives, handLume, handOutline, type RectPrim } from "@/lib/watch-art";
 import type { WatchConfig } from "@/lib/watch";
-import { circlePts, offsetConvex, roundRectPts, shapeOf, type P2 } from "./outline";
+import { cap, circlePts, loft, offsetConvex, roundRectPts, shapeOf, type P2 } from "./outline";
 import { APLIQUE_IMG, APLIQUE_OUTLINE } from "./apliqueOutline";
 
 /** Alturas (z, mm) de cada nivel sobre la esfera. */
 export const Z = {
   dial: 0,
-  applied: 0.3,
+  /** Índices aplicados (≈0.45 en la foto 14 y e10). */
+  applied: 0.45,
+  /** Marco de la fecha (el embudo baja a 45° sus 0.3 hasta la esfera). */
+  frame: 0.3,
   hour: 0.85,
   minute: 1.12,
   seconds: 1.4,
@@ -39,6 +42,17 @@ export function dialDiscGeometry(c: WatchConfig): THREE.BufferGeometry {
   return g;
 }
 
+/** Lo que tapa la esfera por detrás (el movimiento, sin detalle): un disco que
+ *  mira hacia la muñeca. Con la tapa aún en cristal se veían los índices y el
+ *  aplique PY al revés. Va a 3.5 mm y no pegado a la esfera: ahí, los cantos de
+ *  esas piezas, vistos casi de perfil, asomaban como puntos claros. */
+export function dialBackGeometry(): THREE.BufferGeometry {
+  const g = new THREE.CircleGeometry(DIAL_LAYOUT.r, 96);
+  g.rotateY(Math.PI);
+  g.translate(0, 0, -3.5);
+  return g;
+}
+
 /** Las paredes del hueco de la fecha (la esfera tiene 0.4 mm de grueso). */
 export function dateWellGeometry(): THREE.BufferGeometry {
   const D = DIAL_LAYOUT.date;
@@ -49,14 +63,15 @@ export function dateWellGeometry(): THREE.BufferGeometry {
   return g;
 }
 
-const ringExtrude = (outer: P2[], inner: P2[] | null, depth: number, bevel: number) => {
-  const g = new THREE.ExtrudeGeometry(shapeOf(outer, inner ? [inner] : []), {
+/** Anillo extruido con bisel (`segs` = 1: chaflán recto a 45°). */
+const ringExtrude = (outer: P2[], inner: P2[], depth: number, bevel: number, segs: number) => {
+  const g = new THREE.ExtrudeGeometry(shapeOf(outer, [inner]), {
     depth: Math.max(0.01, depth - 2 * bevel),
     bevelEnabled: bevel > 0,
     bevelThickness: bevel,
     bevelSize: bevel,
     bevelOffset: -bevel,
-    bevelSegments: 2,
+    bevelSegments: segs,
     curveSegments: 6,
   });
   g.translate(0, 0, bevel);
@@ -66,46 +81,120 @@ const ringExtrude = (outer: P2[], inner: P2[] | null, depth: number, bevel: numb
 /** y abajo (primitivas) → y arriba (3D). */
 const up = (pts: readonly P2[]): P2[] => pts.map(([x, y]) => [x, -y] as P2);
 
+/** Lume de los índices: borde (0.11 por debajo del aro) y abombado (mm). */
+const LUME_EDGE = 0.34;
+const LUME_DOME = 0.08;
+/** Bisel a 45° de los aros de barras y triángulo (mm). */
+const RIM_BEVEL = 0.12;
+
+/** Aro de un punto: pared recta y canto redondeado (torno). */
+function dotRim(r: number, w: number): THREE.BufferGeometry {
+  const o = r + w / 2;
+  const i = r - w / 2;
+  const H = Z.applied;
+  const prof: P2[] = [
+    [o, 0],
+    [o, H - 0.09],
+    [o - 0.05, H - 0.02],
+    [r, H],
+    [i + 0.05, H - 0.02],
+    [i, H - 0.09],
+    [i, LUME_EDGE - 0.05],
+  ];
+  const g = new THREE.LatheGeometry(
+    prof.map(([x, y]) => new THREE.Vector2(x, y)),
+    56,
+  );
+  // LatheGeometry gira alrededor de y: y → z.
+  g.rotateX(Math.PI / 2);
+  return g;
+}
+
+/** Lume abombado: el contorno (`ring(d)` = el suyo, `d` mm hacia dentro) sube
+ *  LUME_DOME en parábola hasta el centro. */
+function domedLume(ring: (d: number) => readonly P2[], inset: number): THREE.BufferGeometry[] {
+  const rings = [0, 0.25, 0.55, 0.9].map((t) => ({ pts: ring(inset * t), z: LUME_EDGE + LUME_DOME * (1 - (1 - t) ** 2) }));
+  const top = rings[rings.length - 1];
+  return [loft(rings), cap(top.pts, top.z)];
+}
+
+/** Banda plana del marco de la fecha: canto de fuera con bisel, esquina redonda
+ *  y, por dentro, el borde vivo donde empieza el embudo. */
+function dateBand(p: RectPrim, w: number): THREE.BufferGeometry[] {
+  const cx = p.x + p.w / 2;
+  const cy = -(p.y + p.h / 2);
+  const r = (p.rx ?? 0) + w / 2;
+  const B = 0.06;
+  const out = roundRectPts(cx, cy, p.w + w, p.h + w, r, 6);
+  const top = roundRectPts(cx, cy, p.w + w - 2 * B, p.h + w - 2 * B, r - B, 6);
+  const hole = roundRectPts(cx, cy, p.w - w, p.h - w, 0).reverse();
+  return [
+    loft([
+      { pts: out, z: 0 },
+      { pts: out, z: Z.frame - B },
+      { pts: top, z: Z.frame },
+    ]),
+    cap(top, Z.frame, [hole]),
+  ];
+}
+
+/** Embudo del marco de la fecha: 4 facetas a 45° de la banda al hueco (fotos 4,
+ *  11 y 14, renders 8 y 19). */
+function dateFunnel(p: RectPrim, w: number): THREE.BufferGeometry {
+  const cx = p.x + p.w / 2;
+  const cy = -(p.y + p.h / 2);
+  const ring = (d: number, z: number) => roundRectPts(cx, cy, p.w + d, p.h + d, 0).map(([x, y]) => [x, y, z]);
+  const T = ring(w, Z.frame);
+  const B = ring(-w, Z.frame - w);
+  const pos: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    pos.push(...T[i], ...T[j], ...B[j], ...T[i], ...B[j], ...B[i]);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array((pos.length / 3) * 2), 2));
+  g.computeVertexNormals();
+  return g;
+}
+
 /** Aros pulidos y rellenos de lume de los índices aplicados y el marco de la
  *  fecha. `rims` en metal, `lume` en pintura luminosa. */
 export function appliedGeometries(c: WatchConfig): { rims: THREE.BufferGeometry | null; lume: THREE.BufferGeometry | null } {
   const rims: THREE.BufferGeometry[] = [];
   const lume: THREE.BufferGeometry[] = [];
-  const add = (list: THREE.BufferGeometry[], g: THREE.BufferGeometry) => list.push(g.index ? g.toNonIndexed() : g);
+  const add = (list: THREE.BufferGeometry[], ...gs: THREE.BufferGeometry[]) => gs.forEach((g) => list.push(g.index ? g.toNonIndexed() : g));
   for (const p of dialPrimitives(c)) {
     if (p.capa !== "aplicado" || p.id === "aplique") continue;
     const w = p.strokeWidth ?? 0.2;
-    const filled = !!p.fill && p.fill !== "none";
     switch (p.kind) {
       case "circle": {
-        const torus = new THREE.TorusGeometry(p.r, w * 0.6, 10, 56);
-        torus.scale(1, 1, 1.25);
-        torus.translate(p.cx, -p.cy, Z.applied - w * 0.6 * 1.25);
-        add(rims, torus);
-        if (filled) {
-          const cyl = new THREE.CylinderGeometry(p.r - w * 0.25, p.r - w * 0.25, 0.22, 40, 1);
-          cyl.rotateX(Math.PI / 2);
-          cyl.translate(p.cx, -p.cy, 0.11);
-          add(lume, cyl);
-        }
+        add(rims, dotRim(p.r, w * 1.2).translate(p.cx, -p.cy, 0));
+        // Casquete: media esfera aplastada hasta LUME_DOME de alto.
+        const rl = p.r - w * 0.5;
+        const dome = new THREE.SphereGeometry(rl, 40, 5, 0, Math.PI * 2, 0, Math.PI / 2);
+        dome.scale(1, LUME_DOME / rl, 1);
+        dome.rotateX(Math.PI / 2);
+        add(lume, dome.translate(p.cx, -p.cy, LUME_EDGE));
         break;
       }
       case "rect": {
+        if (p.id === "marco-fecha") {
+          add(rims, ...dateBand(p, w));
+          break;
+        }
+        if (p.id === "embudo-fecha") {
+          add(rims, dateFunnel(p, w));
+          break;
+        }
         const cx = p.x + p.w / 2;
         const cy = -(p.y + p.h / 2);
         const rx = p.rx ?? 0;
-        if (filled) {
-          const outer = roundRectPts(cx, cy, p.w + w, p.h + w, rx + w / 2);
-          const inner = roundRectPts(cx, cy, p.w - w, p.h - w, Math.max(0, rx - w / 2)).reverse();
-          add(rims, ringExtrude(outer, inner, Z.applied, 0.05));
-          add(lume, ringExtrude(roundRectPts(cx, cy, p.w - w * 0.6, p.h - w * 0.6, Math.max(0, rx - w / 4)), null, 0.22, 0.03));
-        } else {
-          // Marco de la fecha: el trazo cubre del hueco hacia fuera.
-          const outer = roundRectPts(cx, cy, p.w + w, p.h + w, (p.rx ?? 0) + w / 2);
-          const inner = roundRectPts(cx, cy, p.w - w, p.h - w, 0.02, 1).reverse();
-          // 0.3 mm por encima de la esfera (§4.9 #12).
-          add(rims, ringExtrude(outer, inner, 0.3, 0.05));
-        }
+        const outer = roundRectPts(cx, cy, p.w + w, p.h + w, rx + w / 2);
+        const inner = roundRectPts(cx, cy, p.w - w, p.h - w, Math.max(0, rx - w / 2)).reverse();
+        add(rims, ringExtrude(outer, inner, Z.applied, RIM_BEVEL, 1));
+        const [lw, lh] = [p.w - w * 0.6, p.h - w * 0.6];
+        add(lume, ...domedLume((d) => roundRectPts(cx, cy, lw - 2 * d, lh - 2 * d, Math.max(0.02, rx - w / 4 - d)), Math.min(lw, lh) / 2));
         break;
       }
       case "path": {
@@ -119,8 +208,9 @@ export function appliedGeometries(c: WatchConfig): { rims: THREE.BufferGeometry 
         ]);
         const outer = offsetConvex(tri, w / 2);
         const inner = offsetConvex(tri, -w / 2).reverse();
-        add(rims, ringExtrude(outer, inner, Z.applied, 0.05));
-        add(lume, ringExtrude(offsetConvex(tri, -w * 0.2), null, 0.22, 0.03));
+        add(rims, ringExtrude(outer, inner, Z.applied, RIM_BEVEL, 1));
+        const base = offsetConvex(tri, -w * 0.2);
+        add(lume, ...domedLume((d) => offsetConvex(base, -d), 0.7));
         break;
       }
       default:
@@ -136,72 +226,64 @@ export function appliedGeometries(c: WatchConfig): { rims: THREE.BufferGeometry 
 // ===========================================================================
 // AGUJAS — en local apuntan a las 12 (+y); se giran −ángulo sobre z.
 // ===========================================================================
-/** Lume de las agujas: las mismas formas que el compositor (y abajo). */
-const HOUR_LUME: P2[] = [
-  [-0.44, -1.7],
-  [-0.44, -6.35],
-  [0, -7.3],
-  [0.44, -6.35],
-  [0.44, -1.7],
-];
-const MINUTE_LUME: P2[] = [
-  [-0.32, -2],
-  [-0.32, -11.15],
-  [0, -11.95],
-  [0.32, -11.15],
-  [0.32, -2],
-];
-
-type Blade = { readonly tail: number; readonly tip: number; readonly shoulder: number; readonly halfW: number };
-
-function bladePts(b: Blade): P2[] {
-  return [
-    [-b.halfW, -b.tail],
-    [b.halfW, -b.tail],
-    [b.halfW, b.shoulder],
-    [0, b.tip],
-    [-b.halfW, b.shoulder],
-  ];
-}
-
-/** Aguja de espada: marco pulido con el lume dentro (como las reales). */
+/** Aguja de espada: buje redondo, cuello, marco pulido y el lume dentro (como
+ *  las reales; sin cola: renders 8, 13, 18 y 19 del dueño). */
 export function swordHand(kind: "hour" | "minute"): { frame: THREE.BufferGeometry; lume: THREE.BufferGeometry } {
-  const b = kind === "hour" ? HANDS.hour : HANDS.minute;
-  const lumePts = up(kind === "hour" ? HOUR_LUME : MINUTE_LUME);
-  const outline = bladePts(b);
+  const b = HANDS[kind];
+  const lumePts = up(handLume(b));
   const hole = offsetConvex(lumePts, 0.02).reverse();
-  const frame = new THREE.ExtrudeGeometry(shapeOf(outline, [hole]), {
-    depth: 0.1,
+  const T = 0.08;
+  const DEPTH = 0.06;
+  const frame = new THREE.ExtrudeGeometry(shapeOf(up(handOutline(b)), [hole]), {
+    depth: DEPTH,
     bevelEnabled: true,
-    bevelThickness: 0.06,
-    bevelSize: 0.06,
-    bevelOffset: -0.06,
+    bevelThickness: T,
+    bevelSize: 0.09,
+    bevelOffset: -0.09,
     bevelSegments: 2,
   });
-  frame.translate(0, 0, 0.06);
+  frame.translate(0, 0, T);
   // Facetada (§4.9 #15): la cara de arriba son dos planos a ±8° que se
-  // juntan en una arista central (cresta de 0.12 mm sobre los cantos).
+  // juntan en una arista central (cresta de 0.12 mm sobre los cantos). El
+  // cuello y el buje son planos: ahí se cruzan las dos agujas.
   const tilt = Math.tan((8 * Math.PI) / 180);
-  const top = 0.06 + 0.1 + 0.06;
+  const top = DEPTH + 2 * T;
   const p = frame.getAttribute("position");
   for (let i = 0; i < p.count; i++) {
     const z = p.getZ(i);
-    if (z > 0.12) {
+    if (z > DEPTH + T - 0.02 && p.getY(i) > b.neck.to + 0.05) {
       const rise = Math.min(0.12, tilt * Math.max(0, b.halfW - Math.abs(p.getX(i))));
-      p.setZ(i, z + rise * ((z - 0.06) / (top - 0.06)));
+      p.setZ(i, z + rise * ((z - T) / (top - T)));
     }
   }
   frame.deleteAttribute("normal");
   frame.computeVertexNormals();
+  // El buje: disco con el canto biselado, un pelo más alto que el cuello.
+  const H = 0.24;
+  const hub = new THREE.LatheGeometry(
+    [
+      new THREE.Vector2(b.hubR, 0),
+      new THREE.Vector2(b.hubR, H - 0.07),
+      new THREE.Vector2(b.hubR - 0.07, H),
+      new THREE.Vector2(0.0001, H),
+    ],
+    48,
+  ).toNonIndexed();
+  hub.rotateX(Math.PI / 2);
+  // Canto vivo (normales planas), como el resto de la aguja.
+  hub.computeVertexNormals();
+  const whole = mergeGeometries([frame, hub]);
+  frame.dispose();
+  hub.dispose();
   // El lume, un pelo más estrecho que el hueco del marco (si las paredes
   // coinciden, parpadean) y hundido 0.1 mm bajo el canto del marco.
-  const holeRise = tilt * Math.max(0, b.halfW - Math.max(...lumePts.map(([x]) => Math.abs(x))));
+  const holeRise = tilt * Math.max(0, b.halfW - b.lume.halfW);
   const lume = new THREE.ExtrudeGeometry(shapeOf(offsetConvex(lumePts, -0.01)), {
     depth: Math.max(0.05, top + holeRise - 0.1 - 0.02),
     bevelEnabled: false,
   });
   lume.translate(0, 0, 0.02);
-  return { frame, lume };
+  return { frame: whole, lume };
 }
 
 /** Segundero: varilla, flecha hueca, aro del punto luminoso y contrapeso (en

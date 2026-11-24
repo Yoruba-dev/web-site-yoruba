@@ -271,14 +271,28 @@ export const DIAL_LAYOUT = {
     minor: { len: 0.75, w: 0.17 },
     major: { len: 1.3, w: 0.36 },
   },
+  // Tamaños de los índices y del marco MEDIDOS en las fotos del dueño 14 (y 4,
+  // 11, 17, 20) y en sus renders 8 y 19 (PLAN-REALISMO-V3 §2.3). Los radios se
+  // quedan algo más adentro que en la foto: aquí la pista impresa manda (0.15 mm
+  // de aire a las rayas mayores, check-watch-data).
   /** Puntos luminosos aplicados a las 1, 2, 4, 5, 7, 8, 10, 11. */
-  dots: { r: 11.15, dotR: 1.0, rimW: 0.2 },
+  dots: { r: 11.15, dotR: 1.25, rimW: 0.2 },
   /** Triángulo invertido a las 12 (radios del borde de arriba y de la punta). */
-  triangle: { outerR: 12.45, tipR: 9.65, halfW: 1.4, rimW: 0.2 },
+  triangle: { outerR: 12.45, tipR: 9.4, halfW: 1.6, rimW: 0.3 },
   /** Barras a las 6 y a las 9 (centro, largo radial, ancho). */
-  bar: { r: 10.95, len: 2.9, w: 1.15, rimW: 0.2 },
-  /** Ventana de fecha a las 3 (WATCH_SPECS) y su marco. */
-  date: { cx: WATCH_SPECS.dateWindow.centerMm, w: WATCH_SPECS.dateWindow.wMm, h: WATCH_SPECS.dateWindow.hMm, rim: 0.24 },
+  bar: { r: 10.5, len: 3.9, w: 1.5, rimW: 0.3 },
+  /** Ventana de fecha a las 3 (WATCH_SPECS) y su marco: `rim` es todo lo que
+   *  sobresale del hueco (4.1 × 3.2 por fuera), y de eso `funnel` es el embudo
+   *  de 4 facetas a 45° que baja hasta el hueco; el resto, banda plana con la
+   *  esquina de fuera de radio `r`. */
+  date: {
+    cx: WATCH_SPECS.dateWindow.centerMm,
+    w: WATCH_SPECS.dateWindow.wMm,
+    h: WATCH_SPECS.dateWindow.hMm,
+    rim: 0.6,
+    funnel: 0.3,
+    r: 0.35,
+  },
   /** Hueco del aplique PY (6 mm de alto bajo las 12, plano del proveedor). */
   applique: { cx: 0, cy: -5.6, w: 5.0, h: WATCH_SPECS.appliqueMm },
   /** Texto sobre las 6: línea base, tamaño, espaciado (em) y ancho máximo. */
@@ -323,8 +337,12 @@ export const DIAL_LAYOUT = {
   },
 } as const;
 
-/** Las agujas en mm, dibujadas apuntando a las 12 desde el eje (y hacia abajo =
- *  la cola). Una sola fuente para el cartel, la miniatura y la vista 3D. */
+/** Cuello de las agujas de hora y minuto: estrecho desde el buje hasta `to`, y
+ *  de ahí se abre hasta el ancho de la hoja en `flare` mm. */
+const NECK = { to: 2.3, halfW: 0.42, flare: 0.3 } as const;
+
+/** Las agujas en mm, dibujadas apuntando a las 12 desde el eje. Una sola fuente
+ *  para el cartel, la miniatura y la vista 3D. */
 export const HANDS = {
   /** La hora del cartel y de la cámara 3D: 10:10:40. A las :35 de spec.json
    *  el segundero cruzaba el nombre de las 6 y su contrapeso rozaba la "Y" del
@@ -339,9 +357,27 @@ export const HANDS = {
    *  handPose(); check-watch-data mide que el minutero y el segundero no tocan
    *  ningún signo. */
   poseIfa: { h: 10, m: 9.375 - 39.375 / 60, s: 39.375 },
-  /** Hora y minuto: cola, punta, hombro (donde empieza la punta) y medio ancho. */
-  hour: { tail: 1.6, tip: 8.1, shoulder: 6.5, halfW: 0.8 },
-  minute: { tail: 1.9, tip: 12.75, shoulder: 11.3, halfW: 0.62 },
+  /** Hora y minuto: punta, hombro (donde empieza la punta) y medio ancho; buje
+   *  redondo en el eje (SIN cola: renders 8, 13, 18 y 19 del dueño) y cuello.
+   *  `lume`: de dónde a dónde va la pintura, su hombro y sus medios anchos
+   *  (`baseW`, en la base, sigue la apertura del cuello). Los largos de la foto
+   *  (12.0 y 7.9, un solo render) esperan el visto bueno del dueño. */
+  hour: {
+    tip: 8.1,
+    shoulder: 6.5,
+    halfW: 0.8,
+    hubR: 1.3,
+    neck: NECK,
+    lume: { from: 2.5, shoulder: 6.35, tip: 7.3, halfW: 0.44, baseW: 0.28 },
+  },
+  minute: {
+    tip: 12.75,
+    shoulder: 11.3,
+    halfW: 0.62,
+    hubR: 1.0,
+    neck: NECK,
+    lume: { from: 2.5, shoulder: 11.15, tip: 11.95, halfW: 0.32, baseW: 0.2 },
+  },
   seconds: {
     /** Punta, desde el eje. */
     tip: 13.95,
@@ -356,6 +392,38 @@ export const HANDS = {
     counter: { at: 1.95, r: 0.74 },
   },
 } as const;
+
+/** Aguja de espada (hora o minuto) de HANDS. */
+export type SwordHand = (typeof HANDS)["hour" | "minute"];
+
+/** Contorno de una aguja de espada (mm, y hacia abajo, apuntando a las 12): del
+ *  eje al cuello, la hoja y la punta. El buje (círculo `hubR`) va aparte. */
+export function handOutline(h: SwordHand): [number, number][] {
+  const N = h.neck;
+  const right: [number, number][] = [
+    [N.halfW, 0],
+    [N.halfW, -N.to],
+    [h.halfW, -(N.to + N.flare)],
+    [h.halfW, -h.shoulder],
+  ];
+  return [...right, [0, -h.tip], ...[...right].reverse().map(([x, y]): [number, number] => [-x, y])];
+}
+
+/** El lume de una aguja (mm, y hacia abajo): por dentro del contorno. */
+export function handLume(h: SwordHand): [number, number][] {
+  const L = h.lume;
+  const right: [number, number][] = [
+    [L.baseW, -L.from],
+    [L.halfW, -(L.from + 0.25)],
+    [L.halfW, -L.shoulder],
+  ];
+  return [...right, [0, -L.tip], ...[...right].reverse().map(([x, y]): [number, number] => [-x, y])];
+}
+
+/** Polígono cerrado → datos de trazo SVG (mm). */
+export function polyPath(pts: readonly (readonly [number, number])[], dp = 3): string {
+  return `M${pts.map(([x, y]) => `${fmt(x, dp)} ${fmt(y, dp)}`).join("L")}Z`;
+}
 
 /** La hora del cartel para este reloj (la Esfera Ifá tiene la suya). */
 export function handPose(c: Pick<WatchConfig, "esfera">): { h: number; m: number; s: number } {
@@ -380,6 +448,15 @@ function lighten(hex: string, t: number): string {
   return `#${[0, 2, 4]
     .map((i) => parseInt(h.slice(i, i + 2), 16))
     .map((v) => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/** `hex` mezclado con negro en la proporción `t` (0–1). */
+function darken(hex: string, t: number): string {
+  const h = hex.replace("#", "");
+  return `#${[0, 2, 4]
+    .map((i) => parseInt(h.slice(i, i + 2), 16))
+    .map((v) => Math.round(v * (1 - t)).toString(16).padStart(2, "0"))
     .join("")}`;
 }
 
@@ -635,20 +712,21 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
     });
   }
 
-  // 6 · Piezas aplicadas: marco de fecha, puntos, triángulo, barras, aplique.
+  // 6 · Piezas aplicadas: marco de fecha (embudo y banda), puntos, triángulo,
+  //     barras, aplique.
   if (fecha) {
-    out.push({
-      kind: "rect",
-      capa: "aplicado",
-      x: D.cx - D.w / 2 - D.rim / 2,
-      y: -D.h / 2 - D.rim / 2,
-      w: D.w + D.rim,
-      h: D.h + D.rim,
-      rx: 0.12,
-      fill: "none",
-      stroke: rim,
-      strokeWidth: D.rim,
+    // Dos anillos de ancho constante: el trazo va centrado en su rectángulo.
+    const band = D.rim - D.funnel;
+    const ring = (inner: number, w: number) => ({
+      x: D.cx - D.w / 2 - inner - w / 2,
+      y: -D.h / 2 - inner - w / 2,
+      w: D.w + 2 * inner + w,
+      h: D.h + 2 * inner + w,
     });
+    out.push(
+      { kind: "rect", id: "embudo-fecha", capa: "aplicado", ...ring(0, D.funnel), fill: "none", stroke: darken(rim, 0.3), strokeWidth: D.funnel },
+      { kind: "rect", id: "marco-fecha", capa: "aplicado", ...ring(D.funnel, band), rx: D.r - band / 2, fill: "none", stroke: rim, strokeWidth: band },
+    );
   }
   if (ifa) {
     const A = L.applique;

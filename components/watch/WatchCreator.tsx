@@ -11,6 +11,7 @@ import {
   useReducer,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import WatchStage from "./WatchStage";
@@ -25,15 +26,20 @@ import {
   DRAFT_KEY,
   PART_STEP,
   STEPS,
-  STEP_VIEW,
+  SUB_LABELS,
   confirmedMask,
   creatorReducer,
   fixSub,
   isStepId,
+  nextStop,
   parseDraft,
+  prevStop,
   stepIndex,
   stepOfField,
+  stopKey,
+  stopsUpTo,
   subsOf,
+  viewOf,
   type CreatorAction,
   type Draft,
   type StepId,
@@ -56,14 +62,15 @@ import {
 import { AnnouncerProvider, AnnouncerToast, useAnnouncer } from "./shell/announce";
 import BottomSheet, { type Snap } from "./shell/BottomSheet";
 import FocusHeader, { GUIA_HREF } from "./shell/FocusHeader";
+import HelpPanel from "./shell/HelpPanel";
 import { OverlayHostContext } from "./shell/overlay";
 import SharePopover from "./shell/SharePopover";
-import { HintChip, StageChips } from "./shell/StageOverlays";
+import { HintChip, PartTip, StageChips, type PartTipHandle } from "./shell/StageOverlays";
 import Stepper from "./shell/Stepper";
 import SubTabs from "./shell/SubTabs";
 import ViewDock from "./shell/ViewDock";
 import { store, useCoarse, useKeyboardViewport, useMedia, usePanelLayout, useShareOrigin } from "./shell/hooks";
-import { Icon } from "./shell/icons";
+import { Icon, claspIcon } from "./shell/icons";
 import { copyText, downloadBlob } from "./shell/share";
 import { useScrollShadow } from "./shell/useScrollShadow";
 import { STAGE3D_V2, preload3D, use3DSupport } from "./shell/stage3d";
@@ -75,6 +82,7 @@ import { SITE } from "@/lib/site";
 import {
   canonicalJson,
   designCode,
+  getStrap,
   isPresetId,
   lineProperties,
   normalize,
@@ -118,6 +126,14 @@ export interface CreatorInitial {
 }
 
 const HINT_KEY = "pyj-reloj-pista-cristal";
+/** La sub-pestaña de la pieza que se toca en el reloj. */
+const PART_SUB: Readonly<Partial<Record<WatchPart, SubId>>> = {
+  esfera: "color",
+  agujas: "detalles",
+  correa: "correa",
+  cierre: "cierre",
+  tapa: "signo",
+};
 const PART_NAMES: Readonly<Record<WatchPart, string>> = {
   caja: "caja",
   esfera: "esfera",
@@ -126,6 +142,28 @@ const PART_NAMES: Readonly<Record<WatchPart, string>> = {
   cierre: "cierre",
   tapa: "tapa",
 };
+
+/** [Acercar] del dock: cuánto se acorta la distancia de la cámara. */
+const ACERCAR = 0.52;
+
+/** Cuántos cambios se pueden deshacer. */
+const DESHACER_MAX = 20;
+/** Lo que se teclea seguido (cada letra es una acción) cuenta como UN cambio. */
+const TECLEO_MS = 1500;
+interface Cambio {
+  /** El reloj ANTES del cambio, y dónde se hizo. */
+  config: WatchConfig;
+  step: StepId;
+  sub: SubId | null;
+  clave: string;
+  at: number;
+}
+const claveDe = (a: CreatorAction): string => (a.type === "tapaLinea" ? `tapaLinea${a.linea}` : a.type);
+const esTecleo = (a: CreatorAction): boolean => a.type === "texto" || a.type === "tapaLinea" || a.type === "tapaFecha";
+
+/** ¿El foco está en un campo donde se escribe? (⌘Z es del campo). */
+const enCampo = (t: EventTarget): boolean =>
+  t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
 
 const todayIso = () => {
   const d = new Date();
@@ -159,7 +197,12 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   // ajeno, el panel no se pinta: así no asoma "Listo" antes del paso guardado.
   const [listo, setListo] = useState(!desdeEnlace);
   const [verCompleto, setVerCompleto] = useState(false);
-  const [view, setView] = useState<{ v: View3D; seq: number }>({ v: desdeEnlace ? "tres4" : "tres4", seq: 0 });
+  const [view, setView] = useState<{ v: View3D; seq: number }>({ v: "tres4", seq: 0 });
+  const [cerca, setCerca] = useState(false);
+  // Las paradas ya vistas (los aros "sin ver"). Un enlace compartido: todas.
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set(desdeEnlace ? stopsUpTo(STEPS.length - 1) : []));
+  const [pasado, setPasado] = useState<readonly Cambio[]>([]);
+  const [ayuda, setAyuda] = useState<HTMLElement | null>(null);
   const [noche, setNoche] = useState(false);
   const [foto, setFoto] = useState(false);
   const [fotoVista, setFotoVista] = useState<"frente" | "tapa">("frente");
@@ -185,6 +228,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const dockRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const stage3d = useRef<WatchStage3DHandle>(null);
+  const partTip = useRef<PartTipHandle>(null);
   const sheetH = useRef(0);
   const moved = useRef(false);
   /** La entrada actual del historial la añadió el creador (entrada → editor). */
@@ -243,10 +287,25 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   if (anim.key !== bodyKey) setAnim({ key: bodyKey, parte: bodyParte, kind: anim.parte === bodyParte ? "sub" : "step" });
   const animKind = anim.key === bodyKey ? anim.kind : anim.parte === bodyParte ? "sub" : "step";
 
-  /** Toda edición pasa por aquí. */
+  // Lo último de cada estado, para lo que corre fuera del pintado (dispatch, el
+  // oyente de popstate, goTo).
+  const live = useRef({ screen, config, final, step, sub, max, seen });
+  live.current = { screen, config, final, step, sub, max, seen };
+
+  /** Toda edición pasa por aquí (y queda en la pila de "Deshacer"). */
   const dispatch = useCallback((a: CreatorAction) => {
     setPedido(false);
     setCompartido(false);
+    const now = live.current;
+    if (JSON.stringify(creatorReducer(now.config, a)) !== JSON.stringify(now.config)) {
+      const at = Date.now();
+      const clave = claveDe(a);
+      setPasado((p) => {
+        const ult = p[p.length - 1];
+        if (ult && esTecleo(a) && ult.clave === clave && at - ult.at < TECLEO_MS) return [...p.slice(0, -1), { ...ult, at }];
+        return [...p.slice(1 - DESHACER_MAX), { config: now.config, step: now.step, sub: now.sub, clave, at }];
+      });
+    }
     rawDispatch(a);
   }, []);
 
@@ -263,7 +322,10 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const mount3d = support === "completo" || (want3d && support !== "no" && support !== null);
   const tres = mount3d && !foto && status !== "sin-3d";
 
-  const requestView = useCallback((v: View3D) => setView((s) => ({ v, seq: s.seq + 1 })), []);
+  const requestView = useCallback((v: View3D) => {
+    setView((s) => ({ v, seq: s.seq + 1 }));
+    setCerca(false);
+  }, []);
 
   // — Llegada con ?d=: ¿recarga del mismo diseño (borrador) o enlace ajeno? ——
   // Manda el ?d= VIVO de la barra, no `initial`: al volver con "atrás" desde
@@ -301,17 +363,19 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       setStep(d.step);
       setSubMem(d.sub ? { [d.step]: d.sub } : {});
       setMax(d.max);
+      setSeen(new Set(d.seen));
       setCompartido(false);
-      setView({ v: STEP_VIEW[d.step], seq: 1 });
+      setView({ v: viewOf(d.step, d.sub), seq: 1 });
     } else {
       // Un enlace ajeno: se abre en "Listo" (o en su ?paso=), todo real.
       if (otro) {
         setStep(paso);
         setSubMem({});
         setMax(STEPS.length - 1);
+        setSeen(new Set(stopsUpTo(STEPS.length - 1)));
         setCompartido(true);
       }
-      setView({ v: STEP_VIEW[paso], seq: 1 });
+      setView({ v: viewOf(paso, null), seq: 1 });
     }
     setListo(true);
     // Solo al montar.
@@ -328,10 +392,6 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     setHint(store.get(HINT_KEY) !== "1");
   }, []);
 
-  // Lo último de cada estado, para el oyente de popstate (se monta una vez).
-  const live = useRef({ screen, final, step, sub, max });
-  live.current = { screen, final, step, sub, max };
-
   // — Atrás / adelante del navegador dentro del creador.
   useEffect(() => {
     const onPop = () => {
@@ -342,7 +402,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       if (!d && !preset) {
         if (now.screen !== "editor") return;
         pushed.current = false;
-        setDraft({ v: 2, config: now.final, step: now.step, sub: now.sub, max: now.max, at: Date.now() });
+        setDraft({ v: 2, config: now.final, step: now.step, sub: now.sub, max: now.max, seen: [...now.seen], at: Date.now() });
         setHoverPreset(null);
         focusTitle.current = true;
         setScreen("entrada");
@@ -360,6 +420,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       } else return;
       pushed.current = true;
       focusTitle.current = true;
+      setPasado([]);
       setScreen("editor");
     };
     window.addEventListener("popstate", onPop);
@@ -381,7 +442,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       } catch {
         /* URL demasiado larga o historial bloqueado: el borrador local basta */
       }
-      const d: Draft = { v: 2, config: final, step, sub, max, at: Date.now() };
+      const d: Draft = { v: 2, config: final, step, sub, max, seen: [...seen], at: Date.now() };
       store.set(DRAFT_KEY, JSON.stringify(d));
       setSaveSeq((n) => n + 1);
       // "Guardado" se anuncia, pero como mucho cada 20 s (no en cada letra).
@@ -391,7 +452,14 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       }
     }, 400);
     return () => window.clearTimeout(t);
-  }, [screen, listo, compartido, final, step, sub, max, order.d, announce]);
+  }, [screen, listo, compartido, final, step, sub, max, seen, order.d, announce]);
+
+  // — La parada en la que se está queda vista (su aro se va).
+  useEffect(() => {
+    if (screen !== "editor" || !listo) return;
+    const k = stopKey(step, sub);
+    setSeen((s) => (s.has(k) ? s : new Set(s).add(k)));
+  }, [screen, listo, step, sub]);
 
   // — Cambio de paso: anunciarlo, llevar el foco al título, y el golpe de
   //   cámara de ese paso (en la foto, la tapa se ve en "Tapa").
@@ -405,7 +473,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     announce(i < BUILD_STEPS ? `Paso ${i + 1} de ${BUILD_STEPS}: ${STEPS[i].label}` : "Listo: tu reloj está completo");
     setFotoVista(step === "tapa" ? "tapa" : "frente");
     if (!moved.current) return;
-    requestView(STEP_VIEW[step]);
+    requestView(viewOf(step, live.current.sub));
     headingRef.current?.focus({ preventScroll: true });
   }, [step, screen, listo, announce, requestView]);
 
@@ -431,15 +499,18 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     }
   }, [mask, screen, announce, hint]);
 
-  // — La pista de una vez: se va a los 6 s.
+  // — La pista de una vez: sale cuando el reloj ya se puede tocar (con 3D, al
+  //   terminar de cargar; sin saber aún si hay 3D, espera) y se va a los 8 s (o
+  //   al primer gesto).
+  const verPista = hint && screen === "editor" && hayCristal && (tres ? status === "listo" : support !== null);
   useEffect(() => {
-    if (!hint || screen !== "editor" || !hayCristal) return;
+    if (!verPista) return;
     const t = window.setTimeout(() => {
       setHint(false);
       store.set(HINT_KEY, "1");
-    }, 6000);
+    }, 8000);
     return () => window.clearTimeout(t);
-  }, [hint, screen, hayCristal]);
+  }, [verPista]);
 
   // — Teclado del móvil abierto: el escenario pequeño enseña lo que se escribe.
   useEffect(() => {
@@ -450,21 +521,33 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
 
   // — Ir a un paso (cualquiera, en cualquier orden): visitar = aceptar lo de
   //   en medio (max sube y esas piezas se vuelven reales, escalonadas).
-  const goTo = useCallback((s: StepId, sb?: SubId | null) => {
-    moved.current = true;
-    setStep(s);
-    setMax((m) => Math.max(m, stepIndex(s)));
-    if (sb) setSubMem((x) => ({ ...x, [s]: sb }));
-    setShareAnchor(null);
-  }, []);
-
-  const setSub = useCallback(
-    (sb: SubId) => {
-      setSubMem((x) => ({ ...x, [step]: sb }));
-      if (step === "esfera") requestView("esfera");
+  const goTo = useCallback(
+    (s: StepId, sb?: SubId | null) => {
+      const now = live.current;
+      moved.current = true;
+      setStep(s);
+      setMax((m) => Math.max(m, stepIndex(s)));
+      if (sb) setSubMem((x) => ({ ...x, [s]: sb }));
+      setShareAnchor(null);
+      // Otra sub-pestaña del MISMO paso: su encuadre (al cambiar de paso lo
+      // pide el efecto de arriba).
+      if (s === now.step && sb && sb !== now.sub) requestView(viewOf(s, sb));
     },
-    [step, requestView],
+    [requestView],
   );
+
+  const setSub = useCallback((sb: SubId) => goTo(live.current.step, sb), [goTo]);
+
+  // — Deshacer: el reloj de antes, en el sitio donde se cambió.
+  const deshacer = useCallback(() => {
+    const ult = pasado[pasado.length - 1];
+    if (!ult) return;
+    setPasado((p) => p.slice(0, -1));
+    setPedido(false);
+    rawDispatch({ type: "cargar", config: ult.config });
+    goTo(ult.step, ult.sub);
+    announce("Cambio deshecho");
+  }, [pasado, goTo, announce]);
 
   /** "Corregir": al paso y sub-pestaña del campo, con el foco en él. */
   const fix = useCallback(
@@ -511,6 +594,8 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     setStrapMem({});
     setSubMem({});
     setMax(0);
+    setSeen(new Set());
+    setPasado([]);
     setVerCompleto(false);
     // Sin golpe de cámara (moved = false), pero el foco sí va al título.
     moved.current = false;
@@ -532,17 +617,19 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     setHoverPreset(null);
     setSubMem(draft.sub ? { [draft.step]: draft.sub } : {});
     setMax(draft.max);
+    setSeen(new Set(draft.seen ?? stopsUpTo(draft.max)));
+    setPasado([]);
     moved.current = false;
     focusTitle.current = true;
     prevStep.current = draft.step;
     setStep(draft.step);
     setScreen("editor");
-    requestView(STEP_VIEW[draft.step]);
+    requestView(viewOf(draft.step, draft.sub));
   }
 
   /** Volver a la entrada sin perder nada: el diseño queda como "Continuar". */
   function backToEntry() {
-    setDraft({ v: 2, config: final, step, sub, max, at: Date.now() });
+    setDraft({ v: 2, config: final, step, sub, max, seen: [...seen], at: Date.now() });
     focusTitle.current = true;
     if (pushed.current) {
       window.history.back();
@@ -603,6 +690,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   // — Compartir ——————————————————————————————————————————————————————————————
   // Estable: el popover no debe re-ejecutar su efecto de foco en cada pintado.
   const closeShare = useCallback(() => setShareAnchor(null), []);
+  const closeHelp = useCallback(() => setAyuda(null), []);
   async function copyLink() {
     const r = await copyText(order.creatorUrl);
     if (r === "ok") toast("Enlace copiado ✓");
@@ -703,10 +791,15 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const onPartPick = useCallback(
     (p: WatchPart) => {
       if (screen !== "editor") return;
-      goTo(PART_STEP[p], p === "agujas" ? "detalles" : p === "esfera" ? "color" : p === "tapa" ? "signo" : null);
+      goTo(PART_STEP[p], PART_SUB[p] ?? null);
     },
     [screen, goTo],
   );
+  // El nombre de la pieza bajo el ratón ("Correa"), sin repintar el editor.
+  const onPartHover = useCallback((p: WatchPart | null, x: number, y: number) => {
+    const n = p ? PART_NAMES[p] : null;
+    partTip.current?.show(n ? n.charAt(0).toUpperCase() + n.slice(1) : null, x, y);
+  }, []);
   const onViewRequest = useCallback((v: View3D) => requestView(v), [requestView]);
   const onInteract = useCallback(() => setHint(false), []);
   const onStatus = useCallback((s: Stage3DStatus) => setStatus(s), []);
@@ -716,12 +809,23 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   // ==========================================================================
   const i = stepIndex(step);
   const def = STEPS[i];
-  const prev = i > 0 ? STEPS[i - 1] : null;
-  const next = i < STEPS.length - 1 ? STEPS[i + 1] : null;
   const subs = subsOf(step);
+  // "Siguiente" recorre lo que falta por ver; "‹" vuelve a la parada anterior.
+  const next = nextStop(step, sub, seen);
+  const prev = prevStop(step, sub);
+  const nombreParada = (x: { step: StepId; sub: SubId | null }) =>
+    x.step === step && x.sub ? SUB_LABELS[x.sub] : STEPS[stepIndex(x.step)].label;
+  const sinVer = new Set(subs.filter((x) => !seen.has(stopKey(step, x))));
   const panelId = `${uid}-opts`;
   const stepProps = { config, dispatch, goTo, requestView };
   const enEditor = screen === "editor" && listo;
+
+  /** [Acercar] del dock: acerca, y otra vez para volver. */
+  function acercar() {
+    stage3d.current?.zoom(cerca ? 1 / ACERCAR : ACERCAR);
+    setHint(false);
+    setCerca(!cerca);
+  }
 
   const dock = (
     <div ref={dockRef} className={dockVertical ? "rl-vdockwrap" : "rl-dockwrap"}>
@@ -735,8 +839,11 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         }}
         fotoVista={fotoVista}
         onFotoVista={setFotoVista}
+        cierre={enEditor && mask.correa && mask.cierre ? claspIcon(getStrap(final.correa)?.tipo, final.cierre) : null}
         noche={noche}
         onNoche={() => setNoche((x) => !x)}
+        cerca={cerca}
+        onCerca={acercar}
         onToggleFoto={
           support === "no" || support === null
             ? null
@@ -793,6 +900,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         return (
           <StepCorrea
             {...stepProps}
+            sub={sub ?? "correa"}
             memoria={strapMem}
             recordar={(t: StrapType, id: StrapId) => setStrapMem((m) => (m[t] === id ? m : { ...m, [t]: id }))}
           />
@@ -864,7 +972,12 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const footer = !enEditor ? null : step === "resumen" ? (
     <div className="rl-foot rl-foot--listo">
       {panel ? (
-        <button type="button" className="rl-btn rl-btn--ghost rl-btn--square" onClick={() => goTo("tapa")} aria-label="Volver a Tapa">
+        <button
+          type="button"
+          className="rl-btn rl-btn--ghost rl-btn--square"
+          onClick={() => goTo("tapa", prev?.sub)}
+          aria-label="Volver a Tapa"
+        >
           <Icon name="back" />
         </button>
       ) : (
@@ -886,20 +999,28 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       <button
         type="button"
         className="rl-btn rl-btn--ghost rl-btn--square"
-        onClick={() => (prev ? goTo(prev.id) : backToEntry())}
-        aria-label={prev ? `Paso anterior: ${prev.label}` : "Cambiar de Orisha"}
-        title={prev ? prev.label : "Cambiar de Orisha"}
+        onClick={() => (prev ? goTo(prev.step, prev.sub) : backToEntry())}
+        aria-label={prev ? `Volver a ${nombreParada(prev)}` : "Cambiar de Orisha"}
+        title={prev ? nombreParada(prev) : "Cambiar de Orisha"}
       >
         <Icon name="back" />
       </button>
       {next && (
-        <button type="button" className="rl-btn rl-btn--gold rl-foot_next" onClick={() => goTo(next.id)}>
+        <button
+          type="button"
+          className="rl-btn rl-btn--gold rl-foot_next"
+          onClick={() => {
+            goTo(next.step, next.sub);
+            // El cambio de paso ya se anuncia; el de sub-pestaña, aquí.
+            if (next.step === step && next.sub) announce(`${def.label}: ${SUB_LABELS[next.sub]}`);
+          }}
+        >
           <span className="rl-btn_label">
-            {next.id === "resumen" ? (
+            {next.step === "resumen" ? (
               "Terminar"
             ) : (
               <>
-                Siguiente<span className="rl-foot_nextname">: {next.label}</span>
+                Siguiente<span className="rl-foot_nextname">: {nombreParada(next)}</span>
               </>
             )}
           </span>
@@ -961,6 +1082,8 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
       ) : (
         <span className="rl-eyebrow">
           Paso {i + 1} de {BUILD_STEPS}
+          {/* Solo con un bloqueo real: nunca una frase roja fija. */}
+          {blockedSteps.has(step) && <span className="rl-eyebrow_falta"> · falta resolver algo</span>}
         </span>
       )}
       <div className="rl-stephead_row">
@@ -993,6 +1116,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         panelId={panelId}
         idPrefix={uid}
         blocked={blockedSubs}
+        sinVer={sinVer}
         label={`Partes de ${def.label}`}
       />
     ) : null;
@@ -1042,11 +1166,23 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     sheetFull ? " is-sheet-full" : ""
   }`;
 
+  // Tecla del armazón: ⌘Z / Ctrl+Z = Deshacer, salvo escribiendo. (Las de las
+  // vistas, 1–5, las lleva el visor.)
+  function onAppKey(e: ReactKeyboardEvent<HTMLDivElement>) {
+    if (!enEditor) return;
+    if (e.key.toLowerCase() === "z" && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && !enCampo(e.target) && pasado.length) {
+      e.preventDefault();
+      deshacer();
+    }
+  }
+
   return (
-    <div ref={rootRef} className={appClass} data-pantalla={screen} data-paso={enEditor ? step : undefined}>
+    <div ref={rootRef} className={appClass} data-pantalla={screen} data-paso={enEditor ? step : undefined} onKeyDown={onAppKey}>
       <FocusHeader
         saved={screen === "editor" && saveSeq > 0}
         saveSeq={saveSeq}
+        onAyuda={(el) => setAyuda((a) => (a ? null : el))}
+        ayudaAbierta={!!ayuda}
         onSolicitar={panel && enEditor && step !== "resumen" ? () => goTo("resumen") : undefined}
         cart={order.canBuy ? { count, onOpen: () => setCartOpen(true) } : null}
       />
@@ -1068,6 +1204,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
           status={status}
           onStatus={onStatus}
           onPartPick={onPartPick}
+          onPartHover={enEditor ? onPartHover : undefined}
           onViewRequest={onViewRequest}
           onInteract={onInteract}
         >
@@ -1078,10 +1215,24 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
               onCopy={copyLink}
               onShare={(el) => setShareAnchor((a) => (a ? null : el))}
               shareOpen={!!shareAnchor}
+              onUndo={pasado.length ? deshacer : undefined}
               compact={!panel}
             />
           )}
-          {enEditor && hint && hayCristal && <HintChip text="Las piezas en cristal se colocan en su paso" />}
+          {/* UNA pista, y que diga qué se puede hacer con el reloj (la del visor
+              se calla en el editor: editor.css). */}
+          {enEditor && verPista && (
+            <HintChip
+              text={
+                !tres
+                  ? "Las piezas en cristal se colocan en su paso"
+                  : coarse
+                    ? "Desliza para girarlo · toca una pieza"
+                    : "Arrastra para girarlo · toca una pieza para cambiarla"
+              }
+            />
+          )}
+          {enEditor && tres && !coarse && <PartTip ref={partTip} />}
           {(screen === "editor" || tres || support === "ligero") && dock}
         </WatchStage>
 
@@ -1156,6 +1307,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
           returnFocus={shareAnchor}
         />
       )}
+      {ayuda && <HelpPanel onClose={closeHelp} returnFocus={ayuda} tres={tres} coarse={coarse} />}
       {/* El aviso ("Enlace copiado ✓") dentro del armazón: tokens, cristal y
           capa propios (announce.tsx). */}
       <AnnouncerToast />

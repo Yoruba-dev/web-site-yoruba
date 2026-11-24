@@ -30,7 +30,7 @@ import {
   type NormalizeReport,
   type Part,
 } from "@/lib/watch";
-import { CASEBACK_LAYOUT, DIAL_LAYOUT, dialHasDate, dialPrimitives } from "@/lib/watch-art";
+import { CASEBACK_LAYOUT, DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives } from "@/lib/watch-art";
 import { svgDataUrl } from "@/lib/watch-svg";
 // Texto en CURVAS (contornos reales de Cinzel / Cormorant): la vista previa de
 // la hoja y el archivo que abre el láser o la impresora son idénticos, sin
@@ -50,6 +50,27 @@ import { dialPrintSvgCurvas, laserSvgCurvas } from "@/lib/watch-curvas";
 const downloadHref = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/** mm para la ficha: sin ceros de sobra (2.70 → 2.7). */
+const mm = (x: number) => String(Number(x.toFixed(2)));
+
+/** Medidas de lo aplicado, de las mismas constantes que el dibujo y el 3D (los
+ *  aros van centrados en el borde: por fuera, la medida más un aro). */
+function medidasAplicados(clasica: boolean, fecha: boolean): string {
+  const { dots, bar, triangle, date } = DIAL_LAYOUT;
+  const bits = clasica
+    ? [
+        `puntos Ø${mm(2 * dots.dotR + dots.rimW)} en r ${mm(dots.r)}`,
+        `barras ${mm(bar.len + bar.rimW)} × ${mm(bar.w + bar.rimW)} en r ${mm(bar.r)}`,
+        `triángulo de r ${mm(triangle.outerR)} a ${mm(triangle.tipR)} (aro ${mm(triangle.rimW)} centrado en el borde)`,
+      ]
+    : [];
+  if (fecha) {
+    const e = 2 * date.rim;
+    bits.push(`marco de fecha ${mm(date.w + e)} × ${mm(date.h + e)} (hueco ${mm(date.w)} × ${mm(date.h)}) con embudo a 45° de ${mm(date.funnel)}`);
+  }
+  return bits.join(" · ");
+}
 
 /** "Referencia ABC · nota" de una pieza del catálogo, para el taller. */
 function partNote(p: Part | undefined): string | null {
@@ -96,6 +117,7 @@ export default function WatchSheet({
   const tintas = (["oro", "oro-oscuro", "negra"] as const).filter((id) =>
     impresion.some((q) => q.fill === tintaHex(id) || q.stroke === tintaHex(id)),
   );
+  const aplicados = medidasAplicados(c.esfera.modelo !== "ifa", dialHasDate(c));
   const seq = c.esfera.pista.orisha ? TRACK_SEQUENCES[c.esfera.pista.orisha] : null;
 
   // La ficha: las mismas propiedades que lleva el pedido (lineProperties: una
@@ -138,8 +160,9 @@ export default function WatchSheet({
     },
     {
       key: "Agujas hora / minuto",
-      value: `${finish?.metalAgujas === "oro-rosa" ? "Oro rosa" : "Acero pulido"} con lume (siguen el acabado ${finish?.label ?? ""})`,
+      value: `${finish?.metalAgujas === "oro-rosa" ? "Oro rosa" : "Acero pulido"} con lume (siguen el acabado ${finish?.label ?? ""}) · sin cola, buje redondo Ø${mm(2 * HANDS.hour.hubR)} / Ø${mm(2 * HANDS.minute.hubR)} mm`,
     },
+    ...(aplicados ? [{ key: "Índices y marco (aplicados, mm)", value: aplicados }] : []),
   ];
   const notas = [
     ["Acabado", partNote(finish)],
@@ -211,8 +234,8 @@ export default function WatchSheet({
               />
             </div>
             <figcaption>
-              Impresión de la esfera · Ø{dialMm} mm · 1:1 y ×4 · 12 arriba · texto en curvas. Las guías cian no se
-              imprimen.
+              Impresión de la esfera · Ø{dialMm} mm · 1:1 y ×4 · 12 arriba · texto en curvas. Las guías cian (disco,
+              eje, fecha y su marco, aplique) no se imprimen.
             </figcaption>
           </figure>
           <figure>

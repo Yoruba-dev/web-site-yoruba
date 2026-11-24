@@ -170,6 +170,21 @@ function Strips() {
   );
 }
 
+/** Caja para lo PULIDO visto por detrás (hebilla y plegable en "cierre": sin
+ *  ella reflejaban el lado oscuro del estudio). Estrecha a propósito: con 200
+ *  de ancho la hebilla sale clara pero lisa; con 90 quedan filos oscuros y
+ *  claros (PLAN-REALISMO-V3 1.2). No va en <Strips>: la posición está en el
+ *  mapa, y solo el del HDRI gira (environmentRotation 3.5 rad en y). */
+const CLASP_BOX = {
+  hdri: [51, 115, 216],
+  /** R_y(3.5) de la anterior: la misma dirección del mundo, sin girar. */
+  cupula: [-124, 115, -184],
+} as const;
+
+function ClaspBox({ at }: { at: readonly [number, number, number] }) {
+  return <Lightformer form="rect" intensity={1.2} position={[at[0], at[1], at[2]]} scale={[90, 150, 1]} target={[0, 0, 0]} />;
+}
+
 function ProceduralStudio({ noche, res }: { noche: boolean; res: number }) {
   return (
     <Environment resolution={res} frames={1} far={2000} environmentIntensity={noche ? 0.035 : 1}>
@@ -179,6 +194,7 @@ function ProceduralStudio({ noche, res }: { noche: boolean; res: number }) {
       <Lightformer form="rect" intensity={1.1} position={[0, 220, -10]} scale={[260, 220, 1]} target={[0, 0, 0]} />
       <Strips />
       <Lightformer form="rect" intensity={1.8} position={[80, 110, -190]} scale={[200, 110, 1]} target={[0, 0, 0]} />
+      <ClaspBox at={CLASP_BOX.cupula} />
     </Environment>
   );
 }
@@ -198,6 +214,7 @@ function Studio({ noche, coarse }: { noche: boolean; coarse: boolean }) {
         environmentRotation={[0, 3.5, 0]}
       >
         <Strips />
+        <ClaspBox at={CLASP_BOX.hdri} />
       </Environment>
       <EnvReady />
     </Suspense>
@@ -545,6 +562,7 @@ function Content(p: WatchSceneProps & { coarse: boolean; reduced: boolean; onAct
         model={model}
         onInteract={p.onInteract}
         onPartPick={p.onPartPick}
+        onPartHover={p.onPartHover}
         onActive={p.onActive}
       />
     </AssemblyProvider>

@@ -7,8 +7,10 @@
 //             0.35 mm: flancos cepillados en VERTICAL, cantos pulidos;
 //   bisel     octógono acolchado (radios de esquina medidos, outline.ts):
 //             pared pulida, chaflán pulido a 45° de 1.2 mm (medido a las 9:
-//             1.22), cara cepillada en LINEAL paralela a 3–9 (ref 8) y escalón
-//             interior pulido hasta la ventana de Ø28.8;
+//             1.22), cara cepillada en VERTICAL, paralela a 12–6 (tensor de
+//             estructura 88–92° en las refs 2, 8 y 16: PLAN-REALISMO-V3 §1; el
+//             SPEC §4.9 #2 decía 3–9 y estaba girado 90°) y escalón interior
+//             pulido hasta la ventana de Ø28.8;
 //   orejas    guardacoronas a las 3 y a las 9 con su faceta de arriba pulida;
 //   cubreasas a las 12 y a las 6: bloques trapecio pulidos espejo, biseles de
 //             0.4 y cara convexa de 0.3 (refs 8, 13, 19);
@@ -19,8 +21,10 @@
 //   tapa      anillo cepillado en radial con las 6 muescas de la llave, bisel
 //             pulido de 0.3 y el campo del grabado (Ø25.2), un pelo saliente;
 //   cristal   zafiro plano (ver el material) con un aro pulido de 0.25 mm.
-// Las piezas fijas se UNEN por material (cepillado vertical / lineal x /
-// pulido / mate): menos llamadas de dibujo.
+// Las piezas fijas se UNEN por material (cepillado vertical / pulido / mate):
+// menos llamadas de dibujo. Todas las caras miran hacia su normal
+// (check-watch-data): con materiales a dos caras, three le da la vuelta a la
+// normal de una cara del revés y la pieza sale iluminada al contrario.
 // ---------------------------------------------------------------------------
 import * as THREE from "three";
 import { WATCH_SPECS } from "@/lib/watch";
@@ -61,10 +65,9 @@ const BODY_EDGE = 0.35;
 const BEZEL_CHAMFER = 1.2;
 
 export interface CaseGeometries {
-  /** Cepillado vertical: flancos, caras de arriba y abajo, tubo de la corona. */
+  /** Cepillado vertical (12–6): cara del bisel, flancos, caras de arriba y
+   *  abajo, tubo de la corona. */
   brushed: THREE.BufferGeometry;
-  /** Cepillado lineal paralelo a 3–9: la cara del bisel. */
-  brushedX: THREE.BufferGeometry;
   /** Pulido: cantos, pared y chaflanes del bisel, escalón interior, corona,
    *  cubreasas, facetas de las orejas, tornillos, aro del cristal, bisel del
    *  campo de la tapa. */
@@ -152,7 +155,8 @@ function crownGeometry(): THREE.BufferGeometry {
 }
 
 /** Cubreasas: trapecio pulido (13.4 → 12.6 de ancho), biseles 0.4, cara de
- *  arriba convexa 0.3. En la muesca de las 12 (la de las 6 es su espejo). */
+ *  arriba convexa 0.3. En la muesca de las 12 (el de las 6 es el mismo, girado
+ *  media vuelta). */
 function lugHoodGeometry(): THREE.BufferGeometry {
   const y0 = CASE_DIM.notchY + 0.04;
   const y1 = CASE_DIM.lugEnd - 0.05;
@@ -264,9 +268,9 @@ export function caseGeometries(): CaseGeometries {
   // — Cubreasas (12 y 6) ——————————————————————————————————————————————
   const hood12 = lugHoodGeometry();
   const hood6 = lugHoodGeometry();
-  hood6.scale(1, -1, 1);
-  // El espejo invierte las caras: se rehacen.
-  hood6.index && hood6.setIndex(Array.from(hood6.index.array).reverse());
+  // Media vuelta, no espejo: el trapecio es simétrico en x y así las caras y
+  // sus normales siguen mirando hacia fuera.
+  hood6.rotateZ(Math.PI);
 
   // — Tornillos del flanco derecho (Ø1.1, cúpulas pulidas) ——————————————
   const pins: THREE.BufferGeometry[] = [];
@@ -320,8 +324,7 @@ export function caseGeometries(): CaseGeometries {
   ]);
 
   const out = {
-    brushed: mergeNonIndexed([bodyWall, capTop, capBottom, crownTube]),
-    brushedX: mergeNonIndexed([bezelTop]),
+    brushed: mergeNonIndexed([bodyWall, capTop, capBottom, crownTube, bezelTop]),
     polished: mergeNonIndexed([
       edgeBottom,
       edgeTop,

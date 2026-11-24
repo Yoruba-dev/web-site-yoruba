@@ -43,7 +43,7 @@ import { ALL_GHOST, ALL_SOLID, WATCH_PARTS, type PartMask, type View3D, type Wat
 export type StepId = "caja" | "esfera" | "correa" | "tapa" | "resumen";
 
 /** Sub-pestañas de los pasos que las tienen. */
-export type SubId = "color" | "pista" | "texto" | "detalles" | "signo" | "grabado";
+export type SubId = "color" | "pista" | "texto" | "detalles" | "correa" | "cierre" | "signo" | "grabado";
 
 export interface StepDef {
   id: StepId;
@@ -66,6 +66,8 @@ export const BUILD_STEPS = 4;
 
 export const SUBS: Readonly<Partial<Record<StepId, readonly SubId[]>>> = {
   esfera: ["color", "pista", "texto", "detalles"],
+  // La correa y su cierre son piezas distintas (PLAN-REALISMO-V3 6.4).
+  correa: ["correa", "cierre"],
   tapa: ["signo", "grabado"],
 };
 
@@ -74,6 +76,8 @@ export const SUB_LABELS: Readonly<Record<SubId, string>> = {
   pista: "Pista",
   texto: "Texto",
   detalles: "Detalles",
+  correa: "Correa",
+  cierre: "Cierre",
   signo: "Signo",
   grabado: "Grabado",
 };
@@ -109,14 +113,66 @@ export const PART_STEP: Readonly<Record<WatchPart, StepId>> = {
   tapa: "tapa",
 };
 
-/** El encuadre de la cámara de cada paso. */
+/** El encuadre de la cámara de cada paso. La correa se enseña por su CARA
+ *  (vista 'correa'), no de canto: el canto queda en el botón "Correa entera". */
 export const STEP_VIEW: Readonly<Record<StepId, View3D>> = {
   caja: "tres4",
   esfera: "esfera",
-  correa: "lado",
+  correa: "correa",
   tapa: "tapa",
   resumen: "tres4",
 };
+
+/** El encuadre de un paso y su sub-pestaña (el cierre tiene el suyo). */
+export function viewOf(step: StepId, sub: SubId | null | undefined): View3D {
+  return sub === "cierre" ? "cierre" : STEP_VIEW[step];
+}
+
+// ===========================================================================
+// PARADAS — lo que "Siguiente" recorre (PLAN-REALISMO-V3 6.2). Una parada es un
+// paso sin sub-pestañas, o una sub-pestaña. "Siguiente" lleva a lo que falta
+// por ver del paso y luego al paso siguiente; nunca bloquea (R5.2): la barra
+// de pasos y "Pedir" siguen saltando a donde se quiera.
+// ===========================================================================
+export interface Stop {
+  step: StepId;
+  sub: SubId | null;
+}
+
+/** "esfera:pista", "caja": la clave de una parada (para lo ya visto). */
+export const stopKey = (step: StepId, sub: SubId | null | undefined): string => (sub ? `${step}:${sub}` : step);
+
+/** Todas las paradas, en orden. */
+export const STOPS: readonly Stop[] = STEPS.flatMap((s): Stop[] => {
+  const subs = subsOf(s.id);
+  return subs.length ? subs.map((sub) => ({ step: s.id, sub })) : [{ step: s.id, sub: null }];
+});
+
+/** Las paradas de los pasos con índice ≤ `max` (un borrador sin `seen`, o un
+ *  enlace compartido: todo visto). */
+export function stopsUpTo(max: number): string[] {
+  return STOPS.filter((x) => stepIndex(x.step) <= max).map((x) => stopKey(x.step, x.sub));
+}
+
+/** A dónde lleva "Siguiente": primero lo que falta por ver de ESTE paso (lo
+ *  que va después y luego lo que quedó atrás); si no falta nada, el paso
+ *  siguiente, en su primera sub-pestaña sin ver. null = ya es el último. */
+export function nextStop(step: StepId, sub: SubId | null, seen: ReadonlySet<string>): Stop | null {
+  const subs = subsOf(step);
+  const k = sub ? subs.indexOf(sub) : -1;
+  const falta = [...subs.slice(k + 1), ...subs.slice(0, Math.max(0, k))].find((s) => !seen.has(stopKey(step, s)));
+  if (falta) return { step, sub: falta };
+  const sig = STEPS[stepIndex(step) + 1];
+  if (!sig) return null;
+  const suyas = subsOf(sig.id);
+  return { step: sig.id, sub: suyas.find((s) => !seen.has(stopKey(sig.id, s))) ?? suyas[0] ?? null };
+}
+
+/** A dónde lleva "‹": la parada anterior, en orden (null = la primera). */
+export function prevStop(step: StepId, sub: SubId | null): Stop | null {
+  const i = STOPS.findIndex((x) => x.step === step && x.sub === sub);
+  return i > 0 ? STOPS[i - 1] : null;
+}
 
 /** Qué piezas son reales: las de los pasos ya alcanzados (índice ≤ `max`), o
  *  todas con `todo` ("Ver completo", un enlace compartido). max = -1 → todo en
@@ -147,8 +203,9 @@ export function stepOfField(f: WatchField): { step: StepId; sub: SubId | null } 
     case "segundero":
       return { step: "esfera", sub: "detalles" };
     case "correa":
+      return { step: "correa", sub: "correa" };
     case "cierre":
-      return { step: "correa", sub: null };
+      return { step: "correa", sub: "cierre" };
     case "tapa.signo":
       return { step: "tapa", sub: "signo" };
     case "tapa.linea1":
@@ -275,6 +332,9 @@ export interface Draft {
   sub: SubId | null;
   /** Índice del paso más alto alcanzado (−1 = ninguno). */
   max: number;
+  /** Paradas ya vistas (stopKey): los aros "sin ver" de las sub-pestañas. Un
+   *  borrador anterior no lo trae: se dan por vistos sus pasos alcanzados. */
+  seen?: string[];
   /** Date.now() del último cambio. */
   at: number;
 }
@@ -296,7 +356,11 @@ export function parseDraft(raw: string | null): Draft | null {
       d.v === 2 && typeof d.max === "number" && Number.isFinite(d.max)
         ? Math.max(stepIndex(step), Math.min(top, Math.round(d.max)))
         : stepIndex(step);
-    return { v: 2, config, step, sub, max, at };
+    const claves = new Set(STOPS.map((x) => stopKey(x.step, x.sub)));
+    const seen = Array.isArray(d.seen)
+      ? d.seen.filter((x): x is string => typeof x === "string" && claves.has(x))
+      : stopsUpTo(max);
+    return { v: 2, config, step, sub, max, seen, at };
   } catch {
     return null;
   }
@@ -341,4 +405,49 @@ export function strapLayerName(strapId: string, acabado: string): string {
   if (strapId === "brazalete") return `brazalete-${acabado}`;
   if (strapId.startsWith("piel-")) return `correa-${strapId}-${acabado}`;
   return `correa-${strapId}`;
+}
+
+// ===========================================================================
+// VITRINA — las imágenes pequeñas de las muestras (scripts/gen-vitrina.py, de
+// nuestras capas). Solo las pide el paso que las enseña.
+// ===========================================================================
+const VITRINA = "/assets/images/reloj/vitrina";
+
+/** Piezas de la vitrina que existen (las que tienen capa). */
+const tieneVitrina = (nombre: string) => KNOWN_LAYERS.has(nombre);
+
+/** La punta de una correa, de pie (la piel lleva su terminal en el acabado; el
+ *  brazalete ES del acabado), o undefined si aún no tiene foto. */
+export function vitrinaCorrea(strapId: string, acabado: string): string | undefined {
+  if (!tieneVitrina(strapLayerName(strapId, acabado))) return undefined;
+  if (strapId === "brazalete") return `${VITRINA}/brazalete-${acabado}.webp`;
+  if (strapId.startsWith("piel-")) return `${VITRINA}/${strapId}-${acabado}.webp`;
+  return `${VITRINA}/${strapId}.webp`;
+}
+
+/** El macro del material de una correa (tarjetas de Tipo, mismo encuadre). */
+export function vitrinaTipo(strapId: string, acabado: string): string | undefined {
+  if (!tieneVitrina(strapLayerName(strapId, acabado))) return undefined;
+  return `${VITRINA}/tipo-${strapId === "brazalete" ? `brazalete-${acabado}` : strapId}.webp`;
+}
+
+/** Los índices sueltos (sin el aplique PY), para ponerlos sobre una capa. */
+export function vitrinaIndices(ifa: boolean): string {
+  return `${VITRINA}/indices${ifa ? "-ifa" : ""}-sin.svg`;
+}
+
+/** Las tres imágenes del mini reloj (de arriba abajo): índices, caja, esfera.
+ *  `paso` = el ajuste del degradado (solo con una base de degradado).
+ *  undefined = esa esfera aún no tiene foto. */
+export function vitrinaMini(
+  base: string,
+  acabado: string,
+  opts: { ifa?: boolean; paso?: number } = {},
+): { indices: string; caja: string; dial: string } | undefined {
+  if (!tieneVitrina(`esfera-${base}${base.startsWith("degradado-") ? "-p3" : ""}`)) return undefined;
+  return {
+    indices: `${VITRINA}/${opts.ifa ? "indices-ifa" : "indices"}.svg`,
+    caja: `${VITRINA}/caja-${acabado}.webp`,
+    dial: `${VITRINA}/dial-${base}${base.startsWith("degradado-") ? `-p${opts.paso ?? 3}` : ""}.webp`,
+  };
 }

@@ -63,30 +63,47 @@ export function strapTone(c: Pick<WatchConfig, "correa">): string {
   return STRAP_PHOTO_TONE[s.id] ?? WATCH_COLORS[s.color ?? "negro"].hex;
 }
 
+/** Anisotropía de TODO lo cepillado (PLAN-REALISMO-V3 §2.1). three dobla la
+ *  normal con un peso (1 − a(1 − r))⁴: con 0.7–0.8 (lo que había) solo quedaba
+ *  un 7 % de la normal real y cada pieza reflejaba UN punto del cuarto, fuera
+ *  cual fuera su forma (blanca en "tres4", negra en "cierre"). Con 0.25 queda
+ *  el 47 %: se ve la curva y se conserva el brillo alargado. */
+const BRUSH_ANISO = 0.25;
+
+/** La veta del cepillado de una pieza (tex/maps.ts → brushStreaks): su mapa (a
+ *  la vez tinte y rugosidad) y por cuánto van el color y la rugosidad del
+ *  material: la MEDIA del color sigue siendo FINISH_TONE. */
+export interface BrushVeta {
+  map: THREE.Texture;
+  colorGain: number;
+  roughGain: number;
+}
+
 export interface FinishMaterials {
-  /** Cepillado lineal VERTICAL (flancos, asas, tubo de la corona). */
+  /** Cepillado lineal a lo largo de v: VERTICAL en la caja (cara del bisel,
+   *  flancos, asas, tubo de la corona) y a lo largo en eslabones y cierres. */
   brushed: THREE.MeshPhysicalMaterial;
-  /** Cepillado lineal paralelo a 3–9 (cara del bisel, ref 8; y los
-   *  eslabones a lo largo). */
-  brushedX: THREE.MeshPhysicalMaterial;
   /** Cepillado radial (anillo de la tapa). */
   brushedRadial: THREE.MeshPhysicalMaterial;
   /** Pulido espejo (chaflanes, orejas, cubre-asas, corona, cierres). */
   polished: THREE.MeshPhysicalMaterial;
   /** Interior mate (pared de la ventana sobre la esfera). */
   matte: THREE.MeshPhysicalMaterial;
+  /** Compensación de la veta (para interpolar acabados). */
+  veta: Pick<BrushVeta, "colorGain" | "roughGain">;
   all: THREE.MeshPhysicalMaterial[];
   dispose(): void;
 }
 
 /** Los materiales de metal de un acabado para UNA pieza (con su plano y su
- *  brillo de barrido). `streaksU` / `streaksV` = vetas del cepillado lineal
- *  a lo largo de u / de v; `radial` = dirección del cepillado radial. */
+ *  brillo de barrido). `veta` = la veta del cepillado lineal (a lo largo de
+ *  v); `radial` = dirección del cepillado radial. */
 export function finishMaterials(
   fin: FinishId,
-  maps: { radial: THREE.Texture; streaksU: THREE.Texture; streaksV: THREE.Texture },
+  maps: { radial: THREE.Texture; veta: BrushVeta },
   part: { plane: THREE.Plane; u: PartUniforms },
 ): FinishMaterials {
+  const { veta } = maps;
   const tone = new THREE.Color(FINISH_TONE[fin]);
   const r = ROUGH[fin];
   // A dos caras: los tornos no tienen un sentido fijo.
@@ -94,22 +111,13 @@ export function finishMaterials(
   const clip = [part.plane];
   const brushed = new THREE.MeshPhysicalMaterial({
     side,
-    color: tone,
+    color: tone.clone().multiplyScalar(veta.colorGain),
+    map: veta.map,
     metalness: 1,
-    roughness: r.brushed,
-    roughnessMap: maps.streaksV,
-    anisotropy: 0.7,
+    roughness: r.brushed * veta.roughGain,
+    roughnessMap: veta.map,
+    anisotropy: BRUSH_ANISO,
     anisotropyRotation: Math.PI / 2,
-    clippingPlanes: clip,
-  });
-  const brushedX = new THREE.MeshPhysicalMaterial({
-    side,
-    color: tone,
-    metalness: 1,
-    roughness: r.brushed,
-    roughnessMap: maps.streaksU,
-    anisotropy: 0.75,
-    anisotropyRotation: 0,
     clippingPlanes: clip,
   });
   const radial = maps.radial.clone();
@@ -122,7 +130,7 @@ export function finishMaterials(
     color: tone,
     metalness: 1,
     roughness: r.brushed,
-    anisotropy: 0.8,
+    anisotropy: BRUSH_ANISO,
     anisotropyMap: radial,
     clippingPlanes: clip,
   });
@@ -140,14 +148,14 @@ export function finishMaterials(
     roughness: 0.55,
     clippingPlanes: clip,
   });
-  const all = [brushed, brushedX, brushedRadial, polished, matte];
+  const all = [brushed, brushedRadial, polished, matte];
   all.forEach((m) => withRevealGlint(m, part.u));
   return {
     brushed,
-    brushedX,
     brushedRadial,
     polished,
     matte,
+    veta: { colorGain: veta.colorGain, roughGain: veta.roughGain },
     all,
     dispose() {
       radial.dispose();
@@ -157,19 +165,21 @@ export function finishMaterials(
 }
 
 /** Los valores de un acabado (para interpolar sin crear materiales). */
-function finishTargets(fin: FinishId): { m: (keyof Omit<FinishMaterials, "all" | "dispose">)[]; color: THREE.Color[]; rough: number[] } {
+function finishTargets(
+  fin: FinishId,
+  veta: FinishMaterials["veta"],
+): { m: (keyof Omit<FinishMaterials, "all" | "dispose" | "veta">)[]; color: THREE.Color[]; rough: number[] } {
   const tone = new THREE.Color(FINISH_TONE[fin]);
   const r = ROUGH[fin];
   return {
-    m: ["brushed", "brushedX", "brushedRadial", "polished", "matte"],
+    m: ["brushed", "brushedRadial", "polished", "matte"],
     color: [
-      tone,
-      tone,
+      tone.clone().multiplyScalar(veta.colorGain),
       tone,
       tone.clone().lerp(new THREE.Color("#ffffff"), fin === "pvd-negro" ? 0.02 : 0.06),
       tone.clone().multiplyScalar(0.55),
     ],
-    rough: [r.brushed, r.brushed, r.brushed, r.polished, 0.55],
+    rough: [r.brushed * veta.roughGain, r.brushed, r.polished, 0.55],
   };
 }
 
@@ -184,11 +194,11 @@ export class FinishTween {
   private on = false;
 
   start(sets: readonly FinishMaterials[], fin: FinishId, now: number, dur = 250) {
-    const tg = finishTargets(fin);
     this.mats = [];
     this.from = [];
     this.to = [];
     for (const s of sets) {
+      const tg = finishTargets(fin, s.veta);
       tg.m.forEach((k, i) => {
         const m = s[k];
         this.mats.push(m);
@@ -260,7 +270,7 @@ export function lumeMaterial(day: string, glow: string, part: { plane: THREE.Pla
   return withRevealGlint(
     new THREE.MeshStandardMaterial({
       color: new THREE.Color(day),
-      roughness: 0.6,
+      roughness: 0.5,
       metalness: 0,
       emissive: new THREE.Color(glow),
       emissiveIntensity: 0,

@@ -20,8 +20,10 @@ export function maskKey(m: PartMask): string {
   return WATCH_PARTS.map((p) => (m[p] ? "1" : "0")).join("");
 }
 
-/** Encuadres de la cámara. 'cierre' solo lo pide el editor (al elegir cierre). */
-export type View3D = "tres4" | "lado" | "esfera" | "tapa" | "cierre";
+/** Encuadres de la cámara. 'cierre' y 'correa' solo los pide el editor (al
+ *  elegir cierre; al elegir tipo o color de correa, que enseña la CARA de la
+ *  correa y no el canto). */
+export type View3D = "tres4" | "lado" | "esfera" | "tapa" | "cierre" | "correa";
 
 /** Movimiento propio del escenario: giro en la entrada, quieto al editar,
  *  una vuelta de presentación al llegar a "Listo". */
@@ -59,6 +61,9 @@ export interface WatchStage3DHandle {
    *  la máscara), correa cerrada salvo en 'tapa' (abierta). null si la 3D no
    *  está lista o falla. Nunca rechaza. */
   capture(opts?: CaptureOptions): Promise<Blob | null>;
+  /** Acerca (k < 1) o aleja (k > 1) por el muelle de la cámara, dentro de los
+   *  topes del zoom. Con el visor sin montar no hace nada. */
+  zoom(k: number): void;
 }
 
 export interface WatchStage3DProps {
@@ -83,7 +88,11 @@ export interface WatchStage3DProps {
   onStatus?: (s: Stage3DStatus) => void;
   /** Toque (sin arrastre) sobre una pieza, real o en cristal. */
   onPartPick?: (p: WatchPart) => void;
-  /** Teclas 1–4 con el visor enfocado. */
+  /** La pieza bajo el ratón (solo escritorio, como mucho cada 100 ms y sin pedir
+   *  fotogramas) y dónde está el puntero, en px de la ventana. null = ninguna. */
+  onPartHover?: (p: WatchPart | null, x: number, y: number) => void;
+  /** Teclas 1–4 con el visor enfocado, y 5 (el cierre) si la correa y el cierre
+   *  ya son reales. */
   onViewRequest?: (v: View3D) => void;
   /** Primer gesto del cliente sobre el visor (para ocultar pistas). */
   onInteract?: () => void;

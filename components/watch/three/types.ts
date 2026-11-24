@@ -43,6 +43,7 @@ export interface WatchSceneProps {
   onContextLost?: () => void;
   onInteract?: () => void;
   onPartPick?: (p: WatchPart) => void;
+  onPartHover?: (p: WatchPart | null, x: number, y: number) => void;
   /** La escena entrega su API al montarse (y null al desmontarse). */
   onApi?: (api: SceneApi | null) => void;
 }

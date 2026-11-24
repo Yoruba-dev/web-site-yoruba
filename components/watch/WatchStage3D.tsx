@@ -17,7 +17,8 @@
 //   van dentro del rectángulo que la interfaz deja libre (insets) y usan
 //   app/creador-de-relojes/watch-3d.css (prefijo pyj-r3d).
 // • Teclado con el visor enfocado: flechas giran, + / − acercan y alejan,
-//   1–4 piden Perspectiva, Correa entera, Esfera y Tapa (onViewRequest).
+//   1–4 piden Perspectiva, Correa entera, Esfera y Tapa, y 5 el cierre si ya
+//   es real (onViewRequest).
 // • Un error cae al poster con "Reintentar" (si lo que falló fue BAJAR el
 //   trozo, recarga la página: el cargador guarda el fallo); un contexto WebGL
 //   perdido muestra "Recargar vista 3D". Ambos se reportan (lib/report-error).
@@ -197,7 +198,7 @@ class Boundary extends Component<
 // ===========================================================================
 // Teclado
 // ===========================================================================
-const VIEW_KEYS: Readonly<Record<string, View3D>> = { "1": "tres4", "2": "lado", "3": "esfera", "4": "tapa" };
+const VIEW_KEYS: Readonly<Record<string, View3D>> = { "1": "tres4", "2": "lado", "3": "esfera", "4": "tapa", "5": "cierre" };
 /** Paso de giro con las flechas (radianes). */
 const PASO_AZ = 0.35;
 const PASO_POL = 0.15;
@@ -213,7 +214,7 @@ const sameInsets = (a: ViewInsets, b: ViewInsets) =>
   a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
 
 export default function WatchStage3D(props: WatchStage3DProps) {
-  const { config, poster, className, ref, onStatus, onPartPick, onViewRequest, onInteract } = props;
+  const { config, poster, className, ref, onStatus, onPartPick, onPartHover, onViewRequest, onInteract } = props;
   // Defensivo en tiempo de ejecución (el tipo los exige): un llamador antiguo
   // sin máscara ve el reloj entero en perspectiva, sin recuadros y activo.
   const confirmed = props.confirmed ?? ALL_SOLID;
@@ -286,6 +287,9 @@ export default function WatchStage3D(props: WatchStage3DProps) {
           return null;
         }
       },
+      zoom(k) {
+        setNudge((n) => ({ seq: n.seq + 1, az: 0, pol: 0, zoom: k }));
+      },
     }),
     [],
   );
@@ -323,10 +327,12 @@ export default function WatchStage3D(props: WatchStage3DProps) {
     setReady(false);
   }, []);
 
+  const conCierre = confirmed.correa && confirmed.cierre;
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!ready || e.altKey || e.ctrlKey || e.metaKey) return;
     const v = VIEW_KEYS[e.key];
     if (v) {
+      if (v === "cierre" && !conCierre) return;
       e.preventDefault();
       handleInteract();
       onViewRequest?.(v);
@@ -397,7 +403,7 @@ export default function WatchStage3D(props: WatchStage3DProps) {
               className="pyj-r3d_stage"
               role="application"
               aria-roledescription="visor 3D"
-              aria-label={`Tu reloj en 3D: ${summary(config)}. Flechas para girarlo, + y − para acercarlo, 1 a 4 para cambiar de vista.`}
+              aria-label={`Tu reloj en 3D: ${summary(config)}. Flechas para girarlo, + y − para acercarlo, 1 a ${conCierre ? 5 : 4} para cambiar de vista.`}
               tabIndex={active ? 0 : -1}
               onKeyDown={onKey}
             >
@@ -416,6 +422,7 @@ export default function WatchStage3D(props: WatchStage3DProps) {
                 onContextLost={handleLost}
                 onInteract={handleInteract}
                 onPartPick={onPartPick}
+                onPartHover={onPartHover}
                 onApi={handleApi}
               />
             </div>

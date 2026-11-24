@@ -3,9 +3,11 @@
 // ---------------------------------------------------------------------------
 // ViewDock (spec V2 §3.3 / §3.4 / D3 / D11): las vistas del reloj y los
 // interruptores, en UN solo sitio (la barra del visor 3D ya no existe).
-//   • Escritorio: píldora de cristal abajo al centro, iconos + etiquetas
-//     (consulta de contenedor: < 820 px de escenario → solo iconos).
-//   • Móvil: columna a la derecha, 40 × 40, y [⋯] con el resto.
+//   • Escritorio: píldora de cristal abajo al centro: las vistas con su nombre y
+//     las herramientas (consultas de contenedor en editor.css: según el ancho
+//     del escenario, las herramientas y luego las vistas van solo con icono).
+//   • Móvil: columna a la derecha y [⋯] con el resto.
+// "Cierre" sale cuando la correa ya es real, con el icono del cierre elegido.
 // role=toolbar con tabindex itinerante (flechas, Inicio, Fin) y aria-pressed.
 // ---------------------------------------------------------------------------
 import {
@@ -23,9 +25,16 @@ import { WATCH_RENDER_NOTE } from "@/lib/watch";
 import type { View3D } from "../stage3d-contract";
 import { Icon, type IconName } from "./icons";
 
-type UserView = Exclude<View3D, "cierre">;
+/** Las vistas con botón ('correa' solo la pide el editor). */
+type UserView = Exclude<View3D, "correa">;
 
-const VIEWS: readonly { id: UserView; label: string; short: string; icon: IconName }[] = [
+interface Vista {
+  id: UserView;
+  label: string;
+  short: string;
+  icon: IconName;
+}
+const VIEWS: readonly Vista[] = [
   { id: "tres4", label: "Perspectiva", short: "3/4", icon: "tres4" },
   { id: "lado", label: "Correa entera", short: "Lado", icon: "lado" },
   { id: "esfera", label: "Esfera", short: "Esfera", icon: "esfera" },
@@ -44,8 +53,13 @@ export interface ViewDockProps {
   onView: (v: UserView) => void;
   fotoVista: "frente" | "tapa";
   onFotoVista: (v: "frente" | "tapa") => void;
+  /** Icono del cierre elegido; null = la correa aún está en cristal (sin botón). */
+  cierre: IconName | null;
   noche: boolean;
   onNoche: () => void;
+  /** [Acercar] (escritorio, solo con 3D). */
+  cerca: boolean;
+  onCerca: () => void;
   /** "Foto real" (con 3D delante) o "Ver en 3D" (con la foto delante); null =
    *  este dispositivo no pinta 3D: sin botón. */
   onToggleFoto: (() => void) | null;
@@ -58,6 +72,11 @@ export interface ViewDockProps {
 
 export default function ViewDock(props: ViewDockProps) {
   return props.vertical ? <DockVertical {...props} /> : <DockHorizontal {...props} />;
+}
+
+/** Las vistas que se ofrecen ahora mismo. */
+function vistasDe(p: ViewDockProps): readonly Vista[] {
+  return p.cierre ? [...VIEWS, { id: "cierre", label: "Cierre", short: "Cierre", icon: p.cierre }] : VIEWS;
 }
 
 /** Flechas / Inicio / Fin entre los botones de la barra (tabindex itinerante). */
@@ -167,8 +186,9 @@ function DockHorizontal(p: ViewDockProps) {
   const { ref, onKeyDown, onFocus } = useRoving();
   const notaId = `${useId()}-nota`;
   const [nota, setNota] = useState(false);
-  const segs = p.tres ? VIEWS : FOTO_VISTAS;
-  const i = p.tres ? VIEWS.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
+  const vistas = vistasDe(p);
+  const segs = p.tres ? vistas : FOTO_VISTAS;
+  const i = p.tres ? vistas.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
   return (
     <div
       ref={ref}
@@ -181,7 +201,7 @@ function DockHorizontal(p: ViewDockProps) {
       <div className="rl-dock_seg" style={{ "--n": segs.length, "--i": Math.max(0, i) } as CSSProperties}>
         <span className={`rl-dock_thumb${i < 0 ? " is-empty" : ""}`} aria-hidden="true" />
         {p.tres
-          ? VIEWS.map((v) => (
+          ? vistas.map((v) => (
               <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={p.view === v.id} onClick={() => p.onView(v.id)}>
                 <span className="rl-dock_label">{v.label}</span>
               </DockBtn>
@@ -193,11 +213,17 @@ function DockHorizontal(p: ViewDockProps) {
             ))}
       </div>
       <span className="rl-dock_div" aria-hidden="true" />
-      <DockBtn icon="moon" label="Modo noche" pressed={p.noche} onClick={p.onNoche}>
+      {p.tres && (
+        <DockBtn icon="zoom" label="Acercar" pressed={p.cerca} onClick={p.onCerca} className="rl-dock_tool">
+          <span className="rl-dock_label">Acercar</span>
+        </DockBtn>
+      )}
+      <DockBtn icon="moon" label="Modo noche" pressed={p.noche} onClick={p.onNoche} className="rl-dock_tool">
         <span className="rl-dock_label">Noche</span>
       </DockBtn>
       {p.onToggleFoto && (
         <DockBtn
+          className="rl-dock_tool"
           icon={p.tres ? "photo" : "cube"}
           label={p.tres ? "Foto real" : "Ver en 3D"}
           pressed={p.tres ? false : undefined}
@@ -207,7 +233,7 @@ function DockHorizontal(p: ViewDockProps) {
         </DockBtn>
       )}
       {(p.hayCristal || p.verCompleto) && (
-        <DockBtn icon="eye" label="Ver completo" pressed={p.verCompleto} onClick={p.onVerCompleto}>
+        <DockBtn icon="eye" label="Ver completo" pressed={p.verCompleto} onClick={p.onVerCompleto} className="rl-dock_tool">
           <span className="rl-dock_label">Ver completo</span>
         </DockBtn>
       )}
@@ -233,8 +259,9 @@ function DockVertical(p: ViewDockProps) {
   const masRef = useRef<HTMLButtonElement>(null);
   const [mas, setMas] = useState(false);
   const [nota, setNota] = useState(false);
-  const segs = p.tres ? VIEWS : FOTO_VISTAS;
-  const i = p.tres ? VIEWS.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
+  const vistas = vistasDe(p);
+  const segs = p.tres ? vistas : FOTO_VISTAS;
+  const i = p.tres ? vistas.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
   useEffect(() => {
     if (!mas) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -266,7 +293,7 @@ function DockVertical(p: ViewDockProps) {
       <div className="rl-vdock_seg rl-glass rl-glass--over" style={{ "--n": segs.length, "--i": Math.max(0, i) } as CSSProperties}>
         <span className={`rl-vdock_thumb${i < 0 ? " is-empty" : ""}`} aria-hidden="true" />
         {p.tres
-          ? VIEWS.map((v) => (
+          ? vistas.map((v) => (
               <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={p.view === v.id} onClick={() => p.onView(v.id)}>
                 <span className="rl-vdock_short" aria-hidden="true">
                   {v.short}

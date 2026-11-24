@@ -16,6 +16,8 @@ export const GUIA_HREF = "/creador-de-relojes/como-funciona";
 export default function FocusHeader({
   saved,
   saveSeq,
+  onAyuda,
+  ayudaAbierta,
   onSolicitar,
   cart,
 }: {
@@ -23,6 +25,9 @@ export default function FocusHeader({
   saved: boolean;
   /** Sube con cada guardado: el ✓ vuelve a aparecer. */
   saveSeq: number;
+  /** "Cómo funciona" se abre sobre el editor (el botón que lo pidió). */
+  onAyuda: (anchor: HTMLElement) => void;
+  ayudaAbierta: boolean;
   /** [Solicitar] (escritorio): solo en los pasos, nunca en la entrada ni en Listo. */
   onSolicitar?: () => void;
   /** El carrito, solo cuando el reloj se puede comprar en la web (hoy no). */
@@ -50,8 +55,21 @@ export default function FocusHeader({
               </span>
             </span>
           )}
-          <Link href={GUIA_HREF} className="rl-head_link" aria-label="Cómo funciona el creador de relojes">
-            <Icon name="info" />
+          {/* Un enlace de verdad a la guía (sin JS, o con Ctrl/⌘, la abre); con un
+              clic normal, la ayuda se abre aquí mismo, sin salir del editor. */}
+          <Link
+            href={GUIA_HREF}
+            className="rl-head_link"
+            aria-label="Cómo funciona el creador de relojes"
+            aria-haspopup="dialog"
+            aria-expanded={ayudaAbierta}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              onAyuda(e.currentTarget);
+            }}
+          >
+            <Icon name="help" />
             <span className="rl-head_linklabel">Cómo funciona</span>
           </Link>
           {onSolicitar && (

@@ -32,12 +32,16 @@ import {
   dialPrimitives,
   fmt,
   handAngles,
+  handLume,
   handMetalHex,
+  handOutline,
   handPose,
+  polyPath,
   primitivesToSvg,
   rimMetalHex,
   type Primitive,
   type RectPrim,
+  type SwordHand,
 } from "@/lib/watch-art";
 import { WATCH_COLORS, WATCH_MATERIALS, getDialBase, getSecondsPart, type FinishId, type WatchConfig } from "@/lib/watch";
 import { MM_TRANSFORM, PLANTILLA, R_VENTANA_PX, TAPA_FOTO, tapaUrl } from "@/lib/watch-capas";
@@ -156,9 +160,9 @@ function shadowFilter(id: string, layers: Shadow[]) {
 export const SOMBRAS = {
   /** Tinta: micras de relieve; la letra sigue nítida. */
   tinta: [{ blur: 0.35, dx: 0.4, dy: 0.65, op: 0.3 }],
-  /** Índices aplicados (≈0.3 mm): contacto + proyectada. */
+  /** Índices aplicados (≈0.45 mm): contacto + proyectada. */
   aplicado: [
-    { blur: 1.7, dx: 2.0, dy: 3.0, op: 0.42 },
+    { blur: 2.2, dx: 2.7, dy: 4.0, op: 0.42 },
     { blur: 0.45, dx: 0.5, dy: 0.8, op: 0.5 },
   ],
   aplique: [
@@ -245,6 +249,28 @@ function shape(x: Primitive, props: Record<string, string | number | undefined>,
   }
 }
 
+/** El embudo del marco de la fecha: 4 facetas pulidas que bajan de la banda al
+ *  hueco (cada una según mire o no a la luz). */
+function FunnelArt({ x, hex }: { x: RectPrim; hex: string }) {
+  const w = (x.strokeWidth ?? 0) / 2;
+  const [x0, y0, x1, y1] = [x.x - w, x.y - w, x.x + x.w + w, x.y + x.h + w];
+  const [a0, b0, a1, b1] = [x.x + w, x.y + w, x.x + x.w - w, x.y + x.h - w];
+  // [contorno, hacia dónde mira la faceta: hacia el centro del hueco].
+  const caras: [[number, number][], number, number][] = [
+    [[[x0, y0], [x1, y0], [a1, b0], [a0, b0]], 0, 1],
+    [[[x1, y0], [x1, y1], [a1, b1], [a1, b0]], -1, 0],
+    [[[x1, y1], [x0, y1], [a0, b1], [a1, b1]], 0, -1],
+    [[[x0, y1], [x0, y0], [a0, b0], [a0, b1]], 1, 0],
+  ];
+  return (
+    <g strokeLinejoin="round">
+      {caras.map(([pts, nx, ny], i) => (
+        <path key={i} d={polyPath(pts)} fill={facet(hex, (nx * LIGHT[0] + ny * LIGHT[1]) * 0.8)} stroke="#15181b" strokeOpacity="0.35" strokeWidth="0.03" />
+      ))}
+    </g>
+  );
+}
+
 /** Ventana de fecha (disco blanco con un "8") y las piezas aplicadas: marco de
  *  la fecha, puntos, triángulo y barras — acero pulido con lume dentro. */
 export function AppliedArt({ c, p, q }: { c: WatchConfig; p: string; q: string }) {
@@ -293,6 +319,7 @@ export function AppliedArt({ c, p, q }: { c: WatchConfig; p: string; q: string }
       <Mm filter={`url(#${p}-sh-aplicado)`}>
         {applied.map((x, i) => {
           const w = x.strokeWidth ?? 0.2;
+          if (x.kind === "rect" && x.id === "embudo-fecha") return <FunnelArt key={i} x={x} hex={rimMetalHex(c)} />;
           // Filo oscuro a los dos lados del aro: la pieza se despega de la esfera.
           return (
             <g key={i}>
@@ -326,26 +353,28 @@ export function AppliqueArt({ c, p, href }: { c: WatchConfig; p: string; href: s
   );
 }
 
-// Lume de las agujas: las mismas formas que hands() de lib/watch-svg.ts.
-const HOUR_LUME = "M-0.44 -1.7L-0.44 -6.35L0 -7.3L0.44 -6.35L0.44 -1.7Z";
-const MINUTE_LUME = "M-0.32 -2L-0.32 -11.15L0 -11.95L0.32 -11.15L0.32 -2Z";
-
-type Blade = { readonly tail: number; readonly tip: number; readonly shoulder: number; readonly halfW: number };
+// Lume de las agujas (lib/watch-art: las mismas formas que el cartel y la 3D).
+const HOUR_LUME = polyPath(handLume(HANDS.hour));
+const MINUTE_LUME = polyPath(handLume(HANDS.minute));
 
 /** Aguja de espada pulida: dos facetas (una a la luz, otra en sombra), filo
- *  central brillante y el lume encima. */
-function swordHand(b: Blade, deg: number, metalHex: string, lumePath: string, q: string): ReactNode {
+ *  central brillante, el lume encima y el buje redondo en el eje. */
+function swordHand(b: SwordHand, deg: number, metalHex: string, lumePath: string, q: string): ReactNode {
   const lit = leftFacetLight(deg);
-  const left = `M${-b.halfW} ${b.tail}L${-b.halfW} ${-b.shoulder}L0 ${-b.tip}L0 ${b.tail}Z`;
-  const right = `M0 ${b.tail}L0 ${-b.tip}L${b.halfW} ${-b.shoulder}L${b.halfW} ${b.tail}Z`;
-  const outline = `M${-b.halfW} ${b.tail}L${-b.halfW} ${-b.shoulder}L0 ${-b.tip}L${b.halfW} ${-b.shoulder}L${b.halfW} ${b.tail}Z`;
+  // El contorno va del eje a la punta por la derecha y vuelve por la izquierda.
+  const pts = handOutline(b);
+  const tip = (pts.length - 1) / 2;
+  const right = polyPath([...pts.slice(0, tip + 1), [0, 0]]);
+  const left = polyPath([...pts.slice(tip), [0, 0]]);
   return (
     <g transform={`rotate(${f(deg)})`}>
       <path d={left} fill={facet(metalHex, lit * 0.92)} />
       <path d={right} fill={facet(metalHex, -lit * 0.92)} />
-      <path d={`M0 ${b.tail - 0.3}L0 ${-b.tip + 0.05}`} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="0.05" />
-      <path d={outline} fill="none" stroke={mix(metalHex, "#000000", 0.62)} strokeWidth="0.05" strokeLinejoin="round" />
+      <path d={`M0 ${-b.neck.to}L0 ${-b.tip + 0.05}`} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="0.05" />
+      <path d={polyPath(pts)} fill="none" stroke={mix(metalHex, "#000000", 0.62)} strokeWidth="0.05" strokeLinejoin="round" />
       <path d={lumePath} fill={`url(#${q}-lume)`} stroke={mix(WATCH_MATERIALS.lume, "#3f473c", 0.45)} strokeWidth="0.035" />
+      {/* El buje no gira su brillo con la aguja: se deshace el giro. */}
+      <circle cx="0" cy="0" r={b.hubR} transform={`rotate(${f(-deg)})`} fill={`url(#${q}-eje)`} stroke={mix(metalHex, "#000000", 0.62)} strokeWidth="0.05" />
     </g>
   );
 }
@@ -397,8 +426,7 @@ export function HandsArt({ c, p, q }: { c: WatchConfig; p: string; q: string }) 
           <circle cx="0" cy={-S.lume.at} r={S.lume.r} fill={`url(#${q}-lume)`} stroke={sec} strokeWidth={S.lume.ring} />
           <circle cx="0" cy={S.counter.at} r={S.counter.r} fill={`url(#${q}-contrapeso)`} stroke={secEdge} strokeWidth="0.04" />
         </g>
-        {/* Eje: tubo de la horaria, tapa del segundero y pivote. */}
-        <circle cx="0" cy="0" r="1.15" fill={`url(#${q}-eje)`} stroke={m.deep} strokeWidth="0.06" />
+        {/* Eje: tapa del segundero y pivote (los bujes van con sus agujas). */}
         <circle cx="0" cy="0" r="0.62" fill={`url(#${q}-contrapeso)`} />
         <circle cx="0" cy="0" r="0.2" fill={m.white} />
       </Mm>

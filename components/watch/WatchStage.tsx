@@ -53,6 +53,7 @@ export interface WatchStageProps {
   status: Stage3DStatus;
   onStatus: (s: Stage3DStatus) => void;
   onPartPick?: (p: WatchPart) => void;
+  onPartHover?: (p: WatchPart | null, x: number, y: number) => void;
   onViewRequest?: (v: View3D) => void;
   onInteract?: () => void;
   stage3dRef?: Ref<WatchStage3DHandle>;
@@ -74,6 +75,7 @@ export default function WatchStage({
   status,
   onStatus,
   onPartPick,
+  onPartHover,
   onViewRequest,
   onInteract,
   stage3dRef,
@@ -118,6 +120,7 @@ export default function WatchStage({
             }
             onStatus={onStatus}
             onPartPick={onPartPick}
+            onPartHover={onPartHover}
             onViewRequest={onViewRequest}
             onInteract={onInteract}
           />

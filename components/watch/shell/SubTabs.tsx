@@ -1,10 +1,11 @@
 "use client";
 
 // ---------------------------------------------------------------------------
-// Sub-pestañas de un paso (Esfera: Color · Pista · Texto · Detalles; Tapa:
-// Signo · Grabado). Un tablist WAI-ARIA: una parada de tabulador, flechas,
-// Inicio / Fin. Segmentos iguales con el "pulgar" que se desliza (solo
-// transform, spec §6.2).
+// Sub-pestañas de un paso (Esfera: Color · Pista · Texto · Detalles; Correa:
+// Correa · Cierre; Tapa: Signo · Grabado). Un tablist WAI-ARIA: una parada de
+// tabulador, flechas, Inicio / Fin. Segmentos iguales con el "pulgar" que se
+// desliza (solo transform, spec §6.2). Lo que aún no se ha visto lleva un aro
+// hueco de 6 px; lo que hay que resolver, un punto rojo.
 // ---------------------------------------------------------------------------
 import { useRef, type CSSProperties, type KeyboardEvent } from "react";
 import { SUB_LABELS, type SubId } from "../creator-state";
@@ -16,6 +17,7 @@ export default function SubTabs({
   panelId,
   idPrefix,
   blocked,
+  sinVer,
   label,
 }: {
   subs: readonly SubId[];
@@ -26,6 +28,8 @@ export default function SubTabs({
   idPrefix: string;
   /** Sub-pestañas con algo que resolver (punto rojo). */
   blocked?: ReadonlySet<SubId>;
+  /** Sub-pestañas que aún no se han visto (aro hueco). */
+  sinVer?: ReadonlySet<SubId>;
   label: string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -66,12 +70,17 @@ export default function SubTabs({
           onKeyDown={(e) => onKey(e, k)}
         >
           <span className="rl-seg_label">{SUB_LABELS[s]}</span>
-          {blocked?.has(s) && (
+          {blocked?.has(s) ? (
             <>
               <span className="rl-seg_dot" aria-hidden="true" />
               <span className="rl-sr"> (falta resolver algo)</span>
             </>
-          )}
+          ) : sinVer?.has(s) && k !== i ? (
+            <>
+              <span className="rl-seg_aro" aria-hidden="true" />
+              <span className="rl-sr"> (sin ver)</span>
+            </>
+          ) : null}
         </button>
       ))}
     </div>
