@@ -40,22 +40,19 @@ import {
   secondsHand,
   swordHand,
 } from "./geo/dialParts";
+import { braceletCoreGeometry, braceletGeometries, braceletSlots, type LinkSlot } from "./geo/bracelet";
 import { BUCKLE, buckleGeometries, deployantGeometries, sweptPlate } from "./geo/clasp";
 import {
   PIEL,
   STRAP_LEN,
   appendToBand,
   bandGeometry,
-  braceletCoreGeometry,
-  braceletGeometries,
-  braceletSlots,
   holeGeometries,
   keeperGeometry,
   stitchGeometry,
   strapWidth,
   tongueGeometry,
   type ClaspKind,
-  type LinkSlot,
   type StrapKind,
 } from "./geo/strap";
 import {
