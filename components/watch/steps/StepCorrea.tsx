@@ -3,7 +3,7 @@
 import ClaspArt from "../ClaspArt";
 import OptionGroup from "../OptionGroup";
 import { VitrinaPiece, strapHex } from "../Swatches";
-import { vitrinaCorrea, vitrinaTipo, type SubId } from "../creator-state";
+import { vitrinaCorrea, type SubId } from "../creator-state";
 import { tileState, type StepProps } from "./types";
 import { previewPart, useEspera } from "./preview";
 import {
@@ -42,6 +42,18 @@ function nombreCorto(label: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** "Negro PVD" → "negro PVD": solo baja la primera letra (las siglas, no). */
+const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/** "1 · Tipo": el número, solo donde se ven los dos (en el móvil la cabecera de
+ *  Tipo se oculta y "2 · Color" quedaba sin su 1). */
+const paso = (n: number, t: string) => (
+  <>
+    <span className="rl-group_num">{n} · </span>
+    {t}
+  </>
+);
+
 type Props = StepProps & { memoria: StrapMemory; recordar: (t: StrapType, id: StrapId) => void };
 
 /** Paso 3 · Correa, en 2 sub-pestañas (la correa y su cierre son piezas
@@ -50,7 +62,7 @@ export default function StepCorrea(props: Props & { sub: SubId }) {
   return props.sub === "cierre" ? <CorreaCierre {...props} /> : <CorreaColor {...props} />;
 }
 
-// — Correa: tipo (tres tarjetas con el macro del material) y color (vitrina) ————
+// — Correa: tipo (tres tarjetas con su pieza) y color (vitrina) ————————————
 function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: Props) {
   const [espera, avisar] = useEspera<StrapId>();
   const current = getStrap(config.correa);
@@ -65,7 +77,7 @@ function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: 
   return (
     <>
       <OptionGroup<StrapType>
-        label="1 · Tipo"
+        label={paso(1, "Tipo")}
         variant="cards"
         columns={3}
         field="correa"
@@ -79,15 +91,20 @@ function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: 
         onPreview={(t) => void previewPart(config, "correa", strapFor(t))}
         options={TIPOS.map((t) => {
           const id = strapFor(t.id);
-          const src = vitrinaTipo(id, config.acabado);
           return {
             id: t.id,
             label: t.label,
-            detalle: t.id === "brazalete" ? `En ${finish?.label.toLowerCase() ?? "tu acabado"}` : colores(t.id),
-            visual: src ? (
-              <span className="rl-tipo" style={{ backgroundImage: `url("${src}")` }} />
-            ) : (
-              <span className="rl-tipo" style={{ backgroundColor: strapHex(id, getStrap(id)?.swatch ?? "negro") }} />
+            detalle: t.id === "brazalete" ? `En ${finish ? minuscula(finish.label) : "tu acabado"}` : colores(t.id),
+            // La misma pieza que en la vitrina: el macro del material (una costura,
+            // una placa) no se reconocía a este tamaño.
+            visual: (
+              <span className="rl-tipo">
+                <VitrinaPiece
+                  src={vitrinaCorrea(id, config.acabado)}
+                  hex={strapHex(id, (t.id === "brazalete" ? finish?.swatch : getStrap(id)?.swatch) ?? "negro")}
+                  tipo={t.id}
+                />
+              </span>
             ),
           };
         })}
@@ -97,20 +114,21 @@ function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: 
         <div className="rl-group rl-group--static rl-group--brazalete">
           <div className="rl-group_head">
             <span className="rl-group_label">
-              2 · Color <span className="rl-group_value">— {finish?.label ?? ""}</span>
+              {paso(2, "Color")} <span className="rl-group_value">— {finish?.label ?? ""}</span>
             </span>
           </div>
           <div className="rl-vitsola">
             <VitrinaPiece
               src={vitrinaCorrea("brazalete", config.acabado)}
               hex={strapHex("brazalete", finish?.swatch ?? "acero")}
+              tipo="brazalete"
             />
           </div>
           <p className="rl-note">Eslabón en H. Va siempre en el acabado de tu caja.</p>
         </div>
       ) : (
         <OptionGroup<StrapId>
-          label="2 · Color"
+          label={paso(2, "Color")}
           labelValue={current ? `${current.label}${tipo === "piel" ? " · cocodrilo" : ""}` : undefined}
           variant="vitrina"
           columns={tipo === "piel" ? 3 : 5}
@@ -129,7 +147,7 @@ function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: 
             id: s.id,
             label: s.label,
             nombre: nombreCorto(s.label),
-            visual: <VitrinaPiece src={vitrinaCorrea(s.id, config.acabado)} hex={strapHex(s.id, s.swatch)} />,
+            visual: <VitrinaPiece src={vitrinaCorrea(s.id, config.acabado)} hex={strapHex(s.id, s.swatch)} tipo={tipo} />,
             ...tileState(optionState(config, "correa", s.id)),
           }))}
         />
@@ -139,8 +157,8 @@ function CorreaColor({ config, dispatch, requestView, memoria: mem, recordar }: 
 }
 
 const NOTA_CIERRE: Readonly<Record<ClaspId, string>> = {
-  puas: "La clásica, con púa",
-  desplegable: "Con dos pulsadores",
+  puas: "Se ajusta en los agujeros",
+  desplegable: "Se abre con dos botones",
 };
 
 // — Cierre: dos ilustraciones en el metal de la caja (o el del brazalete) ———————
@@ -173,7 +191,7 @@ function CorreaCierre({ config, dispatch, requestView }: Props) {
         <OptionGroup<ClaspId>
           label="Cierre"
           labelValue={CLASPS.find((c) => c.id === config.cierre)?.label}
-          hint={`En ${finish?.label.toLowerCase() ?? "tu acabado"} · incluido`}
+          hint={`En ${finish ? minuscula(finish.label) : "tu acabado"} · incluido`}
           variant="tiles"
           columns={2}
           field="cierre"

@@ -3,13 +3,13 @@
 de esfera). Salen SOLO de nuestras capas (public/assets/images/reloj/capas/
 *-1200.webp); nada de internet. Se corre a mano cuando cambian las capas:
 
-    python3 scripts/gen-vitrina.py
+    python3 scripts/gen-vitrina.py            (todo)
+    python3 scripts/gen-vitrina.py --indices  (solo los 4 SVG de índices)
 
 Salida: public/assets/images/reloj/vitrina/
   caucho-<color>.webp            punta de la correa, con su muesca (foto 1)
   piel-<color>-<acabado>.webp    punta de la correa con su terminal metálico
   brazalete-<acabado>.webp       tramo del brazalete
-  tipo-*.webp                    macro del material (tarjetas de Tipo)
   caja-<acabado>.webp            marco del mini reloj
   dial-<base>.webp               esfera sol
   dial-degradado-<clave>-p<n>.webp
@@ -41,8 +41,90 @@ SOL = ["blanco", "negro", "rojo", "verde", "azul"]
 GRAD = ["orula", "eleggua", "chango", "chango-vino", "yemaya", "oshun", "oya", "ogun", "obatala", "babalu-aye", "olokun"]
 PX_MM = 16.3934
 
+MINI = 740  # lado del recorte del mini reloj (px de la capa de 1200)
+
 os.makedirs(OUT, exist_ok=True)
 total = 0
+
+
+# — Índices (SVG, en px del recorte de MINI): DIAL_LAYOUT (lib/watch-art.ts) en mm ×
+#   16.3934. Si cambia allí, aquí también: check-watch-data compara los dos. ————
+PUNTOS = (11.15, 1.25, 0.2)  # r, radio, aro
+TRIANGULO = (12.45, 9.4, 1.6, 0.3)  # r de arriba, r de la punta, medio ancho, aro
+BARRA = (10.5, 3.9, 1.5, 0.3)  # r, largo, ancho, aro
+FECHA = (10.55, 4.1, 3.2, 0.3)  # centro, marco por fuera, banda
+ANILLO_IFA = 10.75  # los 16 Meyis; sin ventana de fecha (DIAL_MODELS.ifa) van todos a r
+FECHA_IFA = False  # = DIAL_MODELS.ifa.ventanaFecha
+
+
+def indices(ifa, aplique):
+    C = MINI // 2
+    mm = lambda v: round(v * PX_MM, 1)
+    p = [
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 740"><defs>'
+        '<linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfcfd"/>'
+        '<stop offset=".5" stop-color="#8f969d"/><stop offset="1" stop-color="#e3e7ea"/></linearGradient>'
+        '<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b8"/>'
+        '<stop offset=".45" stop-color="#d9a634"/><stop offset="1" stop-color="#8a5f12"/></linearGradient></defs>'
+    ]
+    # El aro, a tamaño de mini reloj, un poco más grueso que el real (0.2–0.3 mm =
+    # 3–5 px de 740): con el real desaparecía.
+    lume = 'fill="#f1f2e8" stroke="url(#s)" stroke-width="6"'
+    if ifa:
+        # Esfera Ifá: el anillo de los 16 (solo su ritmo: a este tamaño los signos
+        # no se leen y no se inventan).
+        for k in range(16):
+            a = math.radians(k * 22.5)
+            p.append(
+                f'<circle cx="{C + ANILLO_IFA * PX_MM * math.sin(a):.1f}" cy="{C - ANILLO_IFA * PX_MM * math.cos(a):.1f}" r="11" fill="url(#g)"/>'
+            )
+    else:
+        ro, rt, hw, _ = TRIANGULO
+        p.append(f'<path d="M{C - mm(hw)} {C - mm(ro)}H{C + mm(hw)}L{C} {C - mm(rt)}Z" {lume} stroke-linejoin="miter"/>')
+        r, rad, _ = PUNTOS
+        for h in (1, 2, 4, 5, 7, 8, 10, 11):
+            a = math.radians(h * 30)
+            p.append(f'<circle cx="{C + r * PX_MM * math.sin(a):.1f}" cy="{C - r * PX_MM * math.cos(a):.1f}" r="{mm(rad)}" {lume}/>')
+        r, L, W, _ = BARRA
+        L, W = mm(L), mm(W)
+        p.append(f'<rect x="{C - W / 2:.1f}" y="{C + mm(r) - L / 2:.1f}" width="{W}" height="{L}" rx="2" {lume}/>')
+        p.append(f'<rect x="{C - mm(r) - L / 2:.1f}" y="{C - W / 2:.1f}" width="{L}" height="{W}" rx="2" {lume}/>')
+    if not ifa or FECHA_IFA:
+        # El marco por fuera y, dentro, el hueco de la fecha.
+        cx, w, h, banda = FECHA
+        x, y = C + mm(cx) - mm(w) / 2, C - mm(h) / 2
+        p.append(f'<rect id="fecha" x="{x:.1f}" y="{y:.1f}" width="{mm(w)}" height="{mm(h)}" rx="6" fill="url(#s)"/>')
+        b = mm(banda + 0.3)
+        p.append(f'<rect x="{x + b:.1f}" y="{y + b:.1f}" width="{mm(w) - 2 * b:.1f}" height="{mm(h) - 2 * b:.1f}" fill="#f7f6f2"/>')
+    # aplique PY: escudo de 5 × 6 mm bajo las 12 (a 50 px solo se lee su mancha)
+    if aplique:
+        sy = C - mm(5.6)
+        p.append(
+            f'<path d="M{C - 41} {sy - 46}H{C + 41}V{sy}Q{C + 41} {sy + 34} {C} {sy + 50}Q{C - 41} {sy + 34} {C - 41} {sy}Z" '
+            'fill="url(#g)" stroke="#6b4a0e" stroke-width="4"/>'
+        )
+    p.append("</svg>")
+    return "".join(p)
+
+
+def guarda_indices():
+    global total
+    for nombre, es_ifa, con in (
+        ("indices", False, True),
+        ("indices-ifa", True, True),
+        ("indices-sin", False, False),
+        ("indices-ifa-sin", True, False),
+    ):
+        ruta = os.path.join(OUT, f"{nombre}.svg")
+        with open(ruta, "w") as fh:
+            fh.write(indices(es_ifa, con))
+        total += os.path.getsize(ruta)
+
+
+if "--indices" in sys.argv:
+    guarda_indices()
+    print(f"índices: {total} bytes en {OUT}")
+    sys.exit(0)
 
 
 def capa(nombre):
@@ -226,23 +308,9 @@ grupo(
     corta_pie(1460 - 1120),
 )
 
-# — Macro del material para las tarjetas de Tipo (mismo encuadre: 18 × 10 mm) ————
-for nombre, sal in (
-    [(f"correa-caucho-{c}", f"tipo-caucho-{c}") for c in CAUCHO]
-    + [(f"correa-piel-{c}-acero", f"tipo-piel-{c}") for c in PIEL]
-    + [(f"brazalete-{f}", f"tipo-brazalete-{f}") for f in ACABADOS]
-):
-    im = capa(nombre).crop((458, 1212, 742, 1376))
-    fondo = Image.new("RGB", im.size, (20, 17, 12))
-    fondo.paste(im, (0, 0), im)
-    if sal == "tipo-caucho-blanco":
-        fondo = fondo.point([round(255 * (v / 255) ** 0.55) for v in range(256)] * 3)
-    guarda(fondo, sal, 284, q=72)
-
 # — Mini reloj: la caja del paso 1 como marco de cada esfera ———————————————————
 # Recorte cuadrado de 740 px centrado en la esfera: en él, la esfera (r = 250 px)
 # ocupa el 67.6 %, y así se coloca en CSS bajo la caja (.rl-mini).
-MINI = 740
 for f in ACABADOS:
     c = np.asarray(capa(f"caja-{f}").crop((600 - MINI // 2, 800 - MINI // 2, 600 + MINI // 2, 800 + MINI // 2)))
     m = mayor(c[..., 3] > 127)
@@ -259,55 +327,7 @@ for g in GRAD:
         guarda(capa(f"esfera-degradado-{g}-p{n}").crop((350, 550, 850, 1050)), f"dial-degradado-{g}-p{n}", 92, q=74)
 
 
-# — Índices (SVG, en px del recorte de MINI): DIAL_LAYOUT en mm × 16.3934 ———————
-def indices(ifa, aplique):
-    C = MINI // 2
-    mm = lambda v: round(v * PX_MM, 1)
-    p = [
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 740"><defs>'
-        '<linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfcfd"/>'
-        '<stop offset=".5" stop-color="#8f969d"/><stop offset="1" stop-color="#e3e7ea"/></linearGradient>'
-        '<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b8"/>'
-        '<stop offset=".45" stop-color="#d9a634"/><stop offset="1" stop-color="#8a5f12"/></linearGradient></defs>'
-    ]
-    lume = 'fill="#f1f2e8" stroke="url(#s)" stroke-width="6" stroke-linejoin="round"'
-    if ifa:
-        # Esfera Ifá: el anillo de los 16 (solo su ritmo: a este tamaño los signos
-        # no se leen y no se inventan).
-        for k in range(16):
-            a = math.radians(k * 22.5)
-            r = 10.75 if k != 4 else 7.8
-            p.append(f'<circle cx="{C + mm(r * math.sin(a)):.1f}" cy="{C - mm(r * math.cos(a)):.1f}" r="11" fill="url(#g)"/>')
-    else:
-        p.append(f'<path d="M{C - mm(1.6)} {C - mm(12.5)}H{C + mm(1.6)}L{C} {C - mm(9.5)}Z" {lume}/>')
-        for h in (1, 2, 4, 5, 7, 8, 10, 11):
-            a = math.radians(h * 30)
-            p.append(f'<circle cx="{C + mm(11.3 * math.sin(a)):.1f}" cy="{C - mm(11.3 * math.cos(a)):.1f}" r="{mm(1.2)}" {lume}/>')
-        L, W = mm(3.6), mm(1.45)
-        p.append(f'<rect x="{C - W / 2:.1f}" y="{C + mm(10.8) - L / 2:.1f}" width="{W}" height="{L}" {lume}/>')
-        p.append(f'<rect x="{C - mm(10.8) - L / 2:.1f}" y="{C - W / 2:.1f}" width="{L}" height="{W}" {lume}/>')
-    p.append(f'<rect x="{C + mm(10.55) - mm(1.75):.1f}" y="{C - mm(1.3)}" width="{mm(3.5)}" height="{mm(2.6)}" fill="#f7f6f2" stroke="url(#s)" stroke-width="7"/>')
-    # aplique PY: escudo de 5 × 6 mm bajo las 12 (a 50 px solo se lee su mancha)
-    if aplique:
-        sy = C - mm(5.6)
-        p.append(
-            f'<path d="M{C - 41} {sy - 46}H{C + 41}V{sy}Q{C + 41} {sy + 34} {C} {sy + 50}Q{C - 41} {sy + 34} {C - 41} {sy}Z" '
-            'fill="url(#g)" stroke="#6b4a0e" stroke-width="4"/>'
-        )
-    p.append("</svg>")
-    return "".join(p)
-
-
-for nombre, es_ifa, con in (
-    ("indices", False, True),
-    ("indices-ifa", True, True),
-    ("indices-sin", False, False),
-    ("indices-ifa-sin", True, False),
-):
-    ruta = os.path.join(OUT, f"{nombre}.svg")
-    with open(ruta, "w") as fh:
-        fh.write(indices(es_ifa, con))
-    total += os.path.getsize(ruta)
+guarda_indices()
 
 print(f"total {total / 1024:.1f} KB en {OUT}")
 if total > 480 * 1024:

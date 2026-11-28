@@ -11,7 +11,6 @@ import {
   useReducer,
   useRef,
   useState,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import WatchStage from "./WatchStage";
@@ -33,6 +32,7 @@ import {
   isStepId,
   nextStop,
   parseDraft,
+  pasosSinVer,
   prevStop,
   stepIndex,
   stepOfField,
@@ -159,10 +159,15 @@ interface Cambio {
   at: number;
 }
 const claveDe = (a: CreatorAction): string => (a.type === "tapaLinea" ? `tapaLinea${a.linea}` : a.type);
-const esTecleo = (a: CreatorAction): boolean => a.type === "texto" || a.type === "tapaLinea" || a.type === "tapaFecha";
+/** ¿Es una letra más de lo mismo? Vaciar de golpe ("Sin texto", "Quitar fecha")
+ *  NO: se fundía con lo tecleado y Deshacer no devolvía el nombre borrado. */
+const esTecleo = (a: CreatorAction): boolean =>
+  (a.type === "texto" && a.texto !== "") ||
+  (a.type === "tapaLinea" && a.texto !== "") ||
+  (a.type === "tapaFecha" && a.fecha !== "");
 
 /** ¿El foco está en un campo donde se escribe? (⌘Z es del campo). */
-const enCampo = (t: EventTarget): boolean =>
+const enCampo = (t: EventTarget | null): boolean =>
   t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
 
 const todayIso = () => {
@@ -484,33 +489,37 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     headingRef.current?.focus({ preventScroll: true });
   }, [screen, listo]);
 
+  // — La pista de una vez: sale cuando el reloj ya se puede tocar (con 3D, al
+  //   terminar de cargar; sin saber aún si hay 3D, espera) y se va a los 8 s, al
+  //   primer gesto o al colocar otra pieza. Solo se da por vista si SE VIO.
+  const verPista = hint && screen === "editor" && hayCristal && (tres ? status === "listo" : support !== null);
+  const quitarPista = useCallback(() => {
+    setHint(false);
+    store.set(HINT_KEY, "1");
+  }, []);
+  useEffect(() => {
+    if (!verPista) return;
+    const t = window.setTimeout(quitarPista, 8000);
+    return () => window.clearTimeout(t);
+  }, [verPista, quitarPista]);
+
   // — Piezas que pasan a reales: se anuncian ("Pieza colocada: correa").
   const prevMask = useRef<PartMask>(mask);
+  const prevScreen = useRef(screen);
   useEffect(() => {
     const before = prevMask.current;
+    // Elegir el Orisha (entrada → editor) también coloca la caja, pero eso no es
+    // un gesto sobre el reloj: en táctil y con teclado (sin ratón encima que
+    // deje todo real) apagaba la pista antes de que llegara a salir.
+    const entrando = prevScreen.current !== screen;
     prevMask.current = mask;
+    prevScreen.current = screen;
     if (screen !== "editor") return;
     const nuevas = WATCH_PARTS.filter((p) => mask[p] && !before[p]);
     if (!nuevas.length) return;
     announce(`${nuevas.length === 1 ? "Pieza colocada" : "Piezas colocadas"}: ${nuevas.map((p) => PART_NAMES[p]).join(", ")}`);
-    if (hint) {
-      setHint(false);
-      store.set(HINT_KEY, "1");
-    }
-  }, [mask, screen, announce, hint]);
-
-  // — La pista de una vez: sale cuando el reloj ya se puede tocar (con 3D, al
-  //   terminar de cargar; sin saber aún si hay 3D, espera) y se va a los 8 s (o
-  //   al primer gesto).
-  const verPista = hint && screen === "editor" && hayCristal && (tres ? status === "listo" : support !== null);
-  useEffect(() => {
-    if (!verPista) return;
-    const t = window.setTimeout(() => {
-      setHint(false);
-      store.set(HINT_KEY, "1");
-    }, 8000);
-    return () => window.clearTimeout(t);
-  }, [verPista]);
+    if (verPista && !entrando) quitarPista();
+  }, [mask, screen, announce, verPista, quitarPista]);
 
   // — Teclado del móvil abierto: el escenario pequeño enseña lo que se escribe.
   useEffect(() => {
@@ -522,13 +531,17 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   // — Ir a un paso (cualquiera, en cualquier orden): visitar = aceptar lo de
   //   en medio (max sube y esas piezas se vuelven reales, escalonadas).
   const goTo = useCallback(
-    (s: StepId, sb?: SubId | null) => {
+    (s: StepId, sb?: SubId | null, abrir = true) => {
       const now = live.current;
       moved.current = true;
       setStep(s);
       setMax((m) => Math.max(m, stepIndex(s)));
       if (sb) setSubMem((x) => ({ ...x, [s]: sb }));
       setShareAnchor(null);
+      setAyuda(null);
+      // La hoja en su altura mínima no enseña opciones: al ir a otra parada se
+      // abre a media (si no, "Siguiente" las daba por vistas sin enseñarlas).
+      if (abrir) setSnap((x) => (x === "peek" ? "half" : x));
       // Otra sub-pestaña del MISMO paso: su encuadre (al cambiar de paso lo
       // pide el efecto de arriba).
       if (s === now.step && sb && sb !== now.sub) requestView(viewOf(s, sb));
@@ -542,12 +555,32 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const deshacer = useCallback(() => {
     const ult = pasado[pasado.length - 1];
     if (!ult) return;
+    // El último: el botón se desmonta y el foco caería a <body>.
+    if (pasado.length === 1 && document.activeElement?.closest(".rl-undobtn")) headingRef.current?.focus({ preventScroll: true });
     setPasado((p) => p.slice(0, -1));
     setPedido(false);
-    rawDispatch({ type: "cargar", config: ult.config });
-    goTo(ult.step, ult.sub);
+    rawDispatch({ type: "restaurar", config: ult.config });
+    goTo(ult.step, ult.sub, false);
     announce("Cambio deshecho");
   }, [pasado, goTo, announce]);
+
+  // — ⌘Z / Ctrl+Z = Deshacer, en todo el editor (en la ventana: con el foco en
+  //   <body> el armazón no recibe la tecla). No si se escribe (es del campo), si
+  //   hay un diálogo abierto (compartir, ayuda) o fuera del armazón (carrito).
+  //   Las teclas de las vistas (1–5) las lleva el visor, con su foco.
+  useEffect(() => {
+    if (screen !== "editor" || !listo || ayuda || shareAnchor || !pasado.length) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.key.toLowerCase() !== "z" || !(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+      const t = e.target;
+      if (enCampo(t)) return;
+      if (t instanceof Element && t !== document.body && t !== document.documentElement && !rootRef.current?.contains(t)) return;
+      e.preventDefault();
+      deshacer();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen, listo, ayuda, shareAnchor, pasado.length, deshacer]);
 
   /** "Corregir": al paso y sub-pestaña del campo, con el foco en él. */
   const fix = useCallback(
@@ -801,8 +834,17 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     partTip.current?.show(n ? n.charAt(0).toUpperCase() + n.slice(1) : null, x, y);
   }, []);
   const onViewRequest = useCallback((v: View3D) => requestView(v), [requestView]);
-  const onInteract = useCallback(() => setHint(false), []);
-  const onStatus = useCallback((s: Stage3DStatus) => setStatus(s), []);
+  // El primer gesto sobre el reloj: la pista ya no hace falta (si se giró en la
+  // entrada, aún falta decir que las piezas se tocan).
+  const onInteract = useCallback(() => {
+    if (live.current.screen === "editor") quitarPista();
+  }, [quitarPista]);
+  // Con el visor sin montar (o recargado), [Acercar] no tiene qué acercar: la
+  // cámara nace en su sitio.
+  const onStatus = useCallback((s: Stage3DStatus) => {
+    setStatus(s);
+    if (s !== "listo") setCerca(false);
+  }, []);
 
   // ==========================================================================
   // PINTAR
@@ -816,6 +858,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
   const nombreParada = (x: { step: StepId; sub: SubId | null }) =>
     x.step === step && x.sub ? SUB_LABELS[x.sub] : STEPS[stepIndex(x.step)].label;
   const sinVer = new Set(subs.filter((x) => !seen.has(stopKey(step, x))));
+  const pasosPorVer = pasosSinVer(max, seen);
   const panelId = `${uid}-opts`;
   const stepProps = { config, dispatch, goTo, requestView };
   const enEditor = screen === "editor" && listo;
@@ -843,7 +886,8 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         noche={noche}
         onNoche={() => setNoche((x) => !x)}
         cerca={cerca}
-        onCerca={acercar}
+        onCerca={status === "listo" ? acercar : null}
+        pasoCorrea={enEditor && step === "correa" && sub === "correa"}
         onToggleFoto={
           support === "no" || support === null
             ? null
@@ -1166,18 +1210,8 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
     sheetFull ? " is-sheet-full" : ""
   }`;
 
-  // Tecla del armazón: ⌘Z / Ctrl+Z = Deshacer, salvo escribiendo. (Las de las
-  // vistas, 1–5, las lleva el visor.)
-  function onAppKey(e: ReactKeyboardEvent<HTMLDivElement>) {
-    if (!enEditor) return;
-    if (e.key.toLowerCase() === "z" && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && !enCampo(e.target) && pasado.length) {
-      e.preventDefault();
-      deshacer();
-    }
-  }
-
   return (
-    <div ref={rootRef} className={appClass} data-pantalla={screen} data-paso={enEditor ? step : undefined} onKeyDown={onAppKey}>
+    <div ref={rootRef} className={appClass} data-pantalla={screen} data-paso={enEditor ? step : undefined}>
       <FocusHeader
         saved={screen === "editor" && saveSeq > 0}
         saveSeq={saveSeq}
@@ -1239,7 +1273,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
         <OverlayHostContext.Provider value={overlayHost}>
           {panel ? (
             <aside className={`rl-panel rl-glass${screen === "entrada" ? " rl-panel--entrada" : ""}`} aria-labelledby={`${uid}-title`}>
-              {enEditor && <Stepper step={step} max={max} blocked={blockedSteps} onGo={(s) => goTo(s)} />}
+              {enEditor && <Stepper step={step} max={max} blocked={blockedSteps} sinVer={pasosPorVer} onGo={(s) => goTo(s)} />}
               {stepHead}
               {tabs}
               {options}
@@ -1261,7 +1295,7 @@ function Creator({ initial, product = null }: { initial: CreatorInitial; product
                   </h2>
                 ) : enEditor ? (
                   <>
-                    <Stepper step={step} max={max} blocked={blockedSteps} onGo={(s) => goTo(s)} compact />
+                    <Stepper step={step} max={max} blocked={blockedSteps} sinVer={pasosPorVer} onGo={(s) => goTo(s)} compact />
                     <h2 id={`${uid}-title`} ref={headingRef} tabIndex={-1} className="rl-sr">
                       {step === "resumen" ? `${def.titulo} · ${order.code}` : def.titulo}
                     </h2>

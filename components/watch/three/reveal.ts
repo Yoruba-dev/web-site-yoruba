@@ -99,9 +99,9 @@ function sweepOf(p: WatchPart, abierta: boolean): Sweep {
     case "agujas":
       return { dir: NY, v0: -16, v1: 16 };
     case "correa":
-      return abierta ? { dir: X, v0: -12, v1: 12 } : { dir: NZ, v0: 0, v1: 58 };
+      return abierta ? { dir: X, v0: -12, v1: 12 } : { dir: NZ, v0: 0, v1: 62 };
     case "cierre":
-      return abierta ? { dir: X, v0: -12, v1: 12 } : { dir: NZ, v0: 40, v1: 58 };
+      return abierta ? { dir: X, v0: -12, v1: 12 } : { dir: NZ, v0: 40, v1: 63 };
     case "tapa":
       return { dir: X, v0: -16, v1: 16 };
   }

@@ -135,29 +135,31 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   color: inherit;
 }
 
-/* Puesta a cero con :where() (especificidad de un elemento): cualquier clase
-   del editor la pisa. */
+/* Puesta a cero con :where(): cualquier clase del editor la pisa. El «html»
+   de delante (dos elementos) es para ganar a bootstrap y a style.css, que en
+   PRODUCCIÓN se cargan después de esta hoja (en «next dev», antes: allí no se
+   nota): sin él, la barra de pasos salía 32 px corrida. */
 :where(.pyj-reloj-app) *,
 :where(.pyj-reloj-app) *::before,
 :where(.pyj-reloj-app) *::after {
   box-sizing: border-box;
 }
-:where(.pyj-reloj-app) button,
-:where(.pyj-reloj-app) input {
+html :where(.pyj-reloj-app) button,
+html :where(.pyj-reloj-app) input {
   font: inherit;
   color: inherit;
 }
-:where(.pyj-reloj-app) button {
+html :where(.pyj-reloj-app) button {
   margin: 0;
   background: none;
   border: 0;
   cursor: pointer;
 }
-:where(.pyj-reloj-app) a {
+html :where(.pyj-reloj-app) a {
   color: inherit;
 }
-:where(.pyj-reloj-app) ul,
-:where(.pyj-reloj-app) ol {
+html :where(.pyj-reloj-app) ul,
+html :where(.pyj-reloj-app) ol {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -201,6 +203,33 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
     background: var(--rl-glass-bg-solid);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+}
+/* En táctil, lo pequeño se toca en ≈ 44 px (--rl-hit) sin cambiar de tamaño. Las
+   sub-pestañas crecen hacia abajo, sobre el aire de las opciones (arriba están
+   los pasos); los enlaces de un campo, hacia arriba (abajo está el campo). */
+@media (pointer: coarse) {
+  .rl-seg_btn::after,
+  .rl-link::after,
+  .rl-tip::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+  }
+  .rl-subtabs > .rl-seg_btn::after {
+    inset: -5px 0 -11px;
+  }
+  .rl-link::after {
+    inset: -12px -8px;
+  }
+  .rl-field_head .rl-link::after {
+    inset: -8px -8px -5px;
+  }
+  .pyj-reloj-app .rl-field_head .rl-link {
+    min-height: 36px;
+  }
+  .rl-tip::after {
+    inset: -15px -6px -15px -15px;
   }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -402,6 +431,8 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 }
 .rl-btn.is-disabled {
   opacity: 0.55;
+}
+.pyj-reloj-app .rl-btn.is-disabled {
   cursor: not-allowed;
 }
 /* El destello del botón de pedir en "Listo": 1.2 s cada 7 s, 3 veces. */
@@ -442,6 +473,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 }
 
 .rl-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -623,6 +655,11 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   pointer-events: none;
   animation: rl-pop-in 200ms var(--rl-out) both;
 }
+/* [Acercar] con el visor aún sin montar. */
+.rl-dock_btn.is-off {
+  opacity: 0.45;
+  cursor: default;
+}
 /* El nombre de la pieza bajo el ratón (escritorio). */
 .rl-parttip {
   position: absolute;
@@ -643,6 +680,12 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 }
 .rl-parttip.is-on {
   opacity: 1;
+}
+/* Escenario estrecho (1024): bajo el código y Compartir, sin pisar Deshacer. */
+@container rl-stage (max-width: 700px) {
+  .rl-hint {
+    top: 62px;
+  }
 }
 .rl-hint_dot {
   flex: none;
@@ -850,9 +893,9 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   }
 }
 .rl-vdock_short {
-  font-size: 9px;
+  font-size: 10.5px;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
 }
 /* [⋯] se abre AL LADO de la columna, alineado con su parte de ARRIBA, y si
    crece (la nota) crece hacia abajo, junto a la columna. Anclado al pie
@@ -991,6 +1034,17 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Alcanzado, pero con partes sin ver: el aro hueco de las sub-pestañas. */
+.rl-stepper_aro {
+  position: absolute;
+  right: -5px;
+  bottom: 0;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--rl-gold-hi);
+  border-radius: 50% !important;
+  background: var(--rl-glass-bg-solid, #17120b);
+}
 .rl-stepper_bar {
   position: relative;
   order: 3;
@@ -1011,6 +1065,10 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 .rl-stepper_btn.is-done .rl-stepper_fill {
   transform: scaleX(1);
   opacity: 0.85;
+}
+.rl-stepper_btn.is-part .rl-stepper_fill {
+  transform: scaleX(0.5);
+  opacity: 0.6;
 }
 .rl-stepper_btn.is-now .rl-stepper_fill {
   transform: scaleX(1);
@@ -1038,7 +1096,8 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   color: var(--rl-muted);
   transition: color 160ms var(--rl-out);
 }
-.rl-stepper_btn.is-done .rl-stepper_label {
+.rl-stepper_btn.is-done .rl-stepper_label,
+.rl-stepper_btn.is-part .rl-stepper_label {
   color: var(--rl-text);
 }
 .rl-stepper_btn.is-now .rl-stepper_label {
@@ -1315,6 +1374,12 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   line-height: 1.45;
   color: var(--rl-muted);
 }
+.rl-note.is-warn {
+  color: var(--rl-warn);
+}
+.rl-group_note {
+  margin-top: 6px;
+}
 .rl-note--odu {
   margin: 0 0 12px;
   font-family: "Cormorant Garamond", serif;
@@ -1416,8 +1481,11 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 .rl-opt.is-off {
   opacity: 0.4;
   border-style: dashed !important;
-  cursor: not-allowed;
   transform: none;
+}
+/* Con «button» delante: gana a button:not(:disabled) de bootstrap. */
+button.rl-opt.is-off {
+  cursor: not-allowed;
 }
 .rl-opt_vis {
   position: relative;
@@ -1570,8 +1638,8 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   text-align: center;
 }
 
-/* cards: tipo de correa. El macro del material llena la tarjeta (los tres con el
-   mismo encuadre) y el nombre va encima, sobre un velo. */
+/* cards: tipo de correa. La pieza de la vitrina, arriba, y el nombre encima de su
+   pie, sobre un velo. */
 .rl-rail--cards > .rl-opt {
   justify-content: flex-end;
   gap: 0;
@@ -1585,16 +1653,26 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   inset: 0;
 }
 .rl-tipo {
-  background-position: 50% 50%;
-  background-size: cover;
-  background-repeat: no-repeat;
+  --pw: 96px;
+  --ph: 48px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  background: radial-gradient(70% 80% at 50% 20%, rgba(255, 236, 200, 0.14), rgba(255, 236, 200, 0));
   transition: transform 320ms var(--rl-out);
+}
+.rl-rail--cards .rl-vitp {
+  transform: none !important;
+}
+.rl-rail--cards .rl-vitp::after {
+  display: none;
 }
 .rl-rail--cards .rl-opt_vis::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(10, 8, 5, 0) 28%, rgba(10, 8, 5, 0.8) 62%, rgba(10, 8, 5, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0) 45%, rgba(10, 8, 5, 0.82) 66%, rgba(10, 8, 5, 0.92) 100%);
 }
 @media (hover: hover) {
   .rl-rail--cards > .rl-opt:hover .rl-tipo {
@@ -1623,8 +1701,12 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   .rl-rail--cards > .rl-opt {
     min-height: 104px;
   }
+  .rl-tipo {
+    --ph: 60px;
+    padding-top: 8px;
+  }
   .rl-rail--cards .rl-opt_vis::after {
-    background: linear-gradient(180deg, rgba(10, 8, 5, 0) 40%, rgba(10, 8, 5, 0.8) 68%, rgba(10, 8, 5, 0.92) 100%);
+    background: linear-gradient(180deg, rgba(10, 8, 5, 0) 55%, rgba(10, 8, 5, 0.82) 72%, rgba(10, 8, 5, 0.92) 100%);
   }
 }
 
@@ -1767,6 +1849,15 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   outline: 2px dashed var(--rl-gold-hi) !important;
   outline-offset: -3px;
 }
+/* Con las flechas, el foco está casi siempre en la elegida: en oro sobre su aro de
+   oro no se distinguía. Blanco y por dentro del aro. */
+.pyj-reloj-app .rl-rail--vitrina > .rl-opt.is-on:focus-visible,
+.pyj-reloj-app .rl-rail--tiles > .rl-opt.is-on:focus-visible,
+.pyj-reloj-app .rl-rail--cards > .rl-opt.is-on:focus-visible,
+.pyj-reloj-app .rl-rail--rows > .rl-opt.is-on:focus-visible {
+  outline: 2px dashed #fff !important;
+  outline-offset: -6px;
+}
 .rl-rail--vitrina .rl-opt_vis {
   align-items: flex-end;
   width: 100%;
@@ -1808,7 +1899,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: block;
   width: var(--pw);
   height: var(--ph);
-  background: var(--img) center bottom / contain no-repeat;
+  background: var(--img) center bottom / contain no-repeat, var(--resp) center bottom / contain no-repeat;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
   transition: transform 320ms var(--rl-back);
 }
@@ -1831,20 +1922,20 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   width: var(--ph);
   height: var(--ph);
   background-position: 50% 50%;
-  background-size: 100% 100%, 100% 100%, 67.6% 67.6%;
+  background-size: 100% 100%, 100% 100%, 67.6% 67.6%, 100% 100%;
   background-repeat: no-repeat;
   transition: transform 320ms var(--rl-back);
 }
 /* Paso Caja: las capas de 600 × 800 del escenario, encuadradas a los mismos
    740/1200 px que el mini reloj (600 / 370 = 162.2 %). De arriba abajo: el
    aplique PY (6 mm de los 45.1 del encuadre, 5.6 sobre el centro), los
-   índices, la caja y la esfera. */
+   índices, la caja, la esfera y su respaldo dibujado. */
 .rl-cajam {
   display: block;
   width: var(--ph);
   height: var(--ph);
-  background-position: 50% 35.7%, 50% 50%, 50% 50%, 50% 50%;
-  background-size: auto 13.3%, 100% 100%, 162.2% auto, 162.2% auto;
+  background-position: 50% 35.7%, 50% 50%, 50% 50%, 50% 50%, 50% 50%;
+  background-size: auto 13.3%, 100% 100%, 162.2% auto, 162.2% auto, 100% 100%;
   background-repeat: no-repeat;
   transition: transform 320ms var(--rl-back);
 }
@@ -1899,6 +1990,9 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   --ph: min(calc(100cqw / var(--cols) - 2px), 58px);
   --vb: 24px;
 }
+.rl-vit--mini .rl-rail--vitrina > .rl-opt {
+  padding-inline: 0;
+}
 .rl-vit--mini .rl-rail--vitrina .rl-opt_label {
   font-size: 11px;
 }
@@ -1913,17 +2007,21 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 .rl-vit--ajuste .rl-opt_txt {
   display: none;
 }
-/* Poco alto (1366 × 768, 1280 × 720, teléfonos): los mini relojes en filas de 7 y
-   sin nombre (PLAN-REALISMO-V3 6.1: el repuesto previsto). El nombre de la
-   elegida va en la etiqueta, y el de cada una es su nombre accesible. */
+/* Poco alto (1366 × 768, 1280 × 720): los mini relojes más pequeños, con su nombre
+   (decisión 19: la pieza en su balda con su nombre; sin él había que adivinar
+   cuál es Oyá o Elegguá). Solo el ajuste del degradado va sin nombres. */
 @media (max-height: 860px) {
   .rl-vit--mini .rl-rail--vitrina {
-    --cols: 7 !important;
     --vt: 4px;
-    --vb: 6px;
+    --ph: min(calc(100cqw / var(--cols) - 2px), 45px);
+    --vb: 18px;
   }
-  .rl-vit--mini .rl-opt_txt {
-    display: none;
+  .rl-vit--mini .rl-rail--vitrina .rl-opt_txt {
+    padding-bottom: 2px;
+  }
+  .rl-vit--ajuste .rl-rail--vitrina {
+    --ph: min(calc(100cqw / var(--cols) - 2px), 42px);
+    --vb: 6px;
   }
   .rl-vit--mini {
     margin-bottom: 10px;
@@ -1963,8 +2061,39 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
     --cols: 8 !important;
   }
 }
+/* Panel de 360 px (1024): seis minis de 55 px; los nombres de dos palabras
+   ("Changó vino") van en dos líneas. */
+@container rl-vit (max-width: 345px) {
+  .pyj-reloj-app.is-panel .rl-vit--degr .rl-rail--vitrina {
+    --vb: 29px;
+  }
+  .pyj-reloj-app.is-panel .rl-vit--degr .rl-opt_txt {
+    margin: 4px 0 0;
+    padding: 0;
+  }
+  .pyj-reloj-app.is-panel .rl-vit--degr .rl-opt_label {
+    font-size: 10.5px;
+    line-height: 11px;
+    letter-spacing: 0;
+    white-space: normal;
+  }
+  @media (max-height: 860px) {
+    .pyj-reloj-app.is-panel .rl-vit--mini .rl-rail--vitrina {
+      --ph: 40px;
+    }
+    .pyj-reloj-app.is-panel .rl-vit--degr .rl-rail--vitrina {
+      --vb: 27px;
+    }
+    .pyj-reloj-app.is-panel .rl-vit--ajuste .rl-rail--vitrina {
+      --ph: 36px;
+    }
+  }
+}
 /* Teléfono apaisado (panel de 320 px): nada se corta. */
 @container rl-vit (max-width: 326px) {
+  .rl-vit--mini .rl-rail--vitrina {
+    --cols: 5 !important;
+  }
   .rl-rail--vitrina .rl-opt_label {
     font-size: 10.5px;
     letter-spacing: -0.02em;
@@ -2974,12 +3103,15 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: inline;
 }
 .rl-tip {
+  position: relative;
   display: inline-flex;
   vertical-align: -2px;
   color: var(--rl-muted);
   cursor: help;
 }
 .rl-policy-note > summary {
+  position: relative; /* por encima de la zona táctil del ⓘ */
+  z-index: 1;
   display: inline;
   color: var(--rl-text);
   cursor: pointer;
@@ -3256,6 +3388,34 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   }
 }
 
+/* Escritorio estrecho (1024–1199: el panel queda en 360 px, 334 útiles): nada se
+   corta — el botón de pedir, los títulos y los colores de la Pista. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .rl-panel .rl-foot--listo > .rl-btn--cta {
+    padding: 0 10px;
+    letter-spacing: 0.06em;
+  }
+  .rl-panel .rl-title {
+    font-size: 18px;
+  }
+  .rl-panel .rl-rail--rows .rl-beads {
+    width: 36px;
+    height: auto;
+  }
+  .rl-panel .rl-rail--rows > .rl-opt {
+    gap: 8px;
+    padding: 0 8px;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1199px) and (max-height: 800px) {
+  .rl-panel .rl-sum_row {
+    height: 44px;
+  }
+  .rl-panel .rl-sum {
+    margin-bottom: 8px !important;
+  }
+}
+
 /* =========================================================================
    MÓVIL: la hoja inferior (§3.4)
    ========================================================================= */
@@ -3398,6 +3558,8 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   }
 }
 .rl-sheet_tabs {
+  position: relative;
+  z-index: 1; /* su zona táctil, sobre el aire de las opciones */
   flex: none;
   height: 36px;
   padding: 0 16px;
@@ -3414,7 +3576,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   height: 100%;
 }
 .rl-sheet_opts .rl-body {
-  padding: 12px 16px 16px;
+  padding: 10px 16px 16px;
 }
 .rl-sheetfoot {
   position: absolute;
@@ -3526,19 +3688,26 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
 /* Correa en media hoja: las tres tarjetas bajas (el nombre; el detalle queda en
    el nombre accesible) y los 9 cauchos a la vista, sin desplazar. */
 .pyj-reloj-app.is-sheet .rl-group--tipo {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+.pyj-reloj-app.is-sheet .rl-group_num {
+  display: none;
 }
 .pyj-reloj-app.is-sheet .rl-group--tipo > .rl-group_head {
   display: none;
 }
 .pyj-reloj-app.is-sheet .rl-rail--cards > .rl-opt {
-  min-height: 52px;
+  min-height: 60px;
+}
+.pyj-reloj-app.is-sheet .rl-tipo {
+  --ph: 38px;
+  padding-top: 5px;
 }
 .pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_vis::after {
-  background: linear-gradient(180deg, rgba(10, 8, 5, 0.1), rgba(10, 8, 5, 0.8) 70%, rgba(10, 8, 5, 0.9));
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0) 50%, rgba(10, 8, 5, 0.82) 74%, rgba(10, 8, 5, 0.92));
 }
 .pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_txt {
-  padding: 0 4px 5px;
+  padding: 0 4px 3px;
 }
 .pyj-reloj-app.is-sheet .rl-rail--cards .rl-opt_label {
   font-size: 12px;
@@ -3548,9 +3717,19 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   display: none;
 }
 .pyj-reloj-app.is-sheet .rl-rail--vitrina {
-  --vt: 4px;
+  --vt: 6px;
   --vb: 20px;
-  --pw: min(calc(100cqw / var(--cols) - 14px), 52px);
+  --pw: min(calc(100cqw / var(--cols) - 14px), 50px);
+}
+/* Sin reflejo (el nombre se escribía encima) y la elegida sube menos: la punta no
+   pisa su aro. */
+.pyj-reloj-app.is-sheet .rl-rail--vitrina .rl-vitp::after {
+  display: none;
+}
+.pyj-reloj-app.is-sheet .rl-rail--vitrina > .rl-opt.is-on .rl-vitp,
+.pyj-reloj-app.is-sheet .rl-rail--vitrina > .rl-opt.is-on .rl-cajam,
+.pyj-reloj-app.is-sheet .rl-rail--vitrina > .rl-opt.is-on .rl-mini {
+  transform: translateY(-2px);
 }
 .pyj-reloj-app.is-sheet .rl-rail--vitrina .rl-opt_txt {
   padding-bottom: 3px;
@@ -3566,20 +3745,35 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   --ph: min(calc(100cqw / var(--cols) - 20px), 92px);
   --vb: 24px;
 }
+/* Minis: cinco por fila, con su nombre (decisión 19) y 65 px de ancho a 360. */
 .pyj-reloj-app.is-sheet .rl-vit--mini .rl-rail--vitrina {
-  --cols: 8 !important;
-  --vt: 3px;
-  --vb: 6px;
-  --ph: min(calc(100cqw / var(--cols)), 60px);
+  --cols: 5 !important;
+  --vt: 5px;
+  --vb: 19px;
+  --ph: min(calc(100cqw / var(--cols) - 4px), 56px);
 }
-.pyj-reloj-app.is-sheet .rl-vit--mini .rl-opt_txt {
-  display: none;
+@container rl-vit (min-width: 560px) {
+  .pyj-reloj-app.is-sheet .rl-vit--mini .rl-rail--vitrina {
+    --cols: 8 !important;
+  }
+}
+.pyj-reloj-app.is-sheet .rl-vit--ajuste .rl-rail--vitrina {
+  --vb: 7px;
+}
+.pyj-reloj-app.is-sheet .rl-vit--mini .rl-opt_badge,
+.pyj-reloj-app.is-sheet .rl-vit--mini .rl-opt_badge svg {
+  width: 13px;
+  height: 13px;
+}
+.pyj-reloj-app.is-sheet .rl-vit--mini .rl-opt_badge {
+  top: -2px;
+  right: -2px;
 }
 .pyj-reloj-app.is-sheet .rl-group--vitrina {
   margin-bottom: 8px;
 }
 .pyj-reloj-app.is-sheet .rl-group--vitrina > .rl-group_head {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .pyj-reloj-app.is-sheet .rl-vitsola {
   --pw: 84px;
@@ -3680,20 +3874,23 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   gap: 0;
   height: 44px;
 }
+.rl-stepper--compact li {
+  flex: 0 0 clamp(40px, 11.2vw, 44px);
+}
 .rl-stepper--compact .rl-stepper_btn {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 32px;
+  width: 100%;
   height: 44px;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 .rl-stepper--compact .rl-stepper_bar {
   width: 100%;
 }
 .rl-stepper--compact .rl-stepper_dot {
   top: 6px;
-  right: 1px;
+  right: 6px;
 }
 .rl-stepper_now {
   min-width: 0;
@@ -3763,6 +3960,7 @@ body:has(.pyj-reloj-app) .mobile-menu_wrapper:not(.open) {
   }
   .pyj-reloj-app.is-panel .rl-rail--rows .rl-opt_det,
   .pyj-reloj-app.is-panel .rl-rail--cards .rl-opt_det,
+  .pyj-reloj-app.is-panel .rl-group_num,
   .pyj-reloj-app.is-panel .rl-group--tipo > .rl-group_head {
     display: none;
   }

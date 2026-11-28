@@ -25,7 +25,7 @@ import { WATCH_RENDER_NOTE } from "@/lib/watch";
 import type { View3D } from "../stage3d-contract";
 import { Icon, type IconName } from "./icons";
 
-/** Las vistas con botón ('correa' solo la pide el editor). */
+/** Las vistas con botón ('correa' va en el de "Correa entera", en su paso). */
 type UserView = Exclude<View3D, "correa">;
 
 interface Vista {
@@ -35,8 +35,8 @@ interface Vista {
   icon: IconName;
 }
 const VIEWS: readonly Vista[] = [
-  { id: "tres4", label: "Perspectiva", short: "3/4", icon: "tres4" },
-  { id: "lado", label: "Correa entera", short: "Lado", icon: "lado" },
+  { id: "tres4", label: "Perspectiva", short: "Girado", icon: "tres4" },
+  { id: "lado", label: "Correa entera", short: "Correa", icon: "lado" },
   { id: "esfera", label: "Esfera", short: "Esfera", icon: "esfera" },
   { id: "tapa", label: "Tapa", short: "Tapa", icon: "tapa" },
 ];
@@ -50,16 +50,19 @@ export interface ViewDockProps {
   /** El visor 3D está delante (si no: la foto real). */
   tres: boolean;
   view: View3D;
-  onView: (v: UserView) => void;
+  onView: (v: View3D) => void;
   fotoVista: "frente" | "tapa";
   onFotoVista: (v: "frente" | "tapa") => void;
   /** Icono del cierre elegido; null = la correa aún está en cristal (sin botón). */
   cierre: IconName | null;
   noche: boolean;
   onNoche: () => void;
-  /** [Acercar] (escritorio, solo con 3D). */
+  /** [Acercar] (escritorio, solo con 3D); null = el visor aún no está listo. */
   cerca: boolean;
-  onCerca: () => void;
+  onCerca: (() => void) | null;
+  /** Paso Correa: "Correa entera" vuelve a su encuadre (la cara de la correa, el
+   *  que pide el editor al elegir) y, otra vez, la enseña de lado. */
+  pasoCorrea: boolean;
   /** "Foto real" (con 3D delante) o "Ver en 3D" (con la foto delante); null =
    *  este dispositivo no pinta 3D: sin botón. */
   onToggleFoto: (() => void) | null;
@@ -78,6 +81,13 @@ export default function ViewDock(props: ViewDockProps) {
 function vistasDe(p: ViewDockProps): readonly Vista[] {
   return p.cierre ? [...VIEWS, { id: "cierre", label: "Cierre", short: "Cierre", icon: p.cierre }] : VIEWS;
 }
+
+/** ¿Está puesta esta vista? La cara de la correa cuenta como "Correa entera". */
+const puesta = (p: ViewDockProps, v: Vista) => p.view === v.id || (v.id === "lado" && p.view === "correa");
+
+/** La vista que pide un botón. */
+const alPulsar = (p: ViewDockProps, v: Vista): View3D =>
+  v.id === "lado" && p.pasoCorrea && p.view !== "correa" ? "correa" : v.id;
 
 /** Flechas / Inicio / Fin entre los botones de la barra (tabindex itinerante). */
 function useRoving() {
@@ -136,6 +146,7 @@ function DockBtn({
   expanded,
   controls,
   btnRef,
+  off,
   onClick,
   className,
   children,
@@ -146,6 +157,8 @@ function DockBtn({
   expanded?: boolean;
   controls?: string;
   btnRef?: Ref<HTMLButtonElement>;
+  /** Aún no hace nada (sin quitarle el foco: la barra es itinerante). */
+  off?: boolean;
   onClick: () => void;
   className?: string;
   children?: ReactNode;
@@ -155,13 +168,14 @@ function DockBtn({
       ref={btnRef}
       type="button"
       data-dock=""
-      className={`rl-dock_btn${pressed || expanded ? " is-on" : ""}${className ? ` ${className}` : ""}`}
+      className={`rl-dock_btn${pressed || expanded ? " is-on" : ""}${off ? " is-off" : ""}${className ? ` ${className}` : ""}`}
       aria-pressed={pressed}
+      aria-disabled={off || undefined}
       aria-expanded={expanded}
       aria-controls={expanded ? controls : undefined}
       aria-label={label}
       title={label}
-      onClick={onClick}
+      onClick={off ? undefined : onClick}
     >
       <Icon name={icon} />
       {children}
@@ -188,7 +202,7 @@ function DockHorizontal(p: ViewDockProps) {
   const [nota, setNota] = useState(false);
   const vistas = vistasDe(p);
   const segs = p.tres ? vistas : FOTO_VISTAS;
-  const i = p.tres ? vistas.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
+  const i = p.tres ? vistas.findIndex((v) => puesta(p, v)) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
   return (
     <div
       ref={ref}
@@ -202,7 +216,7 @@ function DockHorizontal(p: ViewDockProps) {
         <span className={`rl-dock_thumb${i < 0 ? " is-empty" : ""}`} aria-hidden="true" />
         {p.tres
           ? vistas.map((v) => (
-              <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={p.view === v.id} onClick={() => p.onView(v.id)}>
+              <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={puesta(p, v)} onClick={() => p.onView(alPulsar(p, v))}>
                 <span className="rl-dock_label">{v.label}</span>
               </DockBtn>
             ))
@@ -214,7 +228,14 @@ function DockHorizontal(p: ViewDockProps) {
       </div>
       <span className="rl-dock_div" aria-hidden="true" />
       {p.tres && (
-        <DockBtn icon="zoom" label="Acercar" pressed={p.cerca} onClick={p.onCerca} className="rl-dock_tool">
+        <DockBtn
+          icon="zoom"
+          label="Acercar"
+          pressed={p.cerca}
+          off={!p.onCerca}
+          onClick={() => p.onCerca?.()}
+          className="rl-dock_tool"
+        >
           <span className="rl-dock_label">Acercar</span>
         </DockBtn>
       )}
@@ -261,7 +282,7 @@ function DockVertical(p: ViewDockProps) {
   const [nota, setNota] = useState(false);
   const vistas = vistasDe(p);
   const segs = p.tres ? vistas : FOTO_VISTAS;
-  const i = p.tres ? vistas.findIndex((v) => v.id === p.view) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
+  const i = p.tres ? vistas.findIndex((v) => puesta(p, v)) : FOTO_VISTAS.findIndex((v) => v.id === p.fotoVista);
   useEffect(() => {
     if (!mas) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -294,7 +315,7 @@ function DockVertical(p: ViewDockProps) {
         <span className={`rl-vdock_thumb${i < 0 ? " is-empty" : ""}`} aria-hidden="true" />
         {p.tres
           ? vistas.map((v) => (
-              <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={p.view === v.id} onClick={() => p.onView(v.id)}>
+              <DockBtn key={v.id} icon={v.icon} label={v.label} pressed={puesta(p, v)} onClick={() => p.onView(alPulsar(p, v))}>
                 <span className="rl-vdock_short" aria-hidden="true">
                   {v.short}
                 </span>

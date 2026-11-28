@@ -337,6 +337,18 @@ export const DIAL_LAYOUT = {
   },
 } as const;
 
+/** El triángulo de las 12 POR FUERA de su aro. La línea de DIAL_LAYOUT.triangle
+ *  es el centro del aro; con la esquina a inglete (así lo cortan el 3D y el 2D)
+ *  la punta baja rimW / 2 / sen(ángulo): 9.4 → 9.08. Lo usan la hoja del taller y
+ *  check-watch-data. */
+export function trianguloPorFuera(): { outerR: number; tipR: number; halfW: number } {
+  const { outerR, tipR, halfW, rimW } = DIAL_LAYOUT.triangle;
+  const a = Math.atan(halfW / (outerR - tipR));
+  const R = outerR + rimW / 2;
+  const tip = tipR - rimW / 2 / Math.sin(a);
+  return { outerR: R, tipR: tip, halfW: (R - tip) * Math.tan(a) };
+}
+
 /** Cuello de las agujas de hora y minuto: estrecho desde el buje hasta `to`, y
  *  de ahí se abre hasta el ancho de la hoja en `flare` mm. */
 const NECK = { to: 2.3, halfW: 0.42, flare: 0.3 } as const;
@@ -745,7 +757,8 @@ export function dialPrimitives(c: WatchConfig): Primitive[] {
     fill: lume,
     stroke: rim,
     strokeWidth: T.rimW,
-    strokeLinejoin: "round",
+    // A inglete, como el aro del 3D y como se corta: la misma punta en los dos.
+    strokeLinejoin: "miter",
   });
   const B = L.bar;
   out.push(

@@ -9,9 +9,11 @@ import {
   WATCH_SPECS,
   beadAt,
   contrastRatio,
+  dialBaseHex,
   dialColorAt,
   type Esfera,
   type OrishaId,
+  type StrapType,
   type WatchColorId,
 } from "@/lib/watch";
 
@@ -197,33 +199,82 @@ export function strapHex(id: string, swatch: string): string {
   return STRAP_TONO[id] ?? swatchHex(swatch);
 }
 
+// — Respaldos: la pieza de su color, dibujada en la propia hoja (sin red), como
+//   ÚLTIMA capa de fondo. El color es el correcto desde el primer fotograma y, si
+//   una imagen no llega, la balda no queda vacía. Van por dentro de la silueta de
+//   la foto: cuando llega, los tapa entera.
+const svgUrl = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+
+/** La esfera del mini reloj (en su encuadre, r 33.8 %), con su degradado. */
+function respaldoEsfera(e: Pick<Esfera, "base" | "degradado">): string {
+  const R = WATCH_SPECS.dialMm / 2;
+  const stops = [0, 0.25, 0.4, 0.5, 0.6, 0.75, 1]
+    .map((t) => `<stop offset="${t}" stop-color="${dialColorAt(e, -R + 2 * R * t)}"/>`)
+    .join("");
+  return svgUrl(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient><circle cx="50" cy="50" r="33.2" fill="url(#g)"/></svg>`,
+  );
+}
+
+/** Medida de cada pieza de la vitrina (scripts/gen-vitrina.py): la misma caja
+ *  para la foto y su respaldo. */
+const PIEZA_PX: Readonly<Record<StrapType, readonly [number, number]>> = {
+  caucho: [176, 152],
+  piel: [200, 229],
+  brazalete: [224, 207],
+};
+
+function respaldoPieza(hex: string, tipo: StrapType): string {
+  const [w, h] = PIEZA_PX[tipo];
+  const p = ([[7, 16], [93, 16], [88, 98], [12, 98]] as const).map(([x, y]) => `${(x * w) / 100},${(y * h) / 100}`).join(" ");
+  return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}"><polygon points="${p}" fill="${hex}"/></svg>`);
+}
+
 /** La punta de una correa (o un tramo de brazalete), de pie, con su reflejo. */
-export function VitrinaPiece({ src, hex }: { src?: string; hex: string }) {
+export function VitrinaPiece({ src, hex, tipo }: { src?: string; hex: string; tipo: StrapType }) {
   if (!src) return <ColorDot hex={hex} size={44} />;
-  return <span className="rl-vitp" style={{ "--img": `url("${src}")` } as CSSProperties} />;
+  return (
+    <span className="rl-vitp" style={{ "--img": `url("${src}")`, "--resp": respaldoPieza(hex, tipo) } as CSSProperties} />
+  );
 }
 
 /** La caja en un acabado, con la esfera elegida dentro (paso Caja): las capas de
  *  600 px del escenario, encuadradas como el mini reloj. `capas`, de arriba
  *  abajo: aplique PY, índices, caja y esfera. */
-export function CajaMuestra({ capas, hex }: { capas: readonly [string, string, string | undefined, string | undefined]; hex: string }) {
-  const [aplique, indices, caja, esfera] = capas;
-  if (!caja || !esfera) return <ColorDot hex={hex} size={44} />;
+export function CajaMuestra({
+  capas,
+  hex,
+  esfera,
+}: {
+  capas: readonly [string, string, string | undefined, string | undefined];
+  hex: string;
+  esfera: Pick<Esfera, "base" | "degradado">;
+}) {
+  const [aplique, indices, caja, dial] = capas;
+  if (!caja || !dial) return <ColorDot hex={hex} size={44} />;
   return (
     <span
       className="rl-cajam"
-      style={{ backgroundImage: [aplique, indices, caja, esfera].map((u) => `url("${u}")`).join(", ") }}
+      style={{ backgroundImage: [...[aplique, indices, caja, dial].map((u) => `url("${u}")`), respaldoEsfera(esfera)].join(", ") }}
     />
   );
 }
 
 /** El mini reloj: la esfera dentro de la caja del paso 1, con sus índices. */
-export function MiniWatch({ capas, hex }: { capas?: { indices: string; caja: string; dial: string }; hex: string }) {
-  if (!capas) return <ColorDot hex={hex} size={44} />;
+export function MiniWatch({
+  capas,
+  esfera,
+}: {
+  capas?: { indices: string; caja: string; dial: string };
+  esfera: Pick<Esfera, "base" | "degradado">;
+}) {
+  if (!capas) return <ColorDot hex={dialBaseHex(esfera.base)} size={44} />;
   return (
     <span
       className="rl-mini"
-      style={{ backgroundImage: `url("${capas.indices}"), url("${capas.caja}"), url("${capas.dial}")` }}
+      style={{
+        backgroundImage: `url("${capas.indices}"), url("${capas.caja}"), url("${capas.dial}"), ${respaldoEsfera(esfera)}`,
+      }}
     />
   );
 }

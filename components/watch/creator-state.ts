@@ -221,6 +221,9 @@ export function stepOfField(f: WatchField): { step: StepId; sub: SubId | null } 
 export type CreatorAction =
   /** Carga un reloj entero (de ?d=, de localStorage): siempre normalizado. */
   | { type: "cargar"; config: unknown }
+  /** Deshacer: el reloj de antes TAL CUAL. Sin normalize(): borraría en silencio
+   *  una fecha imposible que el cliente tiene escrita (y con ella el bloqueo). */
+  | { type: "restaurar"; config: WatchConfig }
   | { type: "preset"; id: PresetId }
   /** Una pieza del catálogo; 'pista' cambia el estilo (cuentas / rayas). */
   | { type: "pieza"; cat: PartCategory; id: string }
@@ -248,6 +251,9 @@ export function creatorReducer(c: WatchConfig, a: CreatorAction): WatchConfig {
   switch (a.type) {
     case "cargar":
       return normalize(a.config);
+
+    case "restaurar":
+      return a.config;
 
     case "preset":
       return resolvePreset(a.id);
@@ -315,6 +321,13 @@ export function creatorReducer(c: WatchConfig, a: CreatorAction): WatchConfig {
     case "tapaFuente":
       return { ...c, tapa: { ...c.tapa, fuente: a.fuente } };
   }
+}
+
+/** Los pasos ya alcanzados con alguna parada SIN VER (se llegó saltando). */
+export function pasosSinVer(max: number, seen: ReadonlySet<string>): ReadonlySet<StepId> {
+  return new Set(
+    STOPS.filter((x) => x.step !== "resumen" && stepIndex(x.step) <= max && !seen.has(stopKey(x.step, x.sub))).map((x) => x.step),
+  );
 }
 
 // ===========================================================================
@@ -413,7 +426,8 @@ export function strapLayerName(strapId: string, acabado: string): string {
 // ===========================================================================
 const VITRINA = "/assets/images/reloj/vitrina";
 
-/** Piezas de la vitrina que existen (las que tienen capa). */
+/** Piezas de la vitrina que existen (las que tienen capa; que su imagen esté en
+ *  public/ lo comprueba check-watch-data con todo el catálogo a la venta). */
 const tieneVitrina = (nombre: string) => KNOWN_LAYERS.has(nombre);
 
 /** La punta de una correa, de pie (la piel lleva su terminal en el acabado; el
@@ -423,12 +437,6 @@ export function vitrinaCorrea(strapId: string, acabado: string): string | undefi
   if (strapId === "brazalete") return `${VITRINA}/brazalete-${acabado}.webp`;
   if (strapId.startsWith("piel-")) return `${VITRINA}/${strapId}-${acabado}.webp`;
   return `${VITRINA}/${strapId}.webp`;
-}
-
-/** El macro del material de una correa (tarjetas de Tipo, mismo encuadre). */
-export function vitrinaTipo(strapId: string, acabado: string): string | undefined {
-  if (!tieneVitrina(strapLayerName(strapId, acabado))) return undefined;
-  return `${VITRINA}/tipo-${strapId === "brazalete" ? `brazalete-${acabado}` : strapId}.webp`;
 }
 
 /** Los índices sueltos (sin el aplique PY), para ponerlos sobre una capa. */

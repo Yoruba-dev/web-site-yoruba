@@ -12,8 +12,8 @@
 //             SPEC §4.9 #2 decía 3–9 y estaba girado 90°) y escalón interior
 //             pulido hasta la ventana de Ø28.8;
 //   orejas    guardacoronas a las 3 y a las 9 con su faceta de arriba pulida;
-//   cubreasas a las 12 y a las 6: bloques trapecio pulidos espejo, biseles de
-//             0.4 y cara convexa de 0.3 (refs 8, 13, 19);
+//   muescas   a las 12 y a las 6 quedan abiertas: las llena el bloque de metal
+//             de la correa (geo/strap.ts → endLinkGeometry; refs 8, 13, 19);
 //   tornillos dos cabezas Ø1.1 pulidas en el flanco derecho, junto a las asas
 //             (se ven en la ref 8 a resolución completa y en la 19);
 //   corona    Ø6.6 × 3.6 con 18 estrías redondeadas (±0.18), tapa abombada
@@ -69,7 +69,7 @@ export interface CaseGeometries {
    *  abajo, tubo de la corona. */
   brushed: THREE.BufferGeometry;
   /** Pulido: cantos, pared y chaflanes del bisel, escalón interior, corona,
-   *  cubreasas, facetas de las orejas, tornillos, aro del cristal, bisel del
+   *  facetas de las orejas, tornillos, aro del cristal, bisel del
    *  campo de la tapa. */
   polished: THREE.BufferGeometry;
   /** Mate: la pared de la ventana sobre la esfera. */
@@ -154,47 +154,6 @@ function crownGeometry(): THREE.BufferGeometry {
   return g;
 }
 
-/** Cubreasas: trapecio pulido (13.4 → 12.6 de ancho), biseles 0.4, cara de
- *  arriba convexa 0.3. En la muesca de las 12 (el de las 6 es el mismo, girado
- *  media vuelta). */
-function lugHoodGeometry(): THREE.BufferGeometry {
-  const y0 = CASE_DIM.notchY + 0.04;
-  const y1 = CASE_DIM.lugEnd - 0.05;
-  const w0 = CASE_DIM.notchHalfW * 2 - 0.3;
-  const w1 = w0 - 0.8;
-  const sh = new THREE.Shape();
-  sh.moveTo(-w0 / 2, y0);
-  sh.lineTo(w0 / 2, y0);
-  sh.lineTo(w1 / 2, y1);
-  sh.lineTo(-w1 / 2, y1);
-  sh.closePath();
-  const z0 = -1.7;
-  const z1 = 0.75;
-  const bevel = 0.4;
-  const g = new THREE.ExtrudeGeometry(sh, {
-    depth: z1 - z0 - 2 * bevel,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelOffset: -bevel,
-    bevelSegments: 3,
-    curveSegments: 2,
-  });
-  g.translate(0, 0, z0 + bevel);
-  // Convexa 0.3 a lo ancho en la cara de arriba.
-  const p = g.getAttribute("position");
-  for (let i = 0; i < p.count; i++) {
-    const z = p.getZ(i);
-    if (z > z1 - bevel - 0.01) {
-      const u = (2 * p.getX(i)) / w0;
-      p.setZ(i, z + 0.3 * Math.max(0, 1 - u * u));
-    }
-  }
-  g.deleteAttribute("normal");
-  g.computeVertexNormals();
-  return g;
-}
-
 export function caseGeometries(): CaseGeometries {
   // — Cuerpo ———————————————————————————————————————————————————————————
   const sil = mirrorQuarter(CASE_QUARTER);
@@ -265,13 +224,6 @@ export function caseGeometries(): CaseGeometries {
   crownTube.rotateZ(Math.PI / 2);
   crownTube.translate(CASE_DIM.earX - 0.4, 0, CZ.crownZ);
 
-  // — Cubreasas (12 y 6) ——————————————————————————————————————————————
-  const hood12 = lugHoodGeometry();
-  const hood6 = lugHoodGeometry();
-  // Media vuelta, no espejo: el trapecio es simétrico en x y así las caras y
-  // sus normales siguen mirando hacia fuera.
-  hood6.rotateZ(Math.PI);
-
   // — Tornillos del flanco derecho (Ø1.1, cúpulas pulidas) ——————————————
   const pins: THREE.BufferGeometry[] = [];
   for (const sy of [-1, 1]) {
@@ -332,8 +284,6 @@ export function caseGeometries(): CaseGeometries {
       bezelChamfer,
       innerChamfer,
       crown,
-      hood12,
-      hood6,
       ...facets,
       ...pins,
       crystalRing,

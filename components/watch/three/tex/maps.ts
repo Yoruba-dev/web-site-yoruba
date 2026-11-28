@@ -530,133 +530,233 @@ export function dateWheel(maxAniso: number): THREE.CanvasTexture {
 // ===========================================================================
 // Piel grabado cocodrilo
 // ===========================================================================
-/** Largo (mm) de correa que cubre una repetición de la textura de piel. */
-export const CROCO_TILE_MM = 32;
+/** Largo (mm) de correa que cubre una repetición de la textura de piel: cuatro
+ *  filas (fotos 5, 9 y 10: filas de 17.2 ± 1.3 mm a todo el ancho). */
+export const CROCO_TILE_MM = 69;
 
 export interface CrocoMaps {
   normal: THREE.CanvasTexture;
   color: THREE.CanvasTexture;
-  /** G = rugosidad (surco .78, cresta .42); R = capa de laca (surco .71 de la
-   *  de la cresta: .25 / .35 con clearcoat .35). */
+  /** G = rugosidad (celda .42, pliegue .70); R = capa de laca. */
   rough: THREE.CanvasTexture;
   dispose(): void;
 }
 
-/** Grabado cocodrilo por COLUMNAS (§4.9 #19, sin Voronoi): una columna
- *  central de 0.36·ancho con escamas de 7–10 mm, dos laterales de 0.22·ancho
- *  con escamas de 4–7 mm y dos de canto de 0.10·ancho (escamas menudas, y la
- *  vía del pespunte lisa a 1.3 mm del canto). Celdas rectangulares de
- *  esquinas redondeadas (r 0.6 mm), surcos de 0.35 mm, juego de ±12 %. Se
- *  repite sin costura a lo largo. u = de canto a canto (0…1), v = a lo largo
- *  (CROCO_TILE_MM por repetición). 1024². */
-export function crocoMaps(maxAniso: number, widthMm = 20): CrocoMaps {
-  const W = 1024;
+/** Lo claro de la celda en el mapa de color (sRGB): deja sitio al labio del
+ *  pliegue (1.08). CROCO_GAIN lo compensa en el color del material: la media
+ *  de la celda sigue siendo el tono medido de la correa. */
+const CROCO_BASE = 0.92;
+export const CROCO_GAIN = 1 / Math.pow(CROCO_BASE, 2.2);
+
+/** Pliegues transversales (mm en la repetición), su panza hacia la caja y su
+ *  inclinación; y el pliegue LARGO de la fila que empieza en cada uno (uno por
+ *  fila, u entre −3 y +2), más otro fino junto al pespunte en algunas. */
+const CROCO_ROWS = [
+  { y: 10.2, bulge: 1.2, tilt: 0.5, long: -1.9, fine: 6.1 },
+  { y: 27.0, bulge: 0.9, tilt: -0.6, long: 1.5, fine: 99 },
+  { y: 44.5, bulge: 1.3, tilt: 0.3, long: -2.7, fine: -6.2 },
+  { y: 61.5, bulge: 1.0, tilt: -0.4, long: 0.4, fine: 5.9 },
+] as const;
+
+/** Grabado cocodrilo por FILAS a todo el ancho (PLAN-REALISMO-V3 §2.5, medido
+ *  en las fotos 5, 9 y 10 y en la capa): cada fila acaba hacia la caja en un
+ *  pliegue de tres arrugas arqueadas con su quiebro en V donde la cruza el
+ *  pliegue largo; del lado de la caja de cada pliegue, las tablitas cortas; y
+ *  el micrograno arrugado de la piel. Nada de columnas (parecían ladrillos).
+ *  u = de canto a canto (0…1, 20 mm nominales), v = a lo largo. 512 × 1024. */
+export function crocoMaps(maxAniso: number): CrocoMaps {
+  const W = 512;
   const H = 1024;
   const T = CROCO_TILE_MM;
-  const kx = W / widthMm;
+  const WMM = 20;
+  const kx = W / WMM;
   const ky = H / T;
-  const r = rng(5);
-  // Columnas (fracción del ancho) y rango del largo de sus escamas (mm).
-  const COLS: [number, [number, number]][] = [
-    [0.1, [2.4, 3.6]],
-    [0.22, [4, 7]],
-    [0.36, [7, 10]],
-    [0.22, [4, 7]],
-    [0.1, [2.4, 3.6]],
-  ];
-  interface Cell {
-    x0: number;
-    x1: number;
-    y0: number;
-    y1: number;
-    tone: number;
-    dome: number;
-  }
-  const cells: Cell[][] = [];
-  let acc = 0;
-  for (const [frac, [lo, hi]] of COLS) {
-    const x0 = acc * widthMm;
-    acc += frac;
-    const x1 = acc * widthMm;
-    const lens: number[] = [];
-    let sum = 0;
-    while (sum < T) {
-      const l = lo + (hi - lo) * r();
-      lens.push(l);
-      sum += l;
-    }
-    const k = T / sum;
-    const col: Cell[] = [];
-    // Arranque desfasado por columna (las juntas no se alinean).
-    let y = r() * lens[0] * k;
-    for (const l of lens) {
-      const h = l * k;
-      // Juego ±12 % en los bordes laterales de cada celda.
-      const jx = (x1 - x0) * 0.12;
-      col.push({
-        x0: x0 + (r() - 0.5) * jx,
-        x1: x1 + (r() - 0.5) * jx,
-        y0: y,
-        y1: y + h * (1 + (r() - 0.5) * 0.24),
-        tone: 1 + (r() - 0.5) * 0.12,
-        dome: 0.75 + 0.25 * r(),
-      });
-      y += h;
-    }
-    cells.push(col);
-  }
-  const R = 0.6;
-  const G = 0.35;
-  const hgt = new Float32Array(W * H);
-  const tone = new Float32Array(W * H);
-  const colStart: number[] = [];
-  acc = 0;
-  for (const [frac] of COLS) {
-    colStart.push(acc * widthMm);
-    acc += frac;
-  }
-  for (let py = 0; py < H; py++) {
-    const ym = (py + 0.5) / ky;
+  const r = rng(11);
+  const gauss = (x: number, s: number) => Math.exp(-((x / s) * (x / s)));
+  /** Ruido 1D suave y periódico en `cells` celdas. */
+  const wave = (cells: number) => {
+    const g = new Float32Array(cells);
+    for (let i = 0; i < cells; i++) g[i] = r() * 2 - 1;
+    return (x: number) => {
+      const f = ((x % 1) + 1) % 1;
+      const c = f * cells;
+      const i = Math.floor(c);
+      const t = c - i;
+      const s = t * t * (3 - 2 * t);
+      return g[i % cells] * (1 - s) + g[(i + 1) % cells] * s;
+    };
+  };
+  const K = CROCO_ROWS.length;
+  // Por columna de píxeles: dónde cae cada arruga y cuánto marca.
+  const yc: Float32Array[] = [];
+  const w2: Float32Array[] = [];
+  const w3: Float32Array[] = [];
+  const a1: Float32Array[] = [];
+  const a2: Float32Array[] = [];
+  const a3: Float32Array[] = [];
+  const tab: Float32Array[] = [];
+  const tabLen: Float32Array[] = [];
+  for (let k = 0; k < K; k++) {
+    const row = CROCO_ROWS[k];
+    const n1 = wave(14);
+    const n2 = wave(9);
+    const n3 = wave(11);
+    const n4 = wave(6);
+    const lines: { x: number; len: number; amp: number }[] = [];
+    for (let x = -8.2; x < 8.2; x += 0.85 + r() * 0.7) lines.push({ x, len: 0.9 + r() * 1.5, amp: 0.45 + 0.55 * r() });
+    yc.push(new Float32Array(W));
+    w2.push(new Float32Array(W));
+    w3.push(new Float32Array(W));
+    a1.push(new Float32Array(W));
+    a2.push(new Float32Array(W));
+    a3.push(new Float32Array(W));
+    tab.push(new Float32Array(W));
+    tabLen.push(new Float32Array(W));
     for (let px = 0; px < W; px++) {
-      const xm = (px + 0.5) / kx;
-      let ci = 0;
-      while (ci + 1 < COLS.length && xm >= colStart[ci + 1]) ci++;
-      let best = -1e9;
-      let bt = 1;
-      let bd = 1;
-      // La celda dueña: la de mayor distancia interior (con su vecina).
-      for (const cc of [ci - 1, ci, ci + 1]) {
-        if (cc < 0 || cc >= COLS.length) continue;
-        for (const c of cells[cc]) {
-          for (const shift of [-T, 0, T]) {
-            const y0 = c.y0 + shift;
-            const y1 = c.y1 + shift;
-            if (ym < y0 - 2 || ym > y1 + 2) continue;
-            const hx = (c.x1 - c.x0) / 2 - G / 2;
-            const hy = (y1 - y0) / 2 - G / 2;
-            const dx = Math.abs(xm - (c.x0 + c.x1) / 2) - (hx - R);
-            const dy = Math.abs(ym - (y0 + y1) / 2) - (hy - R);
-            const outside = Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
-            const sdf = outside + Math.min(Math.max(dx, dy), 0) - R;
-            const inside = -sdf;
-            if (inside > best) {
-              best = inside;
-              bt = c.tone;
-              bd = c.dome;
-            }
-          }
+      const x = (px + 0.5) / kx - WMM / 2;
+      // Las dos celdas de la fila de arriba, cada una con su panza; en el
+      // pliegue largo se juntan en una V que mira hacia fuera.
+      const L = row.long;
+      const c = x < L ? (L - 10) / 2 : (L + 10) / 2;
+      const h = x < L ? (L + 10) / 2 : (10 - L) / 2;
+      const q = Math.min(1, Math.abs((x - c) / h));
+      const t = px / W;
+      yc[k][px] = row.y + (row.tilt * x) / 10 - row.bulge * (1 - Math.pow(q, 2.4)) + row.bulge * 0.55 + 0.13 * n1(t);
+      w2[k][px] = 0.62 + 0.3 * n2(t) + 0.25 * (1 - q);
+      w3[k][px] = 1.3 + 0.4 * n3(t) + 0.2 * (1 - q);
+      a1[k][px] = 0.85 + 0.25 * n2(t + 0.4);
+      a2[k][px] = Math.max(0.1, 0.62 + 0.45 * n3(t + 0.2));
+      a3[k][px] = Math.max(0, 0.34 + 0.5 * n4(t + 0.7));
+      let best = 0;
+      let len = 1.2;
+      for (const l of lines) {
+        const v = l.amp * gauss(x - l.x, 0.13);
+        if (v > best) {
+          best = v;
+          len = l.len;
         }
       }
-      // Surco → 0; cresta abombada hacia el centro de la escama.
-      const e = Math.max(0, Math.min(1, best / 0.22));
-      const crest = e * e * (3 - 2 * e);
-      const domeH = Math.min(1, Math.max(0, best) / 1.6);
-      let h = crest * (0.72 + 0.28 * domeH * bd);
-      // La vía del pespunte: lisa y algo hundida a 1.3 mm de cada canto.
-      const ds = Math.min(Math.abs(xm - 1.3), Math.abs(xm - (widthMm - 1.3)));
-      if (ds < 0.55) h = 0.55 + 0.1 * (ds / 0.55);
-      hgt[py * W + px] = h;
-      tone[py * W + px] = bt;
+      tab[k][px] = best;
+      tabLen[k][px] = len;
+    }
+  }
+  const longW: ((v: number) => number)[] = CROCO_ROWS.map(() => wave(7));
+  const longA: ((v: number) => number)[] = CROCO_ROWS.map(() => wave(5));
+  // Micrograno: arrugas finas más largas a lo ancho que a lo largo + poro.
+  // (Ruido de valor periódico, interpolado por filas: se pide una fila y se lee
+  // columna a columna.)
+  const grainOct = (cx: number, cy: number) => {
+    const g = new Float32Array(cx * cy);
+    for (let i = 0; i < g.length; i++) g[i] = r() * 2 - 1;
+    const i0 = new Uint16Array(W);
+    const i1 = new Uint16Array(W);
+    const sx = new Float32Array(W);
+    for (let px = 0; px < W; px++) {
+      const f = (px / W) * cx;
+      const c = Math.floor(f);
+      i0[px] = c % cx;
+      i1[px] = (c + 1) % cx;
+      sx[px] = (f - c) * (f - c) * (3 - 2 * (f - c));
+    }
+    const line = new Float32Array(cx);
+    return {
+      row(py: number) {
+        const f = (py / H) * cy;
+        const c = Math.floor(f);
+        const s = (f - c) * (f - c) * (3 - 2 * (f - c));
+        const a = (c % cy) * cx;
+        const b = ((c + 1) % cy) * cx;
+        for (let i = 0; i < cx; i++) line[i] = g[a + i] * (1 - s) + g[b + i] * s;
+      },
+      at: (px: number) => line[i0[px]] * (1 - sx[px]) + line[i1[px]] * sx[px],
+    };
+  };
+  const g1 = grainOct(26, 170);
+  const g2 = grainOct(96, 330);
+  const g3 = grainOct(9, 30);
+  // El borde (a < 2.4 del canto) es liso: los pliegues casi no lo marcan.
+  const edgeOf = new Float32Array(W);
+  for (let px = 0; px < W; px++) {
+    const x = (px + 0.5) / kx - WMM / 2;
+    const eb = Math.max(0, Math.min(1, (Math.abs(x) - 6.9) / 1.5));
+    edgeOf[px] = 1 - 0.72 * (eb * eb * (3 - 2 * eb));
+  }
+
+  const hgt = new Float32Array(W * H); // mm
+  const dark = new Float32Array(W * H); // 0…1: cuánto oscurece
+  const lip = new Float32Array(W * H);
+  const xl = new Float32Array(K);
+  const al = new Float32Array(K);
+  const xf = new Float32Array(K);
+  for (let py = 0; py < H; py++) {
+    const y = (py + 0.5) / ky;
+    const yn = py / H;
+    g1.row(py);
+    g2.row(py);
+    g3.row(py);
+    for (let k = 0; k < K; k++) {
+      xl[k] = CROCO_ROWS[k].long + 0.42 * longW[k](yn) + 0.12 * longW[(k + 1) % K](yn * 3);
+      al[k] = 0.78 + 0.3 * longA[k](yn);
+      xf[k] = CROCO_ROWS[k].fine + 0.35 * longW[(k + 2) % K](yn);
+    }
+    for (let px = 0; px < W; px++) {
+      const x = (px + 0.5) / kx - WMM / 2;
+      const edge = edgeOf[px];
+      let h = 0;
+      let d = 0;
+      let lp = 0;
+      // La fila en la que cae el píxel: la del último pliegue por debajo.
+      let rowK = K - 1;
+      let yRel = 1e9;
+      for (let k = 0; k < K; k++) {
+        let t = y - yc[k][px];
+        if (t > T / 2) t -= T;
+        else if (t < -T / 2) t += T;
+        if (t >= 0 && t < yRel) {
+          yRel = t;
+          rowK = k;
+        }
+        if (t < -5 || t > 2.4) continue;
+        const t2 = t + w2[k][px];
+        const t3 = t + w3[k][px];
+        const m1 = t > -0.6 && t < 0.6 ? a1[k][px] * gauss(t, 0.17) : 0;
+        const m2 = t2 > -0.5 && t2 < 0.5 ? a2[k][px] * gauss(t2, 0.15) : 0;
+        const m3 = t3 > -0.5 && t3 < 0.5 ? a3[k][px] * gauss(t3, 0.14) : 0;
+        // Toda la zona del pliegue se hunde un poco (la celda se redondea).
+        h -= edge * (0.28 * m1 + 0.2 * m2 + 0.13 * m3 + 0.3 * gauss(t + 0.6, 1.5));
+        d += edge * (1.05 * m1 + 0.75 * m2 + 0.5 * m3 + 0.26 * gauss(t + 0.7, 1.2));
+        if (t > -0.8 && t < 1.4) lp += edge * (0.8 * gauss(t - 0.5, 0.28) + 0.45 * gauss(t + w2[k][px] / 2, 0.16));
+        // Tablitas: del lado de la caja (t < 0), junto al pliegue.
+        const e = -t - 1.5;
+        if (e > -0.4) {
+          const f = Math.max(0, Math.min(1, (e + 0.4) / 0.4)) * Math.max(0, Math.min(1, (tabLen[k][px] - e) / 0.9));
+          const v = tab[k][px] * f * edge;
+          h -= 0.085 * v;
+          d += 0.46 * v + 0.16 * Math.max(0, 1 - e / 2.4) * edge;
+        }
+      }
+      // El pliegue largo de su fila (y el fino).
+      const dl = x - xl[rowK];
+      const on = Math.min(1, yRel / 0.4);
+      if (dl > -2.6 && dl < 2.6) {
+        const ml = on * al[rowK] * gauss(dl, 0.2);
+        h -= 0.22 * ml + 0.13 * on * gauss(dl, 1.1);
+        d += 0.95 * ml + 0.16 * on * gauss(dl, 0.8);
+        lp += on * (0.55 * gauss(dl - 0.42, 0.2) + 0.35 * gauss(dl + 0.42, 0.2));
+      }
+      const df = x - xf[rowK];
+      if (df > -1.2 && df < 1.2) {
+        const mf = on * 0.6 * gauss(df, 0.17);
+        h -= 0.12 * mf + 0.04 * on * gauss(df, 0.5);
+        d += 0.6 * mf;
+      }
+      // Micrograno.
+      const a = g1.at(px);
+      const b = g2.at(px);
+      const i = py * W + px;
+      hgt[i] = h + 0.011 * a + 0.0065 * b;
+      dark[i] = d - 0.05 * a - 0.04 * b - 0.05 * g3.at(px);
+      lip[i] = lp;
     }
   }
   const at = (x: number, y: number) => hgt[(((y % H) + H) % H) * W + Math.max(0, Math.min(W - 1, x))];
@@ -671,28 +771,26 @@ export function crocoMaps(maxAniso: number, widthMm = 20): CrocoMaps {
   const nC = mk();
   const cC = mk();
   const rC = mk();
-  // Gradiente en mm: alto del surco 0.35 mm.
-  const DEPTH = 0.35;
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const dhx = ((at(x + 1, y) - at(x - 1, y)) * DEPTH) / (2 / kx);
-      const dhy = ((at(x, y + 1) - at(x, y - 1)) * DEPTH) / (2 / ky);
-      const s = 0.55;
-      const nx = -dhx * s;
-      const ny = dhy * s;
+      const nx = -((at(x + 1, y) - at(x - 1, y)) * kx) / 2;
+      const ny = -((at(x, y + 1) - at(x, y - 1)) * ky) / 2;
       const l = Math.hypot(nx, ny, 1);
-      const i = (y * W + x) * 4;
+      // La fila 0 del lienzo es v = 1: se escribe del revés (y crece con v).
+      const i = ((H - 1 - y) * W + x) * 4;
+      const q = y * W + x;
       nC.img.data[i] = Math.round((nx / l) * 127.5 + 127.5);
       nC.img.data[i + 1] = Math.round((ny / l) * 127.5 + 127.5);
       nC.img.data[i + 2] = Math.round((1 / l) * 127.5 + 127.5);
       nC.img.data[i + 3] = 255;
-      const h = hgt[y * W + x];
-      // Color: ±6 % por escama; surcos más oscuros.
-      const v = Math.round(255 * Math.min(1, (0.6 + 0.4 * h) * tone[y * W + x]));
+      const d = Math.max(-0.2, Math.min(1, dark[q]));
+      const tone = (1 - 0.56 * d) * (1 + 0.08 * Math.min(1, lip[q]) * (1 - Math.max(0, d)));
+      const v = Math.round(255 * Math.min(1, CROCO_BASE * tone));
       cC.img.data[i] = cC.img.data[i + 1] = cC.img.data[i + 2] = v;
       cC.img.data[i + 3] = 255;
-      rC.img.data[i] = Math.round(255 * (0.714 + 0.286 * h));
-      rC.img.data[i + 1] = Math.round(255 * (0.78 - 0.36 * h));
+      const dr = Math.max(0, d);
+      rC.img.data[i] = Math.round(255 * (1 - 0.45 * dr));
+      rC.img.data[i + 1] = Math.round(255 * (0.42 + 0.28 * dr + 0.03 * Math.max(0, -d)));
       rC.img.data[i + 2] = 255;
       rC.img.data[i + 3] = 255;
     }

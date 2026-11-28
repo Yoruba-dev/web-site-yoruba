@@ -4,7 +4,8 @@
 // La barra de pasos (spec V2 §3.3 / §6.1): UNA fila de 5 segmentos iguales: la
 // pieza del paso (icono de 18 px), su nombre y una barra de 3 px. No depende del
 // color (PLAN-REALISMO-V3 6.9): lo hecho lleva un ✓, el actual va en oro y con
-// la barra llena, y lo pendiente baja al 60 %. Un punto rojo de 6 px = algo que
+// la barra llena, y lo pendiente baja al 60 %. Un paso al que se llegó saltando
+// (con partes sin ver) no está hecho: lleva un aro hueco. Un punto rojo de 6 px = algo que
 // resolver en ese paso. Todos se pueden pulsar, en cualquier orden. En la hoja
 // del móvil van los iconos con su barra y la etiqueta "Correa · 3 de 4".
 // ---------------------------------------------------------------------------
@@ -23,6 +24,7 @@ export default function Stepper({
   step,
   max,
   blocked,
+  sinVer,
   onGo,
   compact = false,
 }: {
@@ -31,6 +33,8 @@ export default function Stepper({
   max: number;
   /** Pasos con algo que resolver (punto rojo). */
   blocked: ReadonlySet<StepId>;
+  /** Pasos alcanzados con alguna parte sin ver (aro hueco, no ✓). */
+  sinVer: ReadonlySet<StepId>;
   onGo: (s: StepId) => void;
   /** Hoja del móvil: barras + "Paso · n de 4". */
   compact?: boolean;
@@ -40,15 +44,16 @@ export default function Stepper({
     <nav className={`rl-stepper${compact ? " rl-stepper--compact" : ""}`} aria-label="Pasos del diseño">
       <ol>
         {STEPS.map((s, k) => {
-          const state = k === i ? "now" : k <= max ? "done" : "todo";
+          const state = k === i ? "now" : k > max ? "todo" : sinVer.has(s.id) ? "part" : "done";
           const falta = blocked.has(s.id);
+          const dicho = state === "done" ? " (hecho)" : state === "part" ? " (sin ver del todo)" : "";
           return (
             <li key={s.id}>
               <button
                 type="button"
                 className={`rl-stepper_btn is-${state}`}
                 aria-current={k === i ? "step" : undefined}
-                aria-label={compact ? `${s.label}${state === "done" ? " (hecho)" : ""}${falta ? " (falta resolver algo)" : ""}` : undefined}
+                aria-label={compact ? `${s.label}${dicho}${falta ? " (falta resolver algo)" : ""}` : undefined}
                 onClick={() => onGo(s.id)}
               >
                 <span className="rl-stepper_ico" aria-hidden="true">
@@ -59,6 +64,7 @@ export default function Stepper({
                       <path d="m2.6 5.2 1.7 1.7L7.5 3.4" />
                     </svg>
                   )}
+                  {state === "part" && <span className="rl-stepper_aro" />}
                 </span>
                 <span className="rl-stepper_bar" aria-hidden="true">
                   <span className="rl-stepper_fill" />
@@ -66,7 +72,7 @@ export default function Stepper({
                 {!compact && (
                   <span className="rl-stepper_label">
                     {s.label}
-                    {state === "done" && <span className="rl-sr"> (hecho)</span>}
+                    {dicho && <span className="rl-sr">{dicho}</span>}
                     {falta && <span className="rl-sr"> (falta resolver algo)</span>}
                   </span>
                 )}

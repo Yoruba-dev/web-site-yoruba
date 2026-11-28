@@ -6,9 +6,11 @@
 // z = −30.5 (su parte de arriba, z = −7.5, queda justo bajo la tapa). Cada
 // correa sale de su asa (y = 22.6, z = −2.6, con la tangente del asa), se une
 // con continuidad C1 a la elipse desplazada medio grueso hacia fuera y la
-// sigue hasta abajo (y = 0). La unión se eligió buscando la curvatura máxima
-// más baja sin entrar en la muñeca (radio mínimo 9.8 mm; ver el informe de la
-// etapa 4): una Hermite del asa a la elipse en φ = 1.65 rad.
+// sigue hasta abajo (y = 0). La unión (una Hermite del asa a la elipse) se
+// eligió con un barrido numérico (PLAN-REALISMO-V3 2.7): la correa sale del
+// asa casi recta y cae en una curva larga, como en los renders 13 y 19 y la
+// foto r11: radio mínimo 16.2 mm (antes 9.8) y 31.6° caídos a los 8 mm (antes
+// 48°), sin entrar en la muñeca (línea media a ≥ 1.8 mm).
 //
 // Una correa se describe por su CURVATURA κ(s) (1/mm) cada DS mm de arco. Su
 // geometría se construye UNA vez en el espacio local de la correa (s a lo
@@ -39,7 +41,7 @@ export const LUG = { y: 22.6, z: -2.6, theta: Math.atan2(-0.25, 2.4) } as const;
 export const BASE_OFFSET = 1.8;
 
 /** La unión C1 asa → elipse (ver cabecera). */
-const JOIN = { phi: 1.65, m0: 40, m1: 34 } as const;
+const JOIN = { phi: 2.1, m0: 40, m1: 90 } as const;
 
 /** Largo de las tablas (mm de arco): de sobra para la cola de la correa de
  *  agujeros y las hojas del desplegable, que pasan del punto de abajo. */
@@ -218,11 +220,7 @@ export type TrackId =
   | "base"
   /** Hebilla: la correa de agujeros, que pasa por el marco y sube por fuera
    *  de la de las 12 (su cola). */
-  | "cola"
-  /** Desplegable: las puntas de las correas montan sobre las hojas. */
-  | "alza"
-  /** Brazalete: la tapa del cierre plegable (abierta, se voltea 160°). */
-  | "tapa";
+  | "cola";
 
 export interface TrackTables {
   closed: Float32Array;
@@ -233,8 +231,6 @@ export interface TrackTables {
 
 /** Grueso de la correa de las 6 (para la cola sobre la de las 12). */
 const COLA = { th: 3.2, gap: 0.3 } as const;
-/** Lo que suben las puntas del desplegable (las dos hojas, 1.4 mm cada una). */
-export const ALZA = 2.8;
 
 /** κ de la pose ABIERTA ("boca abajo"): sale del asa, dobla 18° hacia +z en
  *  12 mm, vuelve a quedar recta en ±y en otros 12 y sigue recta. */
@@ -249,6 +245,34 @@ export function openKappa(): Float32Array {
   return k;
 }
 
+/** El trazo de la COLA: la línea media de la correa de las 6 hasta abajo y,
+ *  de ahí, la de las 12 recorrida al revés (la cola sube POR ENCIMA de ella,
+ *  no por la elipse: cerca de la caja la correa se separa de la muñeca),
+ *  desplazada `d(σ)` hacia fuera en el arco σ. */
+function tailPath(d: (s: number) => number): [number, number][] {
+  const down = closedPath(() => BASE_OFFSET, Math.PI);
+  const up = down
+    .slice(0, -1)
+    .reverse()
+    .map(([y, z]): [number, number] => [-y, z]);
+  const mid = [...down, ...up];
+  const out: [number, number][] = [];
+  let s = 0;
+  for (let i = 0; i < mid.length; i++) {
+    const a = mid[Math.max(0, i - 1)];
+    const b = mid[Math.min(mid.length - 1, i + 1)];
+    if (i > 0) s += Math.hypot(mid[i][0] - a[0], mid[i][1] - a[1]);
+    // La tabla no necesita más (y se queda lejos del asa de las 12).
+    if (s > TABLE_LEN + 2) break;
+    const ty = b[0] - a[0];
+    const tz = b[1] - a[1];
+    const l = Math.hypot(ty, tz) || 1;
+    // Hacia fuera de la muñeca: N = (−T_z, T_y).
+    out.push([mid[i][0] - (d(s) * tz) / l, mid[i][1] + (d(s) * ty) / l]);
+  }
+  return out;
+}
+
 const tableCache = new Map<TrackId, TrackTables>();
 
 /** Las tablas de una pista (memo: son las mismas para toda la vida). */
@@ -256,39 +280,20 @@ export function trackTables(id: TrackId): TrackTables {
   const hit = tableCache.get(id);
   if (hit) return hit;
   const open = openKappa();
-  const end = Math.PI + 1.4;
+  const end = Math.PI + 1.5;
   let out: TrackTables;
   if (id === "base") {
     out = { closed: tableFromPath(closedPath(() => BASE_OFFSET, end)).table.kappa, open };
-  } else if (id === "cola") {
-    const tail = BASE_OFFSET + COLA.th + COLA.gap;
-    // La correa pasa por el marco de la hebilla (centrado abajo) y sube por
-    // fuera de la de las 12.
-    const d = (phi: number) => BASE_OFFSET + (tail - BASE_OFFSET) * smooth(Math.PI - 0.22, Math.PI + 0.2, phi);
-    const dLift = (phi: number) => d(phi) + 4 * smooth(Math.PI - 0.3, Math.PI + 0.1, phi);
-    out = {
-      closed: tableFromPath(closedPath(d, end)).table.kappa,
-      open,
-      lifted: tableFromPath(closedPath(dLift, end)).table.kappa,
-    };
-  } else if (id === "tapa") {
-    // Cerrada: como la base. Abierta: recta hasta la bisagra de la tapa
-    // (L − 15) y ahí se voltea 160° hacia el forro en 6 mm.
-    const k = openKappa();
-    const flip = THREE.MathUtils.degToRad(-160);
-    const h0 = L_BOTTOM - 15;
-    const th = (s: number) => flip * smooth(h0, h0 + 6, s);
-    for (let i = 0; i < SAMPLES; i++) {
-      const s = i * DS;
-      k[i] += (th(s + DS / 2) - th(s - DS / 2)) / DS;
-    }
-    out = { closed: trackTables("base").closed, open: k };
   } else {
-    // Desplegable: la punta (los últimos 8 mm antes de la bisagra) sube ALZA
-    // para montar sobre las hojas.
-    const phiAt = (s: number) => Math.PI - (L_BOTTOM - s) / 43;
-    const d = (phi: number) => BASE_OFFSET + ALZA * smooth(phiAt(L_BOTTOM - 19), phiAt(L_BOTTOM - 11), phi);
-    out = { closed: tableFromPath(closedPath(d, end)).table.kappa, open };
+    // La correa pasa por el marco de la hebilla (centrado abajo) y sube por
+    // fuera de la de las 12, a un grueso de ella.
+    const d = (s: number) => (COLA.th + COLA.gap) * smooth(L_BOTTOM - 7, L_BOTTOM + 6.5, s);
+    const dLift = (s: number) => d(s) + 4 * smooth(L_BOTTOM - 9.5, L_BOTTOM + 3.5, s);
+    out = {
+      closed: tableFromPath(tailPath(d)).table.kappa,
+      open,
+      lifted: tableFromPath(tailPath(dLift)).table.kappa,
+    };
   }
   tableCache.set(id, out);
   return out;
@@ -464,8 +469,19 @@ export class PoseDriver {
       // La cola se separa primero (0–30 %), luego se abre.
       if (t < 0.3) mixKappa(tb.closed, tb.lifted, t / 0.3, tr.tmp);
       else mixKappa(tb.lifted, tb.open, (t - 0.3) / 0.7, tr.tmp);
-    } else mixKappa(tb.closed, tb.open, t, tr.tmp);
+    } else {
+      // Con cola (hebilla o puente), la de las 12 espera debajo a que la cola
+      // se aparte: si no, la atravesaría al abrirse hacia fuera.
+      const wait = tr.side === "12" && this.hasCola();
+      mixKappa(tb.closed, tb.open, wait ? Math.max(0, (t - 0.42) / 0.58) : t, tr.tmp);
+    }
     integratePose(tr.tmp, tr.frames);
+  }
+
+  /** ¿Hay una cola montada? (las pistas no se borran al cambiar de correa). */
+  private hasCola(): boolean {
+    for (const key of this.geos.values()) if (key === "6:cola") return true;
+    return false;
   }
 
   frames(side: Side, id: TrackId): Frames {

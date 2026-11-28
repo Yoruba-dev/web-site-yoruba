@@ -30,7 +30,7 @@ import {
   type NormalizeReport,
   type Part,
 } from "@/lib/watch";
-import { CASEBACK_LAYOUT, DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives } from "@/lib/watch-art";
+import { CASEBACK_LAYOUT, DIAL_LAYOUT, HANDS, dialHasDate, dialPrimitives, trianguloPorFuera } from "@/lib/watch-art";
 import { svgDataUrl } from "@/lib/watch-svg";
 // Texto en CURVAS (contornos reales de Cinzel / Cormorant): la vista previa de
 // la hoja y el archivo que abre el láser o la impresora son idénticos, sin
@@ -58,11 +58,12 @@ const mm = (x: number) => String(Number(x.toFixed(2)));
  *  aros van centrados en el borde: por fuera, la medida más un aro). */
 function medidasAplicados(clasica: boolean, fecha: boolean): string {
   const { dots, bar, triangle, date } = DIAL_LAYOUT;
+  const t = trianguloPorFuera();
   const bits = clasica
     ? [
         `puntos Ø${mm(2 * dots.dotR + dots.rimW)} en r ${mm(dots.r)}`,
         `barras ${mm(bar.len + bar.rimW)} × ${mm(bar.w + bar.rimW)} en r ${mm(bar.r)}`,
-        `triángulo de r ${mm(triangle.outerR)} a ${mm(triangle.tipR)} (aro ${mm(triangle.rimW)} centrado en el borde)`,
+        `triángulo ${mm(2 * t.halfW)} de base × ${mm(t.outerR - t.tipR)} de alto, de r ${mm(t.outerR)} a la punta en r ${mm(t.tipR)} (aro ${mm(triangle.rimW)}, incluido)`,
       ]
     : [];
   if (fecha) {

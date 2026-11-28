@@ -26,7 +26,6 @@ import {
   WATCH_ORISHAS,
   canonicalDialText,
   cleanDialText,
-  dialBaseHex,
   dialColorAt,
   getDialBase,
   getFinish,
@@ -86,6 +85,7 @@ function EsferaColor({ config, dispatch }: StepProps) {
   const bases = visibleParts(DIAL_BASES);
   const lisas = bases.filter((b) => !b.degradado);
   const degradados = bases.filter((b) => b.degradado);
+  const gradientes = degradados.map((b) => b.degradado!);
   const actual = getDialBase(e.base);
   const grad = actual?.degradado;
   const paso = gradientStepOf(e);
@@ -95,7 +95,10 @@ function EsferaColor({ config, dispatch }: StepProps) {
   });
   /** El mini reloj de una base, en la caja del paso 1 (y la Esfera Ifá). */
   const mini = (base: DialBaseId, n?: DialGradientStep) => (
-    <MiniWatch capas={vitrinaMini(base, config.acabado, { ifa: e.modelo === "ifa", paso: n })} hex={dialBaseHex(base)} />
+    <MiniWatch
+      capas={vitrinaMini(base, config.acabado, { ifa: e.modelo === "ifa", paso: n })}
+      esfera={{ base, degradado: n }}
+    />
   );
   const elegir = (id: DialBaseId) => {
     if (!isPartId("esfera", id)) return;
@@ -119,7 +122,7 @@ function EsferaColor({ config, dispatch }: StepProps) {
       />
 
       <OptionGroup<DialBaseId>
-        label="Sol"
+        label="Color liso (brillo sol)"
         labelValue={!grad ? actual?.label : undefined}
         variant="vitrina"
         columns={6}
@@ -143,7 +146,7 @@ function EsferaColor({ config, dispatch }: StepProps) {
           labelValue={grad ? `${grad.orisha} (${grad.nombres[0]} → ${grad.nombres[1]})` : undefined}
           variant="vitrina"
           columns={6}
-          className="rl-vit--mini"
+          className="rl-vit--mini rl-vit--degr"
           value={grad ? e.base : null}
           espera={espera as DialBaseId | null}
           onChange={elegir}
@@ -152,8 +155,10 @@ function EsferaColor({ config, dispatch }: StepProps) {
             const g = b.degradado!;
             return {
               ...baseTile(b),
-              label: `${g.orisha}: ${g.nombres[0]} → ${g.nombres[1]}`,
-              nombre: nombreDegradado(g, degradados.map((x) => x.degradado!)),
+              // El visible va dentro del accesible (control por voz: "pulsa
+              // Changó vino") y sin la flecha, que se lee como símbolo.
+              label: `${nombreDegradado(g, gradientes)}, de ${g.nombres[0]} a ${g.nombres[1]}`,
+              nombre: nombreDegradado(g, gradientes),
               visual: mini(b.id, b.id === e.base && paso ? paso : 3),
             };
           })}
@@ -230,7 +235,7 @@ function EsferaPista({ config, dispatch }: StepProps) {
           {
             id: "lisa" as const,
             label: "Lisa",
-            detalle: "Sin color",
+            detalle: e.pista.estilo === "cuentas" ? "Solo con Rayas" : "Sin color",
             visual: <span className="rl-beads rl-beads--lisa" />,
             ...(e.pista.estilo === "cuentas"
               ? { estado: "bloqueado" as const, motivo: "Las cuentas llevan los colores de un Orisha." }
@@ -417,7 +422,7 @@ function EsferaDetalles({ config, dispatch }: StepProps) {
           ...tileState(optionState(config, "segundero", s.id)),
         }))}
       />
-      <p className="rl-note">Hora y minuto van en {metal} con lume: siguen el acabado de tu caja.</p>
+      <p className="rl-note">Hora y minuto: {metal}, con pintura que brilla en la oscuridad.</p>
     </>
   );
 }

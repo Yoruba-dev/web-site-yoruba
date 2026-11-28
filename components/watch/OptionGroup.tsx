@@ -1,13 +1,15 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // Grupo de opciones del creador = un radiogroup accesible (patrón WAI-ARIA):
 // una sola parada de tabulador por grupo, flechas para moverse (y elegir, como
 // un radio nativo), Inicio / Fin, foco visible. Las fichas en gris (agotada,
 // bloqueada) se pintan con su motivo en español, no se pueden elegir y las
-// flechas las saltan.
+// flechas las saltan. Donde la ficha no tiene sitio para el motivo (círculos,
+// vitrina, filas, segmentado), va a la vista bajo el carril: el aviso de la
+// elegida, o el de la bloqueada que se acaba de pulsar (en táctil no hay title).
 //
 // Variantes (spec V2 §6.1), todas sobre la misma rejilla de 8 px:
 //   • tiles     — fichas con muestra + nombre (acabado, aplique, Meyis…);
@@ -59,7 +61,7 @@ export default function OptionGroup<T extends string>({
   className,
   espera,
 }: {
-  label: string;
+  label: ReactNode;
   /** Lo elegido, a la vista en la etiqueta ("2 · Color — Caucho rojo"). */
   labelValue?: string;
   hint?: ReactNode;
@@ -81,6 +83,8 @@ export default function OptionGroup<T extends string>({
   const uid = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
+  /** La opción en gris que se acaba de pulsar: se dice por qué no se puede. */
+  const [pulsada, setPulsada] = useState<T | null>(null);
   const usable = (o: OptionItem<T>) => o.estado !== "agotado" && o.estado !== "bloqueado";
   const selectedIndex = options.findIndex((o) => o.id === value);
   // La parada de tabulador: la elegida; si no hay, la primera que se puede usar.
@@ -112,6 +116,7 @@ export default function OptionGroup<T extends string>({
     const to = order.find((i) => usable(options[i]));
     if (to === undefined) return;
     refs.current[to]?.focus();
+    setPulsada(null);
     if (options[to].id !== value) onChange(options[to].id);
   }
 
@@ -135,6 +140,23 @@ export default function OptionGroup<T extends string>({
   const swatch = variant === "swatches";
   const vitrina = variant === "vitrina";
   const segmented = variant === "segmented";
+  // El motivo en la propia ficha (tiles, cards) o a la vista bajo el carril.
+  const enFicha = variant === "tiles" || variant === "cards";
+  const elegida = options[selectedIndex];
+  const gris = pulsada === null ? undefined : options.find((o) => o.id === pulsada && !usable(o));
+  const motivo = enFicha ? undefined : (gris?.motivo ?? (elegida?.estado === "aviso" ? elegida.motivo : undefined));
+  // Un aviso nuevo, a la vista (en la media hoja del móvil caía bajo el pie). Solo
+  // mueve la zona de opciones, y no al abrir el paso.
+  const notaRef = useRef<HTMLParagraphElement>(null);
+  const motivoAntes = useRef(motivo);
+  useLayoutEffect(() => {
+    if (motivoAntes.current === motivo) return;
+    motivoAntes.current = motivo;
+    const caja = notaRef.current?.closest(".rl-opts");
+    if (!motivo || !caja) return;
+    const falta = notaRef.current!.getBoundingClientRect().bottom + 28 - caja.getBoundingClientRect().bottom;
+    if (falta > 0) caja.scrollTop += falta;
+  }, [motivo]);
   const style = {
     ...(columns ? { "--cols": columns } : {}),
     ...(segmented ? { "--n": options.length, "--i": Math.max(0, selectedIndex) } : {}),
@@ -185,6 +207,7 @@ export default function OptionGroup<T extends string>({
               }`}
               aria-busy={espera === o.id || undefined}
               onClick={() => {
+                setPulsada(off ? o.id : null);
                 if (!off && !checked) onChange(o.id);
               }}
               onKeyDown={(e) => onKeyDown(e, i)}
@@ -235,6 +258,11 @@ export default function OptionGroup<T extends string>({
           );
         })}
       </div>
+      {motivo && (
+        <p ref={notaRef} className={`rl-note rl-group_note${gris ? "" : " is-warn"}`} role="status">
+          {motivo}
+        </p>
+      )}
     </div>
   );
 }

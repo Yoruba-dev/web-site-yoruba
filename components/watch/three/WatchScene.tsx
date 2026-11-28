@@ -20,7 +20,8 @@
 //     vista pedida es la tapa (pose.ts); la cámara va con muelles
 //     (camera.tsx); la sombra de contacto se hornea a petición (shadow.tsx).
 //   • Antes de mostrarse compila todos los programas (reales y de cristal) con
-//     compileAsync: ningún barrido compila después.
+//     compileAsync: ningún barrido compila después. Los de la correa que no
+//     está puesta se compilan con el reloj ya a la vista, en un rato libre.
 //   • La foto de estudio (capture.ts) se ofrece por onApi.
 //   • Si el navegador pierde el contexto WebGL, avisa (onContextLost).
 //   • ?qa3d (solo en desarrollo): window.__pyjR3D con gl.info, llamadas de
@@ -38,7 +39,7 @@ import { FLOOR_Y } from "./geo/strap";
 import { PoseDriver } from "./pose";
 import { Assembly } from "./reveal";
 import { ContactShadow, type ShadowHandle } from "./shadow";
-import WatchModel from "./WatchModel";
+import WatchModel, { PRECOMPILA } from "./WatchModel";
 import type { WatchSceneProps } from "./types";
 
 // fiber 9.8 crea un THREE.Clock (obsoleto desde r183) en cada <Canvas>: three
@@ -391,6 +392,51 @@ function Content(p: WatchSceneProps & { coarse: boolean; reduced: boolean; onAct
     };
   }, [warm, gl]);
 
+  // — Los programas de lo que aún no se ha elegido (la otra correa, los
+  //   eslabones del brazalete): con el reloj ya a la vista y en un rato libre,
+  //   para no retrasar la entrada; después, cambiar de correa no compila nada.
+  const [resto, setResto] = useState(false);
+  useEffect(() => {
+    if (warm !== "done") return;
+    // Primero, que el reloj entre sin competir con nadie.
+    let id = 0;
+    const t = window.setTimeout(() => {
+      if (typeof window.requestIdleCallback === "function") id = window.requestIdleCallback(() => setResto(true), { timeout: 3000 });
+      else setResto(true);
+    }, 1200);
+    return () => {
+      window.clearTimeout(t);
+      if (id) window.cancelIdleCallback(id);
+    };
+  }, [warm]);
+  useEffect(() => {
+    if (!resto) return;
+    let vivo = true;
+    // En el fotograma siguiente (StrictMode desmonta y vuelve a montar lo recién
+    // puesto, y con ello suelta sus programas).
+    const r = requestAnimationFrame(() => {
+      if (!vivo) return;
+      // La sombra de las instancias: un horneado con el grupo a la vista (no se
+      // ve nada: sus triángulos no tienen área).
+      const g = scene.getObjectByName(PRECOMPILA);
+      if (g) {
+        g.visible = true;
+        shadow.current?.bakeNow();
+        g.visible = false;
+      }
+      gl.compileAsync(scene, camera).then(
+        () => {
+          if (vivo) programs.current = gl.info.programs?.length ?? 0;
+        },
+        () => {},
+      );
+    });
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(r);
+    };
+  }, [resto, gl, scene, camera]);
+
   // — La foto de estudio ———————————————————————————————————————————————
   const sizeRef = useRef(size);
   sizeRef.current = size;
@@ -535,6 +581,7 @@ function Content(p: WatchSceneProps & { coarse: boolean; reduced: boolean; onAct
           coarse={p.coarse}
           reduced={p.reduced}
           tapaView={open}
+          precompila={resto}
           onReady={onModelReady}
           onShape={() => shadow.current?.request()}
         />

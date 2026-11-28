@@ -40,18 +40,27 @@ import {
   secondsHand,
   swordHand,
 } from "./geo/dialParts";
-import { braceletCoreGeometry, braceletGeometries, braceletSlots, type LinkSlot } from "./geo/bracelet";
-import { BUCKLE, buckleGeometries, deployantGeometries, sweptPlate } from "./geo/clasp";
+import { BAR_HALF, braceletGeometries, type Bracelet, type LinkSlot } from "./geo/bracelet";
+import {
+  BAR_HINGE,
+  bridgeOffset,
+  buckleGeometries,
+  deployantGeometries,
+  foldoverBlades,
+  foldoverPushers,
+  mirrored,
+  type Buckle,
+  type Deployant,
+} from "./geo/clasp";
 import {
   PIEL,
+  STRAP_HOLES,
   STRAP_LEN,
-  appendToBand,
   bandGeometry,
-  holeGeometries,
+  endLinkGeometry,
   keeperGeometry,
+  pinGeometry,
   stitchGeometry,
-  strapWidth,
-  tongueGeometry,
   type ClaspKind,
   type StrapKind,
 } from "./geo/strap";
@@ -69,6 +78,7 @@ import {
 import { L_BOTTOM, chordMatrix, frameMatrix, type Frames, type PoseDriver, type Side, type TrackId } from "./pose";
 import type { Assembly } from "./reveal";
 import {
+  CROCO_GAIN,
   DATE_WHEEL,
   appliqueBox,
   brushStreaks,
@@ -146,13 +156,15 @@ export interface WatchModelProps {
   reduced: boolean;
   /** La vista pedida es la tapa (el grabado cambia con un láser). */
   tapaView: boolean;
+  /** Montar lo que hace falta para compilar lo que aún no se ha elegido. */
+  precompila: boolean;
   /** Todas las texturas pintadas por primera vez. */
   onReady?: () => void;
   /** Cambió la silueta (rehornear la sombra). */
   onShape?: () => void;
 }
 
-function WatchModel({ config, noche, asm, pose, coarse, reduced, tapaView, onReady, onShape }: WatchModelProps) {
+function WatchModel({ config, noche, asm, pose, coarse, reduced, tapaView, precompila, onReady, onShape }: WatchModelProps) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const maxAniso = useMemo(() => Math.min(8, gl.capabilities.getMaxAnisotropy()), [gl]);
@@ -252,8 +264,8 @@ function WatchModel({ config, noche, asm, pose, coarse, reduced, tapaView, onRea
         maxAniso={maxAniso}
         asm={asm}
         pose={pose}
-        coarse={coarse}
         reduced={reduced}
+        precompila={precompila}
         onShape={onShape}
       />
     </group>
@@ -545,7 +557,7 @@ function DialParts({
   const wellMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ color: "#2a2a2a", roughness: 0.9 }), es), [es]);
   // El reverso: mate y oscuro, a la sombra dentro de la caja.
   const backMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ color: "#4a4844", roughness: 0.75, metalness: 0.4 }), es), [es]);
-  const dateMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ map: date, roughness: 0.6 }), es), [date, es]);
+  const dateMat = useDisposable(() => dateFace(es, date), [date, es]);
   const dateGeo = useDisposable(() => new THREE.PlaneGeometry(DATE_WHEEL.w, DATE_WHEEL.h), []);
 
   // Aplique PY en relieve (§4.9 #14): el contorno trazado sin conexión,
@@ -563,19 +575,7 @@ function DialParts({
   }, [logo, maxAniso]);
   const logoNormal = useDisposable(() => (logo ? logoNormalMap(logo, maxAniso) : null), [logo, maxAniso]);
   const logoMat = useDisposable(
-    () =>
-      partMat(
-        new THREE.MeshPhysicalMaterial({
-          map: logoTex,
-          normalMap: logoNormal,
-          normalScale: new THREE.Vector2(0.6, 0.6),
-          metalness: 0.45,
-          roughness: 0.32,
-          clearcoat: 0.4,
-          clearcoatRoughness: 0.15,
-        }),
-        es,
-      ),
+    () => logoFace(es, logoTex, logoNormal),
     [logoTex, logoNormal, es],
   );
   const wallHex = config.aplique === "plata" ? "#c9ccd0" : "#c99f55";
@@ -620,19 +620,41 @@ function DialParts({
   );
 }
 
+/** La rueda de la fecha y la cara del aplique PY (también las usa Precompila:
+ *  un diseño puede llegar a ellas después del calentamiento). */
+function dateFace(part: Part3D, map: THREE.Texture) {
+  return partMat(new THREE.MeshStandardMaterial({ map, roughness: 0.6 }), part);
+}
+function logoFace(part: Part3D, map: THREE.Texture | null, normalMap: THREE.Texture | null) {
+  return partMat(
+    new THREE.MeshPhysicalMaterial({
+      map,
+      normalMap,
+      normalScale: new THREE.Vector2(0.6, 0.6),
+      metalness: 0.45,
+      roughness: 0.32,
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.15,
+    }),
+    part,
+  );
+}
+
 // ===========================================================================
 // Correa / brazalete y su CIERRE (posados con pose.ts)
 // ===========================================================================
+/** Cuánto se corre el grabado de la piel en la correa de las 6 (mm): que las
+ *  dos no sean copia una de otra. */
+const CROCO_SHIFT_6 = 23;
+
 interface SideBuild {
   band: THREE.BufferGeometry | null;
-  holes: THREE.BufferGeometry | null;
+  /** Los pasadores que asoman en los cantos junto a la caja. */
+  pins: THREE.BufferGeometry | null;
   stitches: THREE.BufferGeometry | null;
   keepers: THREE.BufferGeometry[];
-  core: THREE.BufferGeometry | null;
-  /** Hojas del desplegable / la hoja doblada del brazalete. */
+  /** Hojas del desplegable (12) / del plegable del brazalete (6). */
   blade: THREE.BufferGeometry | null;
-  /** Brazalete: la tapa del cierre plegable (12). */
-  cover: THREE.BufferGeometry | null;
   track: TrackId;
 }
 
@@ -640,85 +662,196 @@ interface StrapBuild {
   kind: StrapKind;
   clasp: ClaspKind;
   sides: Record<Side, SideBuild>;
-  tongue: THREE.BufferGeometry;
-  links: { outer: THREE.BufferGeometry; side: THREE.BufferGeometry; center: THREE.BufferGeometry; slots: ReturnType<typeof braceletSlots> } | null;
-  buckle: ReturnType<typeof buckleGeometries> | null;
-  deployant: ReturnType<typeof deployantGeometries> | null;
+  /** El bloque de metal que llena la muesca del asa. */
+  endLink: THREE.BufferGeometry;
+  links: Bracelet | null;
+  /** Plegable del brazalete: las medias lunas bajo la barra lisa. */
+  pushers: THREE.BufferGeometry | null;
+  buckle: Buckle | null;
+  deployant: Deployant | null;
   dispose(): void;
 }
 
 function emptySide(track: TrackId): SideBuild {
-  return { band: null, holes: null, stitches: null, keepers: [], core: null, blade: null, cover: null, track };
+  return { band: null, pins: null, stitches: null, keepers: [], blade: null, track };
 }
 
-function buildStrap(kind: StrapKind, clasp: ClaspKind, coarse: boolean): StrapBuild {
-  const fine = coarse ? 0.16 : 0.12;
+function buildStrap(kind: StrapKind, clasp: ClaspKind): StrapBuild {
   const s12 = emptySide("base");
   const s6 = emptySide("base");
   let links: StrapBuild["links"] = null;
+  let pushers: StrapBuild["pushers"] = null;
   let buckle: StrapBuild["buckle"] = null;
   let deployant: StrapBuild["deployant"] = null;
   if (kind === "brazalete") {
-    const g = braceletGeometries();
-    links = { ...g, slots: braceletSlots() };
-    s12.core = braceletCoreGeometry();
-    s6.core = braceletCoreGeometry();
-    // La tapa del cierre plegable, curvada con la muñeca (pista "tapa": se
-    // voltea al abrir), y la hoja doblada debajo (en la mitad de las 6).
-    s12.cover = sweptPlate(L_BOTTOM - 15, L_BOTTOM + 15, 18.4, 2.8, 0.5, 0.3, { w: 6, l: 2, h: 0.6 });
-    s12.track = "tapa";
-    s6.blade = sweptPlate(L_BOTTOM - 13, L_BOTTOM + 11, 15.5, 0.9, 0.25, -1.4);
-  } else if (clasp === "puas") {
+    links = braceletGeometries();
+    pushers = foldoverPushers();
+    s6.blade = foldoverBlades();
+  } else {
+    // Hebilla y desplegable llevan LA MISMA correa (foto 10): la de las 12
+    // acaba en su barra y la de las 6 conserva punta, agujeros y trabillas.
     const end12 = STRAP_LEN.hebilla12;
-    s12.band = bandGeometry(kind, end12, "recto", fine);
-    const h = holeGeometries(kind);
-    s6.band = appendToBand(bandGeometry(kind, STRAP_LEN.hebilla6, "punta", fine), h.bevel);
-    s6.holes = h.dark;
+    const { len6, keepers } = STRAP_HOLES[kind];
+    s12.band = bandGeometry(kind, end12, "recto");
+    s6.band = bandGeometry(kind, len6, "punta", CROCO_SHIFT_6);
     s6.track = "cola";
-    s12.keepers = STRAP_LEN.keepers.map((k) => keeperGeometry(kind, k.s, k.len));
+    s12.keepers = keepers.map((k) => keeperGeometry(kind, k.s, k.len));
     if (kind === "piel") {
       s12.stitches = stitchGeometry(end12, "recto");
-      s6.stitches = stitchGeometry(STRAP_LEN.hebilla6, "punta");
+      s6.stitches = stitchGeometry(len6, "punta");
     }
-    buckle = buckleGeometries(strapWidth(kind, L_BOTTOM));
-  } else {
-    // Desplegable: las dos acaban en recto sobre su bisagra; cada una lleva
-    // su hoja por dentro del aro (las dos se cruzan bajo la cabeza).
-    const end = STRAP_LEN.desplegable;
-    s12.band = bandGeometry(kind, end, "recto", fine);
-    s6.band = bandGeometry(kind, end, "recto", fine);
-    s12.track = "alza";
-    s6.track = "alza";
-    if (kind === "piel") {
-      s12.stitches = stitchGeometry(end, "recto");
-      s6.stitches = stitchGeometry(end, "recto");
+    if (clasp === "puas") buckle = buckleGeometries(kind);
+    else {
+      deployant = deployantGeometries(kind);
+      s12.blade = deployant.blades;
     }
-    s12.blade = sweptPlate(L_BOTTOM - 12, L_BOTTOM + 14, 15.5, 1.4, 0.35, -1.1);
-    s6.blade = sweptPlate(L_BOTTOM - 12, L_BOTTOM + 14, 15.5, 1.4, 0.35, 0.3);
-    deployant = deployantGeometries(strapWidth(kind, end));
   }
-  const tongue = tongueGeometry();
+  if (kind !== "brazalete") {
+    s12.pins = pinGeometry(kind);
+    s6.pins = pinGeometry(kind);
+  }
+  const endLink = endLinkGeometry();
   const all = (): THREE.BufferGeometry[] => {
-    const out: THREE.BufferGeometry[] = [tongue];
+    const out: THREE.BufferGeometry[] = [endLink];
     for (const s of [s12, s6]) {
-      for (const g of [s.band, s.holes, s.stitches, s.core, s.blade, s.cover, ...s.keepers]) if (g) out.push(g);
+      for (const g of [s.band, s.pins, s.stitches, s.blade, ...s.keepers]) if (g) out.push(g);
     }
-    if (links) out.push(links.outer, links.side, links.center);
+    if (pushers) out.push(pushers);
     if (buckle) out.push(buckle.frame, buckle.tongue);
-    if (deployant) out.push(deployant.head, deployant.pushers, deployant.barrel);
+    if (deployant) out.push(deployant.bridge);
     return out;
   };
   return {
     kind,
     clasp,
     sides: { "12": s12, "6": s6 },
-    tongue,
+    endLink,
     links,
+    pushers,
     buckle,
     deployant,
-    dispose: () => all().forEach((g) => g.dispose()),
+    dispose: () => {
+      all().forEach((g) => g.dispose());
+      links?.dispose();
+    },
   };
 }
+
+/** El brillo de terciopelo del caucho: su tono con un 25 % de blanco. */
+const sheenOf = (tone: string) => new THREE.Color(tone).lerp(new THREE.Color("#ffffff"), 0.25);
+
+type Part3D = Assembly["parts"][WatchPart];
+
+/** La luz del estudio devuelve cerca del 75 % del color propio (blanco y gris,
+ *  medidos en la vista Correa): con el tono de la capa tal cual, las 12 correas
+ *  salían ~12 puntos de L más oscuras que su muestra (ΔE medio 13.4). Con esto
+ *  quedan en 6. */
+const LUZ = { caucho: 1.3, piel: 1.6, pielLisa: 1.15 } as const;
+
+// Las recetas de la correa, UNA vez: las usan la correa puesta y el
+// calentamiento (Precompila), que así compila exactamente los mismos programas.
+/** Caucho: mate con micro-grano y un pelo de terciopelo de su propio color
+ *  (con 0.22 blanco, el interior de la roja salía rosa: PLAN V3 2.6). La cara
+ *  lleva el reflejo entero de un dieléctrico (4 %): es el que descuenta el
+ *  tono NeutralToneMapping; con 0.35 los oscuros se hundían en negro. */
+function rubberMat(part: Part3D, tone: string, grain: THREE.Texture, k: number, roughness: number, spec = 1, sheen = 0.06) {
+  return partMat(
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(tone).multiplyScalar(k),
+      vertexColors: true,
+      roughness,
+      metalness: 0,
+      specularIntensity: spec,
+      sheen,
+      sheenRoughness: 0.6,
+      sheenColor: sheenOf(tone),
+      normalMap: grain,
+      normalScale: new THREE.Vector2(0.15, 0.15),
+    }),
+    part,
+  );
+}
+
+/** Piel: la cara, con su grabado (color, normales y rugosidad). */
+function crocoTop(part: Part3D, tone: string, maps: { color: THREE.Texture; normal: THREE.Texture; rough: THREE.Texture } | null) {
+  return partMat(
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(tone).multiplyScalar(CROCO_GAIN * LUZ.piel),
+      vertexColors: true,
+      map: maps?.color ?? null,
+      normalMap: maps?.normal ?? null,
+      normalScale: new THREE.Vector2(0.9, 0.9),
+      roughnessMap: maps?.rough ?? null,
+      roughness: 1,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.5,
+    }),
+    part,
+  );
+}
+
+/** Piel lisa: forro, canto, pared de los agujeros e hilo, en el mismo programa
+ *  (la capa de laca de los que no la llevan es simbólica). */
+function crocoPlain(part: Part3D, tone: string, k: number, roughness: number, clearcoat = 1e-3, specularIntensity = 1) {
+  return partMat(
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(tone).multiplyScalar(k),
+      vertexColors: true,
+      roughness,
+      specularIntensity,
+      clearcoat,
+      clearcoatRoughness: 0.4,
+    }),
+    part,
+  );
+}
+
+/** Lo que el cliente aún puede elegir: el caucho, la piel, los eslabones del
+ *  brazalete (instancias, reales y en cristal), la fecha y el aplique. Mallas ocultas de un triángulo
+ *  que nadie pinta ni toca: WatchScene las monta con el reloj ya a la vista y
+ *  compila sus programas (compileAsync recorre también lo oculto); al seguir
+ *  montadas, ninguno se suelta: cambiar de correa no vuelve a compilar (puerta
+ *  del grupo 7). */
+function Precompila({ metal, core, part, grain }: { metal: FinishMaterials; core: THREE.Material; part: Part3D; grain: THREE.Texture }) {
+  const w = useDisposable(() => {
+    const px = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+    px.needsUpdate = true;
+    const tone = "#808080";
+    const mats = [
+      rubberMat(part, tone, grain, 1, 1),
+      crocoTop(part, tone, { color: px, normal: px, rough: px }),
+      crocoPlain(part, tone, 1, 1),
+      dateFace(part, px),
+      logoFace(part, px, px),
+    ];
+    const geo = new THREE.BufferGeometry();
+    for (const [name, size] of [["position", 3], ["normal", 3], ["uv", 2], ["color", 3]] as const)
+      geo.setAttribute(name, new THREE.BufferAttribute(new Float32Array(3 * size), size));
+    return {
+      mats,
+      geo,
+      dispose: () => {
+        mats.forEach((m) => m.dispose());
+        geo.dispose();
+        px.dispose();
+      },
+    };
+  }, [part, grain]);
+  const inst = [metal.brushed, metal.polished, part.ghost.depth, part.ghost.color];
+  return (
+    <group name={PRECOMPILA} visible={false}>
+      {[...w.mats, core].map((m, i) => (
+        <mesh key={`m${i}`} raycast={noTocar} dispose={null} geometry={w.geo} material={m} />
+      ))}
+      {inst.map((m, i) => (
+        <instancedMesh key={`i${i}`} raycast={noTocar} dispose={null} frustumCulled={false} args={[w.geo, m, 1]} />
+      ))}
+    </group>
+  );
+}
+/** Nombre del grupo (WatchScene lo busca para hornear la sombra una vez). */
+export const PRECOMPILA = "precompila";
+const noTocar = () => null;
 
 /** Una geometría de correa posada (registrada en el conductor de la pose). */
 function Posed({
@@ -765,7 +898,8 @@ function Rigid({
   );
 }
 
-/** Eslabones del brazalete en una pista. */
+/** Piezas iguales del brazalete en una pista: las placas, por la cuerda entre
+ *  sus dos juntas (s, s1); los bloques, sobre su junta (s). */
 function Links({
   pose,
   side,
@@ -773,6 +907,7 @@ function Links({
   geometry,
   material,
   slots,
+  ghost,
 }: {
   pose: PoseDriver;
   side: Side;
@@ -780,13 +915,13 @@ function Links({
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   slots: readonly LinkSlot[];
+  ghost?: boolean;
 }) {
   const place = useMemo(
     () => (fr: Frames, _t: number, i: number, out: THREE.Matrix4) => {
       const sl = slots[i];
-      frameMatrix(fr, sl.s, sl.dn, out);
-      // Desplazamiento a lo ancho (x) y escala a lo ancho.
-      out.elements[12] += sl.dx;
+      if (sl.s1 !== undefined) chordMatrix(fr, sl.s, sl.s1, 0, out);
+      else frameMatrix(fr, sl.s, 0, out);
       out.elements[0] *= sl.sx;
       return out;
     },
@@ -799,7 +934,7 @@ function Links({
       off = m ? pose.addInstances(m, side, "base", slots.length, place) : null;
     };
   }, [pose, side, slots, place]);
-  return <PartInstances part={part} geometry={geometry} material={material} count={slots.length} onMesh={onMesh} />;
+  return <PartInstances part={part} geometry={geometry} material={material} count={slots.length} onMesh={onMesh} ghost={ghost} />;
 }
 
 function Strap({
@@ -809,8 +944,8 @@ function Strap({
   maxAniso,
   asm,
   pose,
-  coarse,
   reduced,
+  precompila,
   onShape,
 }: {
   config: WatchConfig;
@@ -819,8 +954,8 @@ function Strap({
   maxAniso: number;
   asm: Assembly;
   pose: PoseDriver;
-  coarse: boolean;
   reduced: boolean;
+  precompila: boolean;
   onShape?: () => void;
 }) {
   const invalidate = useThree((s) => s.invalidate);
@@ -828,7 +963,7 @@ function Strap({
   const kind: StrapKind = getStrap(config.correa)?.tipo ?? "caucho";
   const clasp: ClaspKind = kind === "brazalete" ? "brazalete" : (getClasp(config.cierre)?.id ?? "puas");
   const tone = strapTone(config);
-  const build = useDisposable(() => buildStrap(kind, clasp, coarse), [kind, clasp, coarse]);
+  const build = useDisposable(() => buildStrap(kind, clasp), [kind, clasp]);
   const croco = useDisposable(() => (kind === "piel" ? crocoMaps(maxAniso) : null), [kind, maxAniso]);
 
   // Cambió la forma: re-barrido de correa y cierre (si ya eran reales) y
@@ -846,56 +981,50 @@ function Strap({
   }, [kind, clasp, asm, invalidate, onShape]);
 
   // — Materiales de la correa (por tipo; el color se interpola) ——————————
+  // Todos llevan la sombra propia en el color de vértice (geo/strap.ts).
   const band = useDisposable(() => {
     if (kind === "piel") {
-      const top = partMat(
-        new THREE.MeshPhysicalMaterial({
-          color: tone,
-          map: croco?.color ?? null,
-          normalMap: croco?.normal ?? null,
-          normalScale: new THREE.Vector2(0.55, 0.55),
-          roughnessMap: croco?.rough ?? null,
-          roughness: 1,
-          clearcoat: 0.3,
-          clearcoatRoughness: 0.42,
-        }),
-        co,
-      );
+      const top = crocoTop(co, tone, croco);
+      const L = LUZ.pielLisa;
       // Forro liso, algo más oscuro y mate.
-      const lining = partMat(new THREE.MeshStandardMaterial({ color: new THREE.Color(tone).multiplyScalar(0.78), roughness: 0.78 }), co);
-      // Canto pintado: banda oscura brillante.
-      const edge = partMat(
-        new THREE.MeshPhysicalMaterial({ color: new THREE.Color(tone).multiplyScalar(0.32), roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
-        co,
-      );
-      const thread = partMat(new THREE.MeshStandardMaterial({ color: new THREE.Color(tone).multiplyScalar(1.25), roughness: 0.55 }), co);
-      return { top, lining, edge, thread, scale: [1, 0.78, 0.32, 1.25], dispose: () => [top, lining, edge, thread].forEach((m) => m.dispose()) };
+      const lining = crocoPlain(co, tone, 0.78 * L, 0.78, 1e-3, 0.5);
+      // Canto pintado, mate (fotos 5 y 9: 0.5–0.8 del tono, sin brillo).
+      const edge = crocoPlain(co, tone, 0.62 * L, 0.6, 0.08);
+      // Pared de los agujeros: sin reflejos (dentro no llega el cuarto).
+      const wall = crocoPlain(co, tone, 0.62, 1, 1e-3, 0);
+      // Hilo tono sobre tono.
+      const thread = crocoPlain(co, tone, 0.96 * L, 0.72);
+      return {
+        top,
+        lining,
+        edge,
+        wall,
+        thread,
+        sheen: [] as THREE.MeshPhysicalMaterial[],
+        scale: [CROCO_GAIN * LUZ.piel, 0.78 * L, 0.62 * L, 0.62, 0.96 * L],
+        dispose: () => [top, lining, edge, wall, thread].forEach((m) => m.dispose()),
+      };
     }
-    // Caucho: mate con brillo de terciopelo y micro-grano (§4.9 #18).
-    const top = partMat(
-      new THREE.MeshPhysicalMaterial({
-        color: tone,
-        roughness: 0.62,
-        metalness: 0,
-        specularIntensity: 0.35,
-        sheen: 0.22,
-        sheenRoughness: 0.6,
-        sheenColor: new THREE.Color("#ffffff"),
-        normalMap: grain,
-        normalScale: new THREE.Vector2(0.15, 0.15),
-      }),
-      co,
-    );
-    return { top, lining: top, edge: top, thread: top, scale: [1, 1, 1, 1], dispose: () => top.dispose() };
+    const K = LUZ.caucho;
+    const rubber = (k: number, roughness: number, spec?: number, sheen?: number) => rubberMat(co, tone, grain, k, roughness, spec, sheen);
+    const top = rubber(K, 0.62);
+    // El forro se ve de refilón: con el reflejo entero se volvía rosado.
+    const lining = rubber(0.92 * K, 0.75, 0.35);
+    const wall = rubber(K, 1, 0, 1e-3);
+    return {
+      top,
+      lining,
+      edge: top,
+      wall,
+      thread: top,
+      sheen: [top, lining, wall],
+      scale: [K, 0.92 * K, K, K, K],
+      dispose: () => [top, lining, wall].forEach((m) => m.dispose()),
+    };
   }, [kind, croco, grain, co]);
-  // El micro-grano se repite cada ~6 mm (u va de canto a canto: 0…1).
-  useEffect(() => {
-    grain.repeat.set(3.5, 32 / 6);
-    grain.needsUpdate = true;
-  }, [grain]);
-  const bandMats = useMemo(() => [band.top, band.lining, band.edge], [band]);
+  const bandMats = useMemo(() => [band.top, band.lining, band.edge, band.wall], [band]);
   const colorTween = useMemo(
-    () => new ColorTween(() => [band.top, band.lining, band.edge, band.thread], band.scale),
+    () => new ColorTween(() => [band.top, band.lining, band.edge, band.wall, band.thread], band.scale),
     [band],
   );
   const lastTone = useRef(tone);
@@ -903,8 +1032,9 @@ function Strap({
     if (lastTone.current === tone) return;
     lastTone.current = tone;
     colorTween.start(tone, performance.now(), reduced ? 0 : 250);
+    band.sheen.forEach((m) => m.sheenColor.copy(sheenOf(tone)));
     invalidate();
-  }, [tone, colorTween, reduced, invalidate]);
+  }, [tone, band, colorTween, reduced, invalidate]);
   useLayoutEffect(() => {
     // Material nuevo (otro tipo): el color actual, sin interpolar.
     colorTween.start(lastTone.current, performance.now(), 0);
@@ -912,44 +1042,48 @@ function Strap({
   useFrame(() => {
     if (colorTween.step(performance.now())) invalidate();
   });
-  const holeMat = useDisposable(
-    () => partMat(new THREE.MeshStandardMaterial({ color: "#070605", roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 }), co),
-    [co],
-  );
   const coreMat = useDisposable(() => partMat(new THREE.MeshStandardMaterial({ color: "#1d1d1d", roughness: 0.9, metalness: 0.2 }), co), [co]);
 
   const cm = metals.correa;
   const km = metals.cierre;
   const b = build;
-  // Lo que llena la muesca del asa: el propio caucho; en piel, el terminal de
-  // metal (PIEL.final "terminal", refs 5 y 9) o la piel misma ("muesca").
-  const tongueMat = kind === "caucho" || (kind === "piel" && PIEL.final === "muesca") ? band.top : cm.brushed;
-  const bladeMats = useMemo(() => [km.brushed, km.polished], [km]);
+  // Lo que llena la muesca del asa: el bloque de metal en el acabado de la caja
+  // (fotos 5 y 9, renders 13 y 19), pulido por fuera y cepillado por detrás.
+  const endLinkMats = useMemo(() => [cm.polished, cm.brushed], [cm]);
 
-  // — Piezas rígidas ————————————————————————————————————————————————
+  // — Piezas rígidas del cierre ————————————————————————————————————————
+  // La hebilla gira sobre su barra al abrir (deja salir la cola) y la púa,
+  // además, se levanta 25° en los primeros 120 ms de los 750: t =
+  // easeInOutCubic(k) = 4k³ al principio → k = ∛(t/4).
   const placeBuckle = useMemo(
-    () => (fr: Frames, _t: number, out: THREE.Matrix4) => chordMatrix(fr, L_BOTTOM - BUCKLE.length / 2, L_BOTTOM + BUCKLE.length / 2, 1.9, out),
-    [],
-  );
-  const tongueRef = useRef<THREE.Group>(null);
-  const placeTongue = useMemo(
     () => (fr: Frames, t: number, out: THREE.Matrix4) => {
-      chordMatrix(fr, L_BOTTOM - BUCKLE.length / 2, L_BOTTOM + BUCKLE.length / 2, 1.9, out);
-      // La púa se levanta 25° en los primeros 120 ms de los 750 de la
-      // apertura: t = easeInOutCubic(k) = 4k³ al principio → k = ∛(t/4).
-      const lift = THREE.MathUtils.degToRad(25) * Math.min(1, Math.cbrt(Math.max(0, t) / 4) / (120 / 750));
-      if (lift > 0 && b.buckle) {
-        const p = b.buckle.tonguePivot;
-        _rot.makeTranslation(p.x, p.y, p.z).multiply(_r2.makeRotationX(lift)).multiply(_r3.makeTranslation(-p.x, -p.y, -p.z));
-        out.multiply(_rot);
-      }
-      return out;
+      frameMatrix(fr, L_BOTTOM, 0, out);
+      return b.buckle ? swivel(out, b.buckle.pivot, buckleSwing(t)) : out;
     },
     [b],
   );
-  const placeHead = useMemo(() => (fr: Frames, _t: number, out: THREE.Matrix4) => frameMatrix(fr, L_BOTTOM, 2.3, out), []);
-  const placeBarrel = useMemo(
-    () => (fr: Frames, _t: number, out: THREE.Matrix4) => frameMatrix(fr, STRAP_LEN.desplegable + 0.9, 0, out),
+  const placeTongue = useMemo(
+    () => (fr: Frames, t: number, out: THREE.Matrix4) => {
+      frameMatrix(fr, L_BOTTOM, 0, out);
+      if (!b.buckle) return out;
+      const lift = THREE.MathUtils.degToRad(25) * Math.min(1, Math.cbrt(Math.max(0, t) / 4) / (120 / 750));
+      return swivel(out, b.buckle.pivot, buckleSwing(t) + lift);
+    },
+    [b],
+  );
+  // El puente va prendido a la cola (la lengüeta en su agujero): al abrir se
+  // va con ella.
+  const placeBridge = useMemo(() => {
+    const s6 = b.deployant?.s6 ?? L_BOTTOM;
+    const off = bridgeOffset(s6);
+    return (fr: Frames, _t: number, out: THREE.Matrix4) => mirrored(frameMatrix(fr, s6, 0, out)).multiply(off);
+  }, [b]);
+  // La barra del plegable se voltea hacia el forro por su bisagra.
+  const placeBar = useMemo(
+    () => (fr: Frames, t: number, out: THREE.Matrix4) => {
+      chordMatrix(fr, L_BOTTOM - BAR_HALF, L_BOTTOM + BAR_HALF, 0, out);
+      return swivel(out, BAR_HINGE, -THREE.MathUtils.degToRad(160) * THREE.MathUtils.smoothstep(t, 0.1, 0.8));
+    },
     [],
   );
 
@@ -958,15 +1092,15 @@ function Strap({
     const mirror = sd === "6";
     return (
       <group scale={[1, mirror ? -1 : 1, 1]} key={sd}>
-        <PartMesh part="correa" geometry={b.tongue} material={tongueMat} />
+        {(kind !== "piel" || PIEL.final === "terminal") && <PartMesh part="correa" geometry={b.endLink} material={endLinkMats} />}
         {s.band && (
           <Posed pose={pose} side={sd} track={s.track} geometry={s.band}>
             <PartMesh part="correa" geometry={s.band} material={bandMats} frustumCulled={false} />
           </Posed>
         )}
-        {s.holes && (
-          <Posed pose={pose} side={sd} track={s.track} geometry={s.holes}>
-            <PartMesh part="correa" ghost={false} geometry={s.holes} material={holeMat} frustumCulled={false} />
+        {s.pins && (
+          <Posed pose={pose} side={sd} track={s.track} geometry={s.pins}>
+            <PartMesh part="correa" ghost={false} geometry={s.pins} material={cm.polished} frustumCulled={false} />
           </Posed>
         )}
         {s.stitches && (
@@ -979,27 +1113,29 @@ function Strap({
             <PartMesh part="correa" geometry={k} material={band.top} frustumCulled={false} />
           </Posed>
         ))}
-        {s.core && (
-          <Posed pose={pose} side={sd} track="base" geometry={s.core}>
-            <PartMesh part="correa" ghost={false} geometry={s.core} material={coreMat} frustumCulled={false} />
-          </Posed>
-        )}
         {b.links && (
           <>
-            <Links pose={pose} side={sd} part="correa" geometry={b.links.outer} material={cm.brushed} slots={b.links.slots.outer} />
-            <Links pose={pose} side={sd} part="correa" geometry={b.links.side} material={cm.brushed} slots={b.links.slots.side} />
-            <Links pose={pose} side={sd} part="correa" geometry={b.links.center} material={cm.polished} slots={b.links.slots.center} />
+            <Posed pose={pose} side={sd} track="base" geometry={b.links.sides[sd].core}>
+              <PartMesh part="correa" ghost={false} geometry={b.links.sides[sd].core} material={coreMat} frustumCulled={false} />
+            </Posed>
+            <Links pose={pose} side={sd} part="correa" geometry={b.links.plate} material={cm.brushed} slots={b.links.sides[sd].slots.plates} />
+            <Links pose={pose} side={sd} part="correa" ghost={false} geometry={b.links.moon} material={cm.polished} slots={b.links.sides[sd].slots.plates} />
+            <Links pose={pose} side={sd} part="correa" geometry={b.links.sides[sd].first} material={cm.brushed} slots={b.links.sides[sd].slots.first} />
+            <Links pose={pose} side={sd} part="correa" geometry={b.links.sides[sd].last} material={cm.brushed} slots={b.links.sides[sd].slots.last} />
+            <Links pose={pose} side={sd} part="correa" geometry={b.links.block} material={cm.polished} slots={b.links.sides[sd].slots.blocks} />
+            <Links pose={pose} side={sd} part="correa" ghost={false} geometry={b.links.blockBase} material={cm.brushed} slots={b.links.sides[sd].slots.blocks} />
           </>
         )}
         {s.blade && (
-          <Posed pose={pose} side={sd} track={b.clasp === "brazalete" ? "base" : "base"} geometry={s.blade}>
-            <PartMesh part="cierre" geometry={s.blade} material={bladeMats} frustumCulled={false} />
+          <Posed pose={pose} side={sd} track="base" geometry={s.blade}>
+            <PartMesh part="cierre" geometry={s.blade} material={km.brushed} frustumCulled={false} />
           </Posed>
         )}
-        {s.cover && (
-          <Posed pose={pose} side={sd} track="tapa" geometry={s.cover}>
-            <PartMesh part="cierre" geometry={s.cover} material={bladeMats} frustumCulled={false} />
-          </Posed>
+        {!mirror && b.links && b.pushers && (
+          <Rigid pose={pose} side="12" track="base" place={placeBar}>
+            <PartMesh part="cierre" edges geometry={b.links.bar} material={km.brushed} />
+            <PartMesh part="cierre" edges geometry={b.pushers} material={km.polished} />
+          </Rigid>
         )}
         {!mirror && b.buckle && (
           <>
@@ -1007,21 +1143,13 @@ function Strap({
               <PartMesh part="cierre" edges geometry={b.buckle.frame} material={km.polished} />
             </Rigid>
             <Rigid pose={pose} side="12" track="base" place={placeTongue}>
-              <group ref={tongueRef} position={[0, 0, 0.35]}>
-                <PartMesh part="cierre" edges geometry={b.buckle.tongue} material={km.polished} />
-              </group>
+              <PartMesh part="cierre" edges geometry={b.buckle.tongue} material={km.polished} />
             </Rigid>
           </>
         )}
         {!mirror && b.deployant && (
-          <Rigid pose={pose} side="12" track="base" place={placeHead}>
-            <PartMesh part="cierre" edges geometry={b.deployant.head} material={km.polished} />
-            <PartMesh part="cierre" geometry={b.deployant.pushers} material={km.polished} />
-          </Rigid>
-        )}
-        {b.deployant && (
-          <Rigid pose={pose} side={sd} track="alza" place={placeBarrel}>
-            <PartMesh part="cierre" geometry={b.deployant.barrel} material={km.polished} />
+          <Rigid pose={pose} side="6" track="cola" place={placeBridge}>
+            <PartMesh part="cierre" edges geometry={b.deployant.bridge} material={km.polished} />
           </Rigid>
         )}
       </group>
@@ -1031,9 +1159,21 @@ function Strap({
     <group>
       {side("12")}
       {side("6")}
+      {precompila && <Precompila metal={cm} core={coreMat} part={co} grain={grain} />}
     </group>
   );
 }
 const _rot = new THREE.Matrix4();
 const _r2 = new THREE.Matrix4();
 const _r3 = new THREE.Matrix4();
+
+/** Gira `m` (en su propio marco) `a` radianes alrededor de x por `p`. */
+function swivel(m: THREE.Matrix4, p: THREE.Vector3, a: number): THREE.Matrix4 {
+  if (a === 0) return m;
+  _rot.makeTranslation(p.x, p.y, p.z).multiply(_r2.makeRotationX(a)).multiply(_r3.makeTranslation(-p.x, -p.y, -p.z));
+  return m.multiply(_rot);
+}
+
+/** Lo que se levanta la hebilla mientras sale la cola (y cómo vuelve). */
+const buckleSwing = (t: number) =>
+  THREE.MathUtils.degToRad(62) * THREE.MathUtils.smoothstep(t, 0, 0.3) * (1 - 0.85 * THREE.MathUtils.smoothstep(t, 0.7, 1));

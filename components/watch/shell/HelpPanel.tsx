@@ -73,8 +73,9 @@ export default function HelpPanel({
       </ul>
       {!coarse && (
         <p className="rl-ayuda_teclas">
-          Teclado: {tres && "flechas para girar, + y − para acercar, 1 a 5 para cambiar de vista · "}
-          ⌘Z o Ctrl+Z para deshacer.
+          Teclado: ⌘Z o Ctrl+Z para deshacer.
+          {tres &&
+            " Con el reloj seleccionado (arrástralo o llega con Tab): flechas para girar, + y − para acercar, 1 a 5 para cambiar de vista."}
         </p>
       )}
       <Link className="rl-link" href={GUIA_HREF}>

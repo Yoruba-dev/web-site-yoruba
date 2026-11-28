@@ -2,7 +2,7 @@
 
 // ---------------------------------------------------------------------------
 // La hoja inferior del móvil (spec V2 §3.4). Tres alturas:
-//   peek = 148 + zona segura · half (por defecto) = clamp(320, 47dvh, 440)
+//   peek = 148 (168 con sub-pestañas: enteras) + zona segura · half (por defecto) = clamp(320, 47dvh, 440)
 //   (tableta: clamp(360, 40dvh, 480)) · full = alto visible − 48 − 168.
 // Se arrastra SOLO desde el asa y la cabecera: el dedo la lleva 1:1; un
 // lanzamiento de más de 0.5 px/ms va a la siguiente altura. El asa es un
@@ -35,10 +35,10 @@ function safeBottom(): number {
   return h;
 }
 
-function snapHeights(vh: number, tablet: boolean, sb: number): Record<Snap, number> {
+function snapHeights(vh: number, tablet: boolean, sb: number, tabs: boolean): Record<Snap, number> {
   const full = Math.max(260, vh - HEADER - MINI_STAGE);
   const half = tablet ? clamp(360, vh * 0.4, 480) : clamp(320, vh * 0.47, 440);
-  return { peek: Math.min(148 + sb, full), half: Math.min(half, full), full };
+  return { peek: Math.min((tabs ? 168 : 148) + sb, full), half: Math.min(half, full), full };
 }
 
 export default function BottomSheet({
@@ -72,6 +72,7 @@ export default function BottomSheet({
   const [heights, setHeights] = useState<Record<Snap, number>>({ peek: 148, half: 397, full: 628 });
   const [settled, setSettled] = useState<number>(397);
   const efectivo: Snap = keyboard ? "full" : snap;
+  const conTabs = !!tabs;
   const target = heights[efectivo];
 
   // — Alturas: con el alto visible (teclado incluido) y la zona segura.
@@ -80,7 +81,7 @@ export default function BottomSheet({
     const calc = () => {
       const vh = window.visualViewport?.height ?? window.innerHeight;
       const tablet = window.matchMedia("(min-width: 640px)").matches;
-      setHeights(snapHeights(vh, tablet, sb));
+      setHeights(snapHeights(vh, tablet, sb, conTabs));
     };
     calc();
     window.addEventListener("resize", calc);
@@ -89,7 +90,7 @@ export default function BottomSheet({
       window.removeEventListener("resize", calc);
       window.visualViewport?.removeEventListener("resize", calc);
     };
-  }, []);
+  }, [conTabs]);
 
   // — Informar el alto visible cada fotograma mientras la hoja se mueve.
   const raf = useRef(0);

@@ -99,6 +99,11 @@
   margin: 0 auto;
   object-fit: contain;
 }
+/* Dos clases: en producción las hojas se cargan en otro orden que en «next dev»
+   y el centrado se perdía. */
+.wf.pyj-reloj_sheetwatch {
+  margin: 0 auto;
+}
 .pyj-reloj_sheetviews figcaption,
 .pyj-reloj_sheetfiles figcaption {
   margin-top: 6px;

@@ -31,10 +31,12 @@ import {
   DIAL_NAMES,
   DIAL_TEXT_IFA,
   DIAL_TEXT_MAX,
+  FINISHES,
   FLAGS,
   ORISHA_WATCH_PRESETS,
   PRESET_ORDER,
   RULES,
+  STRAPS,
   WATCH_CUSTOM_POLICY,
   WATCH_IFA_NOTE,
   WATCH_MATERIALS,
@@ -92,6 +94,7 @@ import {
   polar,
   signInkSize,
   signPrimitives,
+  trianguloPorFuera,
   type IfaSlot,
   type Primitive,
   type RectPrim,
@@ -136,7 +139,12 @@ import {
   fixSub,
   isStepId,
   parseDraft,
+  pasosSinVer,
   stepOfField,
+  stopsUpTo,
+  vitrinaCorrea,
+  vitrinaIndices,
+  vitrinaMini,
 } from "../components/watch/creator-state";
 import { ALL_GHOST, ALL_SOLID, WATCH_PARTS, maskKey } from "../components/watch/stage3d-contract";
 import { buildOrderInfo, isLocalOrigin } from "../components/watch/order";
@@ -1029,7 +1037,13 @@ section("print area: everything printed or applied sits inside the case opening"
   ok(2 * L.dots.r * Math.sin(Math.PI / 12) - 2 * (L.dots.dotR + L.dots.rimW / 2) >= 0.3 - EPS, "two neighbouring hour dots touch");
   ok(D.funnel > 0 && D.rim - D.funnel >= 0.25, "the date frame keeps a flat band around its funnel");
   ok(DIAL_Z.applied < DIAL_Z.hour && DIAL_Z.applied <= WATCH_SPECS.hourHandClearanceMm, "the applied indices stay below the hour hand");
-  ok(L.triangle.tipR + (L.applique.cy - L.applique.h / 2) >= 0.8 - EPS, "the triangle tip stays ≥ 0.8 mm above the PY applique");
+  ok(L.triangle.tipR + (L.applique.cy - L.applique.h / 2) >= 0.8 - EPS, "the triangle's line stays ≥ 0.8 mm above the PY applique");
+  // …and the METAL of its tip (rim and mitre, as the 3D cuts it). tipR stays at
+  // 9.4 (plan §5.3): the owner's photos 14 and 8 show it 3.9–4.3 mm tall and it
+  // is already 3.5; pulling the tip up to keep 0.8 mm here would shorten it
+  // further. What is left (0.48 mm, 1.6 rims) reads as air at any size.
+  const tri = trianguloPorFuera();
+  ok(tri.tipR + (L.applique.cy - L.applique.h / 2) >= 0.45 - EPS, `the triangle's rim comes within ${(tri.tipR + (L.applique.cy - L.applique.h / 2)).toFixed(3)} mm of the PY applique`);
 });
 
 // ---------------------------------------------------------------------------
@@ -1577,6 +1591,76 @@ section("editor v2: focus route is exact (the guide page keeps the site chrome)"
   ok(!isFocusRoute("/creador-de-relojes-viejo") && !isFocusRoute("/") && !isFocusRoute(null), "a prefix / other route is a focus route");
 });
 
+section("editor v3: undo gives back exactly what was there; a skipped step is not done", () => {
+  // Deshacer restaura el reloj CRUDO: normalize() borraría una fecha imposible
+  // que el cliente tiene escrita, y con ella el bloqueo del pedido.
+  const ref = resolvePreset("eleggua");
+  const malo: WatchConfig = { ...ref, tapa: { ...ref.tapa, fecha: "2205-01-01" } };
+  ok(creatorReducer(ref, { type: "restaurar", config: malo }) === malo, "restaurar must return the very same config");
+  ok(validate(creatorReducer(ref, { type: "restaurar", config: malo })).issues.some((i) => i.campo === "tapa.fecha"), "restaurar keeps the bad-date blocker");
+  ok(validate(creatorReducer(ref, { type: "cargar", config: malo })).issues.length === 0, "cargar (drafts, links) still normalizes");
+  // Caja → Tapa con la barra: Esfera y Correa no están "hechas".
+  const saltado = pasosSinVer(3, new Set(["caja", "tapa:signo", "tapa:grabado"]));
+  ok(same([...saltado], ["esfera", "correa"]), `pasosSinVer: ${[...saltado].join(", ")}`);
+  ok(pasosSinVer(3, new Set(stopsUpTo(3))).size === 0, "everything seen: every step is done");
+  ok(pasosSinVer(1, new Set(["caja"])).has("esfera") && !pasosSinVer(1, new Set(["caja"])).has("correa"), "only reached steps count");
+});
+
+// ---------------------------------------------------------------------------
+section("vitrina: every picture the showcase asks for exists, and shows THAT dial", () => {
+  const PUB = join(process.cwd(), "public");
+  const hay = (u: string | undefined, quien: string) => ok(!u || existsSync(join(PUB, u)), `${quien}: ${u} does not exist`);
+  let pedidas = 0;
+  for (const f of FINISHES) {
+    for (const s of STRAPS) {
+      const u = vitrinaCorrea(s.id, f.id);
+      hay(u, `strap ${s.id} / ${f.id}`);
+      if (u) pedidas++;
+    }
+    for (const b of DIAL_BASES) {
+      for (const ifa of [false, true]) {
+        for (const paso of b.degradado ? DIAL_GRADIENT_STEPS : [undefined]) {
+          const m = vitrinaMini(b.id, f.id, { ifa, paso });
+          if (!m) continue;
+          pedidas++;
+          hay(m.indices, `dial ${b.id}`);
+          hay(m.caja, `dial ${b.id} / ${f.id}`);
+          hay(m.dial, `dial ${b.id} step ${paso ?? "-"}`);
+        }
+      }
+    }
+  }
+  ok(pedidas > 300, `the showcase asks for ${pedidas} pieces (the whole catalogue)`);
+  // Lo que se OFRECE hoy tiene su imagen: nada cae al punto de color.
+  for (const f of visibleParts(FINISHES)) {
+    for (const s of visibleParts(STRAPS)) ok(!!vitrinaCorrea(s.id, f.id), `${s.id} / ${f.id} is on sale without its showcase picture`);
+    for (const b of visibleParts(DIAL_BASES)) ok(!!vitrinaMini(b.id, f.id), `${b.id} / ${f.id} is on sale without its showcase picture`);
+  }
+  // Los índices del mini reloj son los de ESA esfera: con las medidas de
+  // DIAL_LAYOUT y sin ventana de fecha donde el reloj no la lleva.
+  const PX = 16.3934;
+  const n1 = (v: number) => String(Number((v * PX).toFixed(1)));
+  const L = DIAL_LAYOUT;
+  for (const ifa of [false, true]) {
+    for (const u of [vitrinaIndices(ifa), vitrinaMini("blanco", "acero", { ifa })!.indices]) {
+      hay(u, "indices");
+      const svg = existsSync(join(PUB, u)) ? readFileSync(join(PUB, u), "utf8") : "";
+      ok(svg.includes('id="fecha"') === DIAL_MODELS[ifa ? "ifa" : "clasica"].ventanaFecha, `${u}: the date window does not match DIAL_MODELS`);
+      const centros = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)"/g)].map((m) => Math.hypot(Number(m[1]) - 370, Number(m[2]) - 370) / PX);
+      if (ifa) {
+        const r = DIAL_MODELS.ifa.ventanaFecha ? null : L.ifa.ringR;
+        ok(centros.length === 16 && (r === null || centros.every((x) => Math.abs(x - r) < 0.02)), `${u}: the 16 Meyis are not on one ring at ${r}`);
+      } else {
+        ok(centros.length === 8 && centros.every((x) => Math.abs(x - L.dots.r) < 0.02), `${u}: the hour dots are not at r ${L.dots.r}`);
+        ok(svg.includes(`r="${n1(L.dots.dotR)}"`), `${u}: the hour dots are not r ${L.dots.dotR}`);
+        ok(svg.includes(`width="${n1(L.bar.w)}" height="${n1(L.bar.len)}"`), `${u}: the 6 o'clock bar is not ${L.bar.w} × ${L.bar.len}`);
+        ok(svg.includes(`width="${n1(L.date.w + 2 * L.date.rim)}" height="${n1(L.date.h + 2 * L.date.rim)}"`), `${u}: the date frame is not its real size`);
+      }
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
 section("letra fina (R7): Cormorant Garamond Italic 500, py-dial untouched", () => {
   const fina = readFileSync(join(process.cwd(), "lib/watch-glyphs-fina.ts"), "utf8");
   ok(/Cormorant Garamond Italic 500, OFL 1\.1/.test(fina), "the fina glyph file does not name Cormorant Garamond Italic 500, OFL 1.1");
@@ -1740,6 +1824,13 @@ section("3D geometry: every face points where its normal does (no inside-out par
   const applied = appliedGeometries(c);
   check("applied rims", applied.rims);
   check("applied lume", applied.lume);
+  // The 12 o'clock triangle's metal tip is where the workshop sheet says.
+  {
+    const P = applied.rims!.getAttribute("position");
+    let tip = Infinity;
+    for (let i = 0; i < P.count; i++) if (Math.abs(P.getX(i)) < 0.02 && P.getY(i) > 8) tip = Math.min(tip, P.getY(i));
+    ok(Math.abs(tip - trianguloPorFuera().tipR) < 0.02, `triangle: 3D tip at ${tip.toFixed(3)}, sheet says ${trianguloPorFuera().tipR.toFixed(3)}`);
+  }
   // The parts stand ON the dial, their rims at the declared height and the
   // domed lume below them; the outer wall of each rim looks outwards.
   const zRange = (g: THREE.BufferGeometry) => {

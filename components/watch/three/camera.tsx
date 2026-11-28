@@ -186,9 +186,13 @@ export function CameraRig({
   }).current;
   const springs = [st.az, st.pol, st.logD, st.tx, st.ty, st.tz];
 
+  // Quita el nombre de la pieza bajo el ratón (lo pone el efecto de tocar).
+  const sinNombre = useRef<() => void>(() => {});
   const setMoving = (on: boolean) => {
     if (st.moving === on) return;
     st.moving = on;
+    // Si el reloj gira o la cámara viaja, la pieza bajo el ratón ya es otra.
+    if (on) sinNombre.current();
     onActive?.(on);
   };
 
@@ -445,6 +449,7 @@ export function CameraRig({
       sobre = p;
       onPartHover?.(p, x, y);
     };
+    sinNombre.current = () => avisar(null);
     const onDown = (e: PointerEvent) => {
       down = { x: e.clientX, y: e.clientY, t: performance.now() };
       avisar(null);
@@ -459,7 +464,7 @@ export function CameraRig({
     };
     let last = 0;
     const onMove = (e: PointerEvent) => {
-      if (coarse || e.buttons || e.pointerType !== "mouse" || !onPartPick) return;
+      if (coarse || e.buttons || e.pointerType !== "mouse" || !onPartPick || st.moving) return;
       const now = performance.now();
       if (now - last < 100) return;
       last = now;
@@ -481,8 +486,9 @@ export function CameraRig({
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
       avisar(null);
+      sinNombre.current = () => {};
     };
-  }, [gl, camera, model, coarse, onPartPick, onPartHover]);
+  }, [gl, camera, model, coarse, onPartPick, onPartHover, st]);
 
   // — El bucle ————————————————————————————————————————————————————————
   useFrame((_, delta) => {

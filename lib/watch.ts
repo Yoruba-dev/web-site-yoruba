@@ -117,7 +117,8 @@ export const WATCH_COLORS: Readonly<Record<WatchColorId, WatchColor>> = {
   verde: { hex: HEX.verde, nombre: "Verde" },
   marron: { hex: HEX.marron, nombre: "Carmelita" },
   vinotinto: { hex: HEX.vinotinto, nombre: "Vino" },
-  tan: { hex: HEX.tan, nombre: "Tan" },
+  // "tan" es inglés (en español se lee "tan…"): el id no cambia.
+  tan: { hex: HEX.tan, nombre: "Canela" },
   dorado: { hex: HEX.dorado, nombre: "Dorado" },
 };
 
@@ -442,9 +443,11 @@ const caucho = (
   color: WatchColorId,
   status: PartStatus = "verificado",
   nota?: string,
+  /** El nombre a la vista, si no es el del id. */
+  visible = nombre,
 ): StrapPart => ({
   id: `caucho-${nombre.replace(/ /g, "-")}` as StrapId,
-  label: `Caucho ${nombre}`,
+  label: `Caucho ${visible}`,
   status,
   swatch: color,
   tipo: "caucho",
@@ -474,7 +477,7 @@ export const STRAPS: readonly StrapPart[] = [
   caucho("naranja", "naranja"),
   caucho("verde", "verde"),
   caucho("rojo", "rojo"),
-  caucho("tan", "tan"),
+  caucho("tan", "tan", "verificado", "El «tan» del proveedor.", "canela"),
   caucho("amarillo", "amarillo", "pendiente", "No está en las imágenes 1 y 7: por conseguir."),
   caucho("vino", "vinotinto", "pendiente", "No está en las imágenes 1 y 7: por conseguir."),
   piel("verde", "verde"),

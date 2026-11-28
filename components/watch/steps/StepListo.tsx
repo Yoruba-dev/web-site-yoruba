@@ -261,7 +261,11 @@ function summaryRows(c: WatchConfig): SumRow[] {
       thumb: (
         // La misma punta de correa de la vitrina (antes, un recorte de la capa).
         <span className="rl-sum_vit">
-          <VitrinaPiece src={vitrinaCorrea(c.correa, c.acabado)} hex={strapHex(c.correa, strap?.swatch ?? "negro")} />
+          <VitrinaPiece
+            src={vitrinaCorrea(c.correa, c.acabado)}
+            hex={strapHex(c.correa, strap?.swatch ?? "negro")}
+            tipo={strap?.tipo ?? "caucho"}
+          />
         </span>
       ),
     },

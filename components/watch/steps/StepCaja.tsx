@@ -36,6 +36,7 @@ export default function StepCaja({ config, dispatch }: StepProps) {
             <CajaMuestra
               capas={[apliqueUrl(nombresCapas(config).aplique, 600), indices, layerUrl(`caja-${f.id}`), esfera]}
               hex={swatchHex(f.swatch)}
+              esfera={config.esfera}
             />
           ),
           ...tileState(optionState(config, "acabado", f.id)),
